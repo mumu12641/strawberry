@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Token {
     Class_,
     Function,
@@ -33,7 +33,9 @@ pub enum Token {
     Semicolon,
     Period,
     Comma,
+    Colon,
 
+    Newline,
     Whitespace,
     Comment,
 

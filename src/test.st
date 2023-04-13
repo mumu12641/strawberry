@@ -1,10 +1,14 @@
+// this is a comment.
+
 class Main {
     let a : Int;
     let b : String = "hello world";
     let c : Bool = true;
 
-    function main(): Int{
-        let d:Bool = false;
+    function main(e:Int): Int{
+        let d:Bool = true;
+        d = false;
+        /*
         if c == true {
             c.print();
         }else{
@@ -12,6 +16,7 @@ class Main {
         }
         b.print();
         return a;
+        */
     };
     
 };
