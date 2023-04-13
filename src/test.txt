@@ -1,0 +1,17 @@
+class Main {
+    let a : Int;
+    let b : String = "hello world";
+    let c : Bool = true;
+
+    function main(): Int{
+        let d:Bool = false;
+        if c == true {
+            c.print();
+        }else{
+            d.print();
+        }
+        b.print();
+        return a;
+    };
+    
+};
