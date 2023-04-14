@@ -56,7 +56,6 @@ fn parse_string(text: &str) -> Token {
     let mut s: String = String::from("");
     let mut flag = false;
     for c in (&text[1..text.len() - 1]).chars() {
-
         if c == '\\' && !flag {
             flag = true;
             continue;
@@ -94,26 +93,30 @@ impl<'a> Lexer<'a> {
 #[derive(Debug, Clone, Copy)]
 pub struct Span {
     pub line_num: usize,
-    pub start: usize,
+    pub off: usize,
     pub len: usize,
 }
 
+#[derive(Debug)]
+pub struct LexicalError {}
 
+pub type LineNum = usize;
+pub type Offset = usize;
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = (Token, Span);
-    fn next(&mut self) -> Option<(Token, Span)> {
+    type Item = Result<(LineNum, Token, Offset), LexicalError>;
+    fn next(&mut self) -> Option<Result<(LineNum, Token, Offset), LexicalError>> {
         loop {
             let (tok, span) = if let Some((tok, new_remaining)) = next_token(self.remaining) {
-                let start = self.original.len() - self.remaining.len();
-                let len = self.original.len() - new_remaining.len();
+                let len = self.original.len() - self.remaining.len();
+                let off = self.original.len() - new_remaining.len();
                 self.remaining = new_remaining;
                 (
                     tok,
                     Span {
                         line_num: self.current_line,
-                        start,
                         len,
+                        off,
                     },
                 )
             } else {
@@ -129,16 +132,28 @@ impl<'a> Iterator for Lexer<'a> {
                     continue;
                 }
                 tok => {
-                    return Some((tok, span));
+                    // return Some((tok, span));
+                    return Some(Ok((self.current_line, tok, span.off)));
                 }
             }
+
+            // if let Some((token, rem)) = next_token(self.remaining) {
+            //     let start = self.original.len() - self.remaining.len();
+            //     let end = self.original.len() - rem.len();
+            //     self.remaining = rem;
+            //     match token {
+            //         Token::Comment | Token::Whitespace => continue,
+            //         token => return Some(Ok((start, token, end))),
+            //     }
+            // } else {
+            //     return None;
+            // };
         }
     }
 }
 
 // extern {
 
-    
 //     enum Token{
 //         "Class" => Token::Class_,
 //         "Function" => Token::Function,
@@ -163,7 +178,7 @@ impl<'a> Iterator for Lexer<'a> {
 //         "/" => Token::Divide,
 //         "*" => Token::Mul,
 //         "=" => Token::Equal,
-        
+
 //         "{" => Token::Lbrace,
 //         "}" => Token::Rbrace,
 //         "(" => Token::Lparen,

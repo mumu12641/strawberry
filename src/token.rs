@@ -1,4 +1,4 @@
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum Token {
     Class_,
     Function,

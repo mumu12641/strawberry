@@ -3,36 +3,46 @@ pub type Type = String;
 pub type Boolean = bool;
 pub type Int = u32;
 pub type Str = String;
+
 #[derive(Debug)]
 pub struct Program {
     pub classes: Vec<Class>,
 }
+
 #[derive(Debug)]
 pub struct Class {
     pub name: Type,
     pub parent: Option<Type>,
-    pub feature: Vec<Feature>,
+    pub features: Vec<Feature>,
 }
 #[derive(Debug)]
 pub enum Feature {
-    Attribute(AttrDecl),
+    Attribute(VarDecl),
     Method(MethodDecl),
 }
 #[derive(Debug)]
-pub struct AttrDecl {
+pub struct VarDecl {
     pub name: Identifier,
     pub type_: Type,
-    pub init: Option<Expr>,
+    pub init: Box<Option<Expr>>,
 }
 #[derive(Debug)]
 pub struct MethodDecl {
-    pub name:Identifier,
-    pub param:Box<Vec<ParamDecl>>,
-    pub return_type:Type,
-    pub body:Vec<Expr>
+    pub name: Identifier,
+    pub param: Box<Vec<ParamDecl>>,
+    pub return_type: Type,
+    pub body: Box<Option<Expr>>,
 }
 
 pub type ParamDecl = (Identifier, Type);
+
+#[derive(Debug)]
+pub enum MathOp {
+    Add,
+    Subtract,
+    Mul,
+    Div,
+}
 
 #[derive(Debug)]
 pub enum Expr {
@@ -40,6 +50,28 @@ pub enum Expr {
     Bool(Boolean),
     Int(Int),
     Str(Str),
-    Assign(Identifier, Box<Expr>),
-    // Let_expr(Identifier, )
+    Assignment(Identifier, Box<Expr>),
+    Dispacth {
+        target: Box<Option<Expr>>,
+        exprs: Box<Vec<Expr>>,
+    },
+    Cond {
+        test: Box<Expr>,
+        then_body: Box<Expr>,
+        else_body: Box<Expr>,
+    },
+    While {
+        test: Box<Expr>,
+        body: Box<Expr>,
+    },
+    Block(Box<Vec<Expr>>),
+    Let(Box<Vec<VarDecl>>),
+    New(Type),
+    Isvoid(Box<Expr>),
+
+    Math {
+        left: Box<Expr>,
+        op: Box<MathOp>,
+        right: Box<Expr>,
+    },
 }

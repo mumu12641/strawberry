@@ -1,6 +1,6 @@
-// #[macro_use]
-// extern crate lalrpop_util;
-// lalrpop_mod!(pub strawberry);
+#[macro_use]
+extern crate lalrpop_util;
+lalrpop_mod!(pub strawberry);
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -16,20 +16,17 @@ fn main() {
     println!("With text:\n{content}");
 
     let lexer = lexer::Lexer::new(&content);
-    for i in lexer {
-        println!("{:?}", i);
-    }
+    let program = strawberry::ProgramParser::new().parse(lexer);
+        match program {
+            Ok(v) => println!("Res: {:?}", v),
+            Err(e) => {
+                println!("Err: {:?}", e);
+                for token_tup in lexer::Lexer::new(&content) {
+                    println!("{:?}", token_tup);
+                }
+            },
+        }
 }
 
 #[test]
-fn test() {
-    let a = crate::ast::Feature::Attribute(crate::ast::AttrDecl {
-        name: "a".to_string(),
-        type_: "b".to_string(),
-        init: None,
-    });
-    assert_eq!(2 + 2, 4);
-    println!("{:?}", a);
-    let b = crate::token::Token::StringConst("111".to_string());
-    println!("{:?}", b);
-}
+fn test() {}

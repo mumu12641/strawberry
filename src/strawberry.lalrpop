@@ -1,0 +1,74 @@
+use crate::ast::*;
+use crate::token::Token;
+use crate::lexer::{LineNum, LexicalError};
+
+grammar<'input>;
+
+// * => zero or more
+// + => once or more
+// ? => zero or once
+
+pub Program = <class*>;
+
+class: Class = {
+    "CLASS" <tid:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+        name: tid,
+        parent: None,
+        features: f
+    },
+};
+
+feature: Feature = {
+    <oid:"ID"> ":" <tid:"TYPE"> ";" => {
+        Feature::Attribute(VarDecl {
+            name: oid,
+            type_: tid,
+            init: Box::new(None),
+        })
+    },
+};
+
+extern {
+    type Location = LineNum;
+    type Error = LexicalError;
+
+    // Map parser terms to token values:
+
+    enum Token{
+        "CLASS" => Token::Class_,
+        "FUN" => Token::Function,
+        "IF" => Token::If,
+        "ELSE" => Token::Else,
+        "INHERITS" => Token::Inherits,
+        "LET" => Token::Let,
+        "WHILE" => Token::While,
+        "NEW" => Token::New,
+        "ISVOID" => Token::Isvoid,
+        "NOT" => Token::Not,
+
+        "STR" => Token::StringConst(<String>),
+        "INT" => Token::IntConst(<String>),
+        "BOOL" => Token::BoolConst(<bool>),
+        "TYPE" => Token::TypeId(<String>),
+        "ID" => Token::Identifier(<String>),
+
+        "=" => Token::Assign,
+        "+" => Token::Plus,
+        "-" => Token::Minus,
+        "/" => Token::Divide,
+        "*" => Token::Mul,
+        "=" => Token::Equal,
+        
+        "{" => Token::Lbrace,
+        "}" => Token::Rbrace,
+        "(" => Token::Lparen,
+        ")" => Token::Rparen,
+        ";" =>Token::Semicolon,
+        "." => Token::Period,
+        "," => Token::Comma,
+        ":" =>Token::Colon,
+        "ERROR" => Token::Error(<String>),
+    }
+
+}
+
