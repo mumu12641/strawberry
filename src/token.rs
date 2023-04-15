@@ -3,6 +3,7 @@ pub enum Token {
     Class_,
     Function,
     If,
+    Then,
     Else,
 
     Inherits,
@@ -19,6 +20,7 @@ pub enum Token {
     Identifier(String),
 
     Assign,
+    Arrow,
 
     Plus,
     Minus,

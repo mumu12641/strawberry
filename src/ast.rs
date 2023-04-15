@@ -31,7 +31,7 @@ pub struct MethodDecl {
     pub name: Identifier,
     pub param: Box<Vec<ParamDecl>>,
     pub return_type: Type,
-    pub body: Box<Option<Expr>>,
+    pub body: Box<Option<Vec<Expr>>>,
 }
 
 pub type ParamDecl = (Identifier, Type);
@@ -51,9 +51,12 @@ pub enum Expr {
     Int(Int),
     Str(Str),
     Assignment(Identifier, Box<Expr>),
-    Dispacth {
+    Dispatch {
         target: Box<Option<Expr>>,
-        exprs: Box<Vec<Expr>>,
+        fun_name: Identifier,
+        actual:Box<Vec<Expr>>,
+      
+
     },
     Cond {
         test: Box<Expr>,

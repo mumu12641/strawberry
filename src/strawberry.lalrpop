@@ -11,22 +11,136 @@ grammar<'input>;
 pub Program = <class*>;
 
 class: Class = {
-    "CLASS" <tid:"TYPE"> "{" <f:feature*> "}" ";" => Class {
-        name: tid,
+    "CLASS" <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+        name: class_name,
         parent: None,
+        features: f
+    },
+    "CLASS" <class_name:"TYPE"> "INHERITS" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+        name: class_name,
+        parent: Some(parent_name),
         features: f
     },
 };
 
 feature: Feature = {
-    <oid:"ID"> ":" <tid:"TYPE"> ";" => {
+    // attr
+    <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
         Feature::Attribute(VarDecl {
-            name: oid,
-            type_: tid,
+            name: attr_name,
+            type_: type_name,
             init: Box::new(None),
         })
     },
+
+    <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:compute_expr> ";" => {
+        Feature::Attribute(VarDecl{
+            name:attr_name,
+            type_:type_name,
+            init:Box::new(Some(e)),
+        })
+    },
+    
+    // function
+    "FUN" <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+        Feature::Method(MethodDecl{
+            name: method_name,
+            param: Box::new(param_.unwrap_or(vec![])),
+            return_type:r_type,
+            body: Box::new(Some(e)),
+        })
+    },
+
+    "FUN" <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+        Feature::Method(MethodDecl{
+            name: method_name,
+            param: Box::new(param_.unwrap_or(vec![])),
+            return_type:r_type,
+            body: Box::new(None),
+        })
+    },
+
 };
+
+param: ParamDecl = {
+    <id:"ID"> ":" <t:"TYPE"> => (<>),
+};
+
+// let var
+var: VarDecl = {
+    <id:"ID"> ":" <type_name:"TYPE"> => VarDecl{
+        name:id,
+        type_: type_name,
+        init: Box::new(None),
+    },
+    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:compute_expr> => VarDecl{
+        name:id,
+        type_: type_name,
+        init: Box::new(Some(e)),
+    },
+};
+
+// let assign if while 
+expr: Expr = {
+    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Box::new(var_)),
+    <id:"ID"> "=" <expr :compute_expr>";" => Expr::Assignment(id, Box::new(expr)),
+
+    <e:compute_expr> "." <id:"ID"> "(" <args:comma_list<compute_expr>?> ")" ";" => {
+        Expr::Dispatch {
+            target: Box::new(Some(e)),
+            fun_name: id,
+            actual: Box::new(args.unwrap_or(vec![])),
+        }
+    },
+    <id:"ID"> "(" <args:comma_list<compute_expr>?>  ")" ";"=> {
+        Expr::Dispatch {
+            target: Box::new(None),
+            fun_name: id,
+            actual: Box::new(args.unwrap_or(vec![])),
+        }
+    },
+
+    "IF" <test_:compute_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
+        test:Box::new(test_),
+        then_body: Box::new(then_),
+        else_body: Box::new(else_),
+    },
+
+    "WHILE" <test_:compute_expr> "{" <body_:expr> "}" => Expr::While{
+        test:Box::new(test_),
+        body: Box::new(body_),
+    },
+};
+
+compute_expr:Expr = {
+    <id:"ID"> => Expr::Identifier(<>),
+    <s:"STR"> => Expr::Str(s),
+    <b:"BOOL"> => Expr::Bool(b),
+    <i:"INT"> => Expr::Int(i.parse().unwrap()), 
+    "NEW" <class_name:"TYPE"> => Expr::New(<>), 
+}
+
+
+
+#[inline]
+comma_list<T>: Vec<T> = {
+    <i1: T> <i2:("," T)*> => {
+        let mut items = vec![i1];
+        items.extend(i2.into_iter().map(|e| e.1));
+        items
+    }
+};
+
+#[inline]
+semi_list<T>:Vec<T> = {
+    // <i1: T> <i2:(";" T)*> => {
+        <i1: T> <i2: T*> => {
+        let mut items = vec![i1];
+        items.extend(i2.into_iter().map(|e| e));
+        items
+    }
+}
+
 
 extern {
     type Location = LineNum;
@@ -38,6 +152,7 @@ extern {
         "CLASS" => Token::Class_,
         "FUN" => Token::Function,
         "IF" => Token::If,
+        "THEN" => Token::Then,
         "ELSE" => Token::Else,
         "INHERITS" => Token::Inherits,
         "LET" => Token::Let,
@@ -45,6 +160,7 @@ extern {
         "NEW" => Token::New,
         "ISVOID" => Token::Isvoid,
         "NOT" => Token::Not,
+        "->" => Token::Arrow,
 
         "STR" => Token::StringConst(<String>),
         "INT" => Token::IntConst(<String>),
@@ -57,7 +173,7 @@ extern {
         "-" => Token::Minus,
         "/" => Token::Divide,
         "*" => Token::Mul,
-        "=" => Token::Equal,
+        "==" => Token::Equal,
         
         "{" => Token::Lbrace,
         "}" => Token::Rbrace,

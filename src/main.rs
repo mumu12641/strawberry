@@ -21,12 +21,25 @@ fn main() {
             Ok(v) => println!("Res: {:?}", v),
             Err(e) => {
                 println!("Err: {:?}", e);
-                for token_tup in lexer::Lexer::new(&content) {
-                    println!("{:?}", token_tup);
-                }
+                // for token_tup in lexer::Lexer::new(&content) {
+                //     println!("{:?}", token_tup);
+                // }
             },
         }
 }
 
 #[test]
-fn test() {}
+fn test() {
+    let mut file = File::open("src/test.st").unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).expect("error");
+
+    println!("With text:\n{content}");
+
+    let lexer = lexer::Lexer::new(&content);
+    for i in lexer {
+        println!("{:?}",i);
+    }
+
+    // let i = crate::ast::ParamDecl("f","a");
+}

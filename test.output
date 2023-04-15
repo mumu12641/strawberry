@@ -1,0 +1,19 @@
+With text:
+// this is a comment.
+
+class Main {
+    a : Int;
+
+    function main() -> Int {
+        let t:String = "hello";
+        a = 0;
+    };
+};
+
+class Test inherits Main{
+     b : Int;
+     c : Int = 0;
+};
+Res: [Class { name: "Main", parent: None,
+ features: [Attribute(VarDecl { name: "a", type_: "Int", init: None })
+ , Method(MethodDecl { name: "main", param: [], return_type: "Int", body: Some([Let([VarDecl { name: "t", type_: "String", init: Some(Str("hello")) }]), Assignment("a", Int(0))]) })] }, Class { name: "Test", parent: Some("Main"), features: [Attribute(VarDecl { name: "b", type_: "Int", init: None }), Attribute(VarDecl { name: "c", type_: "Int", init: Some(Int(0)) })] }]

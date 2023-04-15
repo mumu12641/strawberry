@@ -11,8 +11,9 @@ lexer! {
     "fn" => Token::Function,
 
     "if" => Token::If,
+    "then" => Token::Then,
     "else" => Token::Else,
-    "Inherits" => Token::Inherits,
+    "inherits" => Token::Inherits,
     "let" => Token::Let,
     "while" => Token::While,
     "new"=>Token::New,
@@ -27,6 +28,7 @@ lexer! {
     r#""[^"]*""# => parse_string(text),
 
     "="=>Token::Assign,
+    "->" => Token::Arrow,
     r"\+" => Token::Plus,
     "-" => Token::Minus,
     r"\*" => Token::Mul,
@@ -108,15 +110,18 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Result<(LineNum, Token, Offset), LexicalError>> {
         loop {
             let (tok, span) = if let Some((tok, new_remaining)) = next_token(self.remaining) {
+                
                 let len = self.original.len() - self.remaining.len();
                 let off = self.original.len() - new_remaining.len();
+
                 self.remaining = new_remaining;
+
                 (
                     tok,
                     Span {
                         line_num: self.current_line,
-                        len,
                         off,
+                        len,
                     },
                 )
             } else {
@@ -128,65 +133,12 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 Token::Newline => {
                     self.current_line += 1;
-                    println!("");
                     continue;
                 }
                 tok => {
-                    // return Some((tok, span));
                     return Some(Ok((self.current_line, tok, span.off)));
                 }
             }
-
-            // if let Some((token, rem)) = next_token(self.remaining) {
-            //     let start = self.original.len() - self.remaining.len();
-            //     let end = self.original.len() - rem.len();
-            //     self.remaining = rem;
-            //     match token {
-            //         Token::Comment | Token::Whitespace => continue,
-            //         token => return Some(Ok((start, token, end))),
-            //     }
-            // } else {
-            //     return None;
-            // };
         }
     }
 }
-
-// extern {
-
-//     enum Token{
-//         "Class" => Token::Class_,
-//         "Function" => Token::Function,
-//         "If" => Token::If,
-//         "Else" => Token::Else,
-//         "Inherits" => Token::Inherits,
-//         "Let" => Token::Let,
-//         "While" => Token::While,
-//         "New" => Token::New,
-//         "Isvoid" => Token::Isvoid,
-//         "Not" => Token::Not,
-
-//         "String" => Token::StringConst(<String>),
-//         "Int" => Token::IntConst(<String>),
-//         "Bool" => Token::BoolConst(<bool>),
-//         "Type" => Token::TypeId(<String>),
-//         "Id" => Token::Identifier(String),
-
-//         "=" => Token::Assign,
-//         "+" => Token::Plus,
-//         "-" => Token::Minus,
-//         "/" => Token::Divide,
-//         "*" => Token::Mul,
-//         "=" => Token::Equal,
-
-//         "{" => Token::Lbrace,
-//         "}" => Token::Rbrace,
-//         "(" => Token::Lparen,
-//         ")" => Token::Rparen,
-//         ";" =>Token::Semicolon,
-//         "." => Token::Period,
-//         "," => Token::Comma,
-//         ":" =>Token::Colon,
-
-//     }
-// }
