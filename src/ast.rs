@@ -39,10 +39,17 @@ pub type ParamDecl = (Identifier, Type);
 #[derive(Debug)]
 pub enum MathOp {
     Add,
-    Subtract,
+    Minus,
     Mul,
-    Div,
+    Divide,
+    Equal,
+    More,
+    MoreE,
+    Less,
+    LessE,
 }
+
+
 
 #[derive(Debug)]
 pub enum Expr {

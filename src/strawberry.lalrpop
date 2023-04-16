@@ -33,7 +33,7 @@ feature: Feature = {
         })
     },
 
-    <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:compute_expr> ";" => {
+    <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
         Feature::Attribute(VarDecl{
             name:attr_name,
             type_:type_name,
@@ -73,7 +73,7 @@ var: VarDecl = {
         type_: type_name,
         init: Box::new(None),
     },
-    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:compute_expr> => VarDecl{
+    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> => VarDecl{
         name:id,
         type_: type_name,
         init: Box::new(Some(e)),
@@ -83,16 +83,16 @@ var: VarDecl = {
 // let assign if while 
 expr: Expr = {
     "LET" <var_:comma_list<var>> ";"=> Expr::Let(Box::new(var_)),
-    <id:"ID"> "=" <expr :compute_expr>";" => Expr::Assignment(id, Box::new(expr)),
+    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(id, Box::new(expr)),
 
-    <e:compute_expr> "." <id:"ID"> "(" <args:comma_list<compute_expr>?> ")" ";" => {
+    <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch {
             target: Box::new(Some(e)),
             fun_name: id,
             actual: Box::new(args.unwrap_or(vec![])),
         }
     },
-    <id:"ID"> "(" <args:comma_list<compute_expr>?>  ")" ";"=> {
+    <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
         Expr::Dispatch {
             target: Box::new(None),
             fun_name: id,
@@ -100,26 +100,83 @@ expr: Expr = {
         }
     },
 
-    "IF" <test_:compute_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
+    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
     },
 
-    "WHILE" <test_:compute_expr> "{" <body_:expr> "}" => Expr::While{
+    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
+        test:Box::new(test_),
+        then_body: Box::new(then_),
+        else_body: Box::new(else_),
+    },
+
+    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr> "}" => Expr::While{
         test:Box::new(test_),
         body: Box::new(body_),
     },
+
+    "WHILE" <test_:cond_expr> "{" <body_:expr> "}" => Expr::While{
+        test:Box::new(test_),
+        body: Box::new(body_),
+    },
+    math_expr,
+
 };
 
-compute_expr:Expr = {
+single_expr:Expr = {
     <id:"ID"> => Expr::Identifier(<>),
     <s:"STR"> => Expr::Str(s),
     <b:"BOOL"> => Expr::Bool(b),
     <i:"INT"> => Expr::Int(i.parse().unwrap()), 
     "NEW" <class_name:"TYPE"> => Expr::New(<>), 
+};
+
+add_minus: MathOp = {
+    "+" => MathOp::Add,
+    "-" => MathOp::Minus,
+};
+
+mul_div: MathOp = {
+    "/" => MathOp::Divide,
+    "*" => MathOp::Mul,
+};
+
+cond_op: MathOp = {
+    ">" => MathOp::More,
+    "=>" => MathOp::MoreE,
+    "<" => MathOp::Less,
+    "<=" => MathOp::LessE,
+    "==" => MathOp::Equal,
 }
 
+math_term:Expr ={
+    <l:math_term> <op:mul_div> <r:single_expr> => Expr::Math {
+        left: Box::new(l),
+        op: Box::new(op),
+        right: Box::new(r),
+    },
+    single_expr,
+};
+
+math_expr: Expr = {
+    <l:math_expr> <op:add_minus> <r:math_term> => Expr::Math {
+        left: Box::new(l),
+        op: Box::new(op),
+        right: Box::new(r),
+    },
+    math_term,
+};
+
+cond_expr: Expr = {
+    <l:math_expr> <op:cond_op> <r:math_expr> => Expr::Math { 
+        left: Box::new(l),
+        op: Box::new(op),
+        right: Box::new(r),
+    },
+    math_expr,
+}
 
 
 #[inline]
@@ -147,7 +204,6 @@ extern {
     type Error = LexicalError;
 
     // Map parser terms to token values:
-
     enum Token{
         "CLASS" => Token::Class_,
         "FUN" => Token::Function,
@@ -159,7 +215,7 @@ extern {
         "WHILE" => Token::While,
         "NEW" => Token::New,
         "ISVOID" => Token::Isvoid,
-        "NOT" => Token::Not,
+        "!" => Token::Not,
         "->" => Token::Arrow,
 
         "STR" => Token::StringConst(<String>),
@@ -174,6 +230,10 @@ extern {
         "/" => Token::Divide,
         "*" => Token::Mul,
         "==" => Token::Equal,
+        ">" => Token::More,
+        "=>" => Token::MoreE,
+        "<" => Token::Less,
+        "<=" => Token::LessE,
         
         "{" => Token::Lbrace,
         "}" => Token::Rbrace,

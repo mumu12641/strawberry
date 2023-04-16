@@ -18,7 +18,7 @@ lexer! {
     "while" => Token::While,
     "new"=>Token::New,
     "isvoid" => Token::Isvoid,
-    "not" => Token::Not,
+    "!" => Token::Not,
     "true"=>Token::BoolConst(true),
     "false" => Token::BoolConst(false),
 
@@ -34,6 +34,10 @@ lexer! {
     r"\*" => Token::Mul,
     "/" => Token::Divide,
     "==" => Token::Equal,
+    ">" => Token::More,
+    "=>" => Token::MoreE,
+    "<" => Token::Less,
+    "<=" => Token::LessE,
 
     r#"\n"# => Token::Newline,
     r#"[ \t\r]+"# => Token::Whitespace,

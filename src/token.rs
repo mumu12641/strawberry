@@ -27,6 +27,11 @@ pub enum Token {
     Divide,
     Mul,
     Equal,
+    More,
+    MoreE,
+    Less,
+    LessE,
+
 
     Lbrace,
     Rbrace,
