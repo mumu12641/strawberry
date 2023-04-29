@@ -1,5 +1,5 @@
 extern crate plex;
-use crate::token::Token;
+use crate::{table::Tables, token::Token};
 use plex::lexer;
 
 lexer! {
@@ -83,51 +83,39 @@ fn parse_string(text: &str) -> Token {
 #[derive(Debug)]
 pub struct Lexer<'a> {
     current_line: usize,
+    offset: usize,
     original: &'a str,
     remaining: &'a str,
+    // tables: &'a mut Vec<String>,
+    tables: &'a mut Tables,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(text: &'a str) -> Lexer<'a> {
+    pub fn new(text: &'a str, tables: &'a mut Tables) -> Lexer<'a> {
         Lexer {
             current_line: 1,
+            offset: 0,
             original: text,
             remaining: text,
+            tables,
         }
     }
-}
-#[derive(Debug, Clone, Copy)]
-pub struct Span {
-    pub line_num: usize,
-    pub off: usize,
-    pub len: usize,
 }
 
 #[derive(Debug)]
 pub struct LexicalError {}
 
 pub type LineNum = usize;
-pub type Offset = usize;
+pub type Off = usize;
 
 impl<'a> Iterator for Lexer<'a> {
-    type Item = Result<(LineNum, Token, Offset), LexicalError>;
-    fn next(&mut self) -> Option<Result<(LineNum, Token, Offset), LexicalError>> {
+    type Item = Result<(LineNum, Token, Off), LexicalError>;
+    fn next(&mut self) -> Option<Result<(LineNum, Token, Off), LexicalError>> {
         loop {
-            let (tok, span) = if let Some((tok, new_remaining)) = next_token(self.remaining) {
-                
-                let len = self.original.len() - self.remaining.len();
-                let off = self.original.len() - new_remaining.len();
-
+            let tok = if let Some((tok, new_remaining)) = next_token(self.remaining) {
+                self.offset += self.remaining.len() - new_remaining.len();
                 self.remaining = new_remaining;
-
-                (
-                    tok,
-                    Span {
-                        line_num: self.current_line,
-                        off,
-                        len,
-                    },
-                )
+                tok
             } else {
                 return None;
             };
@@ -137,10 +125,31 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 Token::Newline => {
                     self.current_line += 1;
+                    self.offset = 0;
                     continue;
                 }
-                tok => {
-                    return Some(Ok((self.current_line, tok, span.off)));
+                Token::StringConst(text) => {
+                    self.tables.string_table.insert(text.clone());
+                    return Some(Ok((
+                        self.current_line,
+                        Token::StringConst(text),
+                        self.offset,
+                    )));
+                }
+                Token::IntConst(text) => {
+                    self.tables.int_table.insert(text.clone());
+                    return Some(Ok((self.current_line, Token::IntConst(text), self.offset)));
+                }
+                Token::Identifier(text) => {
+                    self.tables.id_table.insert(text.clone());
+                    return Some(Ok((
+                        self.current_line,
+                        Token::Identifier(text),
+                        self.offset,
+                    )));
+                }
+                token => {
+                    return Some(Ok((self.current_line, token, self.offset)));
                 }
             }
         }

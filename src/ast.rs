@@ -62,8 +62,6 @@ pub enum Expr {
         target: Box<Option<Expr>>,
         fun_name: Identifier,
         actual:Box<Vec<Expr>>,
-      
-
     },
     Cond {
         test: Box<Expr>,
@@ -84,4 +82,10 @@ pub enum Expr {
         op: Box<MathOp>,
         right: Box<Expr>,
     },
+}
+
+impl Expr  {
+    // pub fn get_name(){
+    // }    
+
 }

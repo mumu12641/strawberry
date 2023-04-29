@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, Clone)]
 pub enum Token {
     Class_,
@@ -31,7 +33,6 @@ pub enum Token {
     MoreE,
     Less,
     LessE,
-
 
     Lbrace,
     Rbrace,
