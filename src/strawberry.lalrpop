@@ -1,6 +1,6 @@
-use crate::ast::*;
-use crate::token::Token;
-use crate::lexer::{LineNum, LexicalError};
+use crate::grammar::ast::*;
+use crate::grammar::token::Token;
+use crate::grammar::lexer::{LineNum, LexicalError};
 
 grammar<'input>;
 

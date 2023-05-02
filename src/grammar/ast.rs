@@ -31,7 +31,7 @@ impl Hash for Class {
 }
 impl Eq for Class {}
 
-#[derive(Debug, Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Feature {
     Attribute(VarDecl),
     Method(MethodDecl),
@@ -45,10 +45,8 @@ pub struct VarDecl {
 
 impl PartialEq for VarDecl {
     fn eq(&self, other: &Self) -> bool {
-
-        // TODO: type_ 
-        return self.name == other.name
-            && self.type_ == other.type_
+        // TODO: type_
+        return self.name == other.name && self.type_ == other.type_;
     }
 }
 
@@ -62,13 +60,14 @@ pub struct MethodDecl {
 
 impl PartialEq for MethodDecl {
     fn eq(&self, other: &Self) -> bool {
-
-        // TODO: return type 
+        // TODO: return type
         return self.name == other.name
             && self.return_type == other.return_type
-            && crate::util::do_vecs_match::<(String, String)>(&(*self.param), &(*other.param));
+            && crate::utils::util::do_vecs_match::<(String, String)>(&(*self.param), &(*other.param));
     }
 }
+
+
 
 pub type ParamDecl = (Identifier, Type);
 

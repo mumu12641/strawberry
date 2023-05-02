@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Class, Feature},
+    grammar::ast::{Class, Feature},
     table::ClassTable,
 };
 
@@ -31,12 +31,12 @@ impl SemanticChecker {
         for i in &self.classes {
             if i.name == "Main".to_string() {
                 main_flag = true;
-                for feature in &i.features{
+                for feature in &i.features {
                     if let Feature::Method(m) = feature {
-                        if m.name.clone() == "main".to_string(){
+                        if m.name.clone() == "main".to_string() {
                             main_method_flag = true;
                         }
-                    } 
+                    }
                 }
             }
             if class_table.classes.contains_key(&i.name) {
@@ -111,12 +111,16 @@ impl SemanticChecker {
                         match feature {
                             Feature::Method(method_) => {
                                 if i.features.contains(&feature) {
+                                    // check returan_type and attr
+                                    // if i.features.
+
+                                    // TODO: if object has a fuction , these will be an error
                                 } else {
                                     return Err(SemanticError {
                                         err_msg: "An error occurred in the parameter type or return type of the method <"
                                             .to_string()
                                             + &method_.name
-                                            + "> overridden by class " + &i.name + " !",
+                                            + "> overridden by class " + &i.name + "!",
                                     });
                                 }
                             }

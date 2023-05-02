@@ -1,21 +1,14 @@
 #[macro_use]
 extern crate lalrpop_util;
 lalrpop_mod!(pub strawberry);
-
 use std::fs::File;
 use std::io::prelude::*;
-
-
-use table::Tables;
-
-use crate::semantic::{SemanticChecker, SemanticError};
-use crate::table::ClassTable;
-mod ast;
-mod lexer;
+use grammar::lexer::Lexer;
+use semantic::semantic::{SemanticChecker, SemanticError};
+use utils::table::{Tables, self, ClassTable};
+mod grammar;
 mod semantic;
-mod table;
-mod token;
-mod util;
+mod utils;
 
 fn main() {
     // get input file
@@ -32,10 +25,10 @@ fn main() {
     class_table.install_basic_class();
 
     // start compiler
-    let lexer: lexer::Lexer = lexer::Lexer::new(&content, &mut table);
+    let lexer: Lexer = Lexer::new(&content, &mut table);
     let program = strawberry::ProgramParser::new().parse(lexer);
 
-    // print_table(&table);
+    print_table(&table);
     match program {
         Ok(v) => {
             // println!("Res: {:?}", v);
@@ -55,6 +48,7 @@ fn main() {
             println!("Oops, syntax error has occurred!");
             println!("Err: {:?}", e);
         }
+        
     }
 }
 
@@ -77,20 +71,7 @@ fn print_table(table: &Tables) {
     println!();
 }
 
-struct Te {
-    a: String,
-}
 
 #[test]
 fn test() {
-    let opt = Some(Te {
-        a: "ss".to_string(),
-    });
-
-    loop {
-        match opt {
-            Some(ref t) => {}
-            None => {}
-        }
-    }
 }

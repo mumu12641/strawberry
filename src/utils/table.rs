@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{Class, Feature, MethodDecl, VarDecl};
+use crate::grammar::ast::{Class, Feature, MethodDecl, VarDecl};
 
 #[derive(Debug)]
 pub struct Tables {
@@ -43,12 +43,13 @@ impl ClassTable {
             Class {
                 name: object.clone(),
                 parent: Some("None".to_string()),
-                features: vec![Feature::Method(MethodDecl {
-                    name: "print".to_string(),
-                    param: Box::new(vec![("s".to_string(), string.clone())]),
-                    return_type: object.clone(),
-                    body: Box::new(None),
-                })],
+                // features: vec![Feature::Method(MethodDecl {
+                //     name: "print".to_string(),
+                //     param: Box::new(vec![("s".to_string(), string.clone())]),
+                //     return_type: object.clone(),
+                //     body: Box::new(None),
+                // })],
+                features: vec![],
             },
         );
         self.classes.insert(

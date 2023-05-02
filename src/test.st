@@ -21,7 +21,7 @@ class Main inherits A{
         return 0;
     };
 
-    function funa(a:String) -> Int{
+    function funa(a:Int) -> Int{
         
     };
 };

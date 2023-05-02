@@ -1,5 +1,6 @@
 extern crate plex;
-use crate::{table::Tables, token::Token};
+use crate::{table::Tables, grammar::token::Token};
+
 use plex::lexer;
 
 lexer! {
