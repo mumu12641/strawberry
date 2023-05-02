@@ -4,6 +4,7 @@ use std::fmt;
 pub enum Token {
     Class_,
     Function,
+    Return,
     If,
     Then,
     Else,

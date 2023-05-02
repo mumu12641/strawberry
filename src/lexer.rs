@@ -9,6 +9,7 @@ lexer! {
     "function"=>Token::Function,
     "fun" => Token::Function,
     "fn" => Token::Function,
+    "return"=>Token::Return,
 
     "if" => Token::If,
     "then" => Token::Then,
@@ -142,6 +143,7 @@ impl<'a> Iterator for Lexer<'a> {
                 }
                 Token::Identifier(text) => {
                     self.tables.id_table.insert(text.clone());
+
                     return Some(Ok((
                         self.current_line,
                         Token::Identifier(text),

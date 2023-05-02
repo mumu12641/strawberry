@@ -1,3 +1,5 @@
+use std::hash::{Hash, Hasher};
+
 pub type Identifier = String;
 pub type Type = String;
 pub type Boolean = bool;
@@ -9,24 +11,39 @@ pub struct Program {
     pub classes: Vec<Class>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Class {
     pub name: Type,
     pub parent: Option<Type>,
     pub features: Vec<Feature>,
 }
-#[derive(Debug)]
+
+
+impl PartialEq for Class {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Hash for Class {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+impl Eq for Class {}
+
+#[derive(Debug, Clone)]
 pub enum Feature {
     Attribute(VarDecl),
     Method(MethodDecl),
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VarDecl {
     pub name: Identifier,
     pub type_: Type,
     pub init: Box<Option<Expr>>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MethodDecl {
     pub name: Identifier,
     pub param: Box<Vec<ParamDecl>>,
@@ -36,7 +53,7 @@ pub struct MethodDecl {
 
 pub type ParamDecl = (Identifier, Type);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MathOp {
     Add,
     Minus,
@@ -49,9 +66,7 @@ pub enum MathOp {
     LessE,
 }
 
-
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(Identifier),
     Bool(Boolean),
@@ -61,7 +76,7 @@ pub enum Expr {
     Dispatch {
         target: Box<Option<Expr>>,
         fun_name: Identifier,
-        actual:Box<Vec<Expr>>,
+        actual: Box<Vec<Expr>>,
     },
     Cond {
         test: Box<Expr>,
@@ -82,10 +97,13 @@ pub enum Expr {
         op: Box<MathOp>,
         right: Box<Expr>,
     },
+
+    Return {
+        val: Box<Expr>,
+    },
 }
 
-impl Expr  {
+impl Expr {
     // pub fn get_name(){
-    // }    
-
+    // }
 }

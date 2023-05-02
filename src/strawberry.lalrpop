@@ -121,6 +121,9 @@ expr: Expr = {
         test:Box::new(test_),
         body: Box::new(body_),
     },
+    "RETURN"  <val:math_expr> ";"=> Expr::Return{
+        val: Box::new(val),
+    },
     math_expr,
 
 };
@@ -207,6 +210,7 @@ extern {
     enum Token{
         "CLASS" => Token::Class_,
         "FUN" => Token::Function,
+        "RETURN" => Token::Return,
         "IF" => Token::If,
         "THEN" => Token::Then,
         "ELSE" => Token::Else,
