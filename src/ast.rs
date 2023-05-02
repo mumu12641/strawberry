@@ -11,13 +11,12 @@ pub struct Program {
     pub classes: Vec<Class>,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Class {
     pub name: Type,
     pub parent: Option<Type>,
     pub features: Vec<Feature>,
 }
-
 
 impl PartialEq for Class {
     fn eq(&self, other: &Self) -> bool {
@@ -32,7 +31,7 @@ impl Hash for Class {
 }
 impl Eq for Class {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq)]
 pub enum Feature {
     Attribute(VarDecl),
     Method(MethodDecl),
@@ -43,12 +42,32 @@ pub struct VarDecl {
     pub type_: Type,
     pub init: Box<Option<Expr>>,
 }
+
+impl PartialEq for VarDecl {
+    fn eq(&self, other: &Self) -> bool {
+
+        // TODO: type_ 
+        return self.name == other.name
+            && self.type_ == other.type_
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MethodDecl {
     pub name: Identifier,
     pub param: Box<Vec<ParamDecl>>,
     pub return_type: Type,
     pub body: Box<Option<Vec<Expr>>>,
+}
+
+impl PartialEq for MethodDecl {
+    fn eq(&self, other: &Self) -> bool {
+
+        // TODO: return type 
+        return self.name == other.name
+            && self.return_type == other.return_type
+            && crate::util::do_vecs_match::<(String, String)>(&(*self.param), &(*other.param));
+    }
 }
 
 pub type ParamDecl = (Identifier, Type);

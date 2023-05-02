@@ -5,6 +5,7 @@ lalrpop_mod!(pub strawberry);
 use std::fs::File;
 use std::io::prelude::*;
 
+
 use table::Tables;
 
 use crate::semantic::{SemanticChecker, SemanticError};
@@ -14,13 +15,14 @@ mod lexer;
 mod semantic;
 mod table;
 mod token;
+mod util;
 
 fn main() {
     // get input file
     let mut file = File::open("src/test.st").unwrap();
     let mut content = String::new();
     file.read_to_string(&mut content).expect("error");
-    println!("{content}");
+    // println!("{content}");
 
     // init
     let mut table = table::Tables::new();
@@ -33,7 +35,7 @@ fn main() {
     let lexer: lexer::Lexer = lexer::Lexer::new(&content, &mut table);
     let program = strawberry::ProgramParser::new().parse(lexer);
 
-    print_table(&table);
+    // print_table(&table);
     match program {
         Ok(v) => {
             // println!("Res: {:?}", v);
@@ -43,9 +45,9 @@ fn main() {
                 Ok(_) => {
                     println!("Congratulations you passed the semantic check!");
                 }
-                Err(e) =>{
+                Err(e) => {
                     println!("Oops, semantic error has occurred!");
-                    println!("{}",e.err_msg);
+                    println!("{}", e.err_msg);
                 }
             }
         }
@@ -75,5 +77,20 @@ fn print_table(table: &Tables) {
     println!();
 }
 
+struct Te {
+    a: String,
+}
+
 #[test]
-fn test() {}
+fn test() {
+    let opt = Some(Te {
+        a: "ss".to_string(),
+    });
+
+    loop {
+        match opt {
+            Some(ref t) => {}
+            None => {}
+        }
+    }
+}

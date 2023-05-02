@@ -21,10 +21,13 @@ class Main inherits A{
         return 0;
     };
 
-    function test() -> Int {
+    function funa(a:String) -> Int{
+        
     };
 };
 
-class A{
-
+class A {
+    function funa(a:Int) -> Int{
+        
+    };
 };

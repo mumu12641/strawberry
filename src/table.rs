@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::ast::{Class, Feature, MethodDecl, ParamDecl, VarDecl};
+use crate::ast::{Class, Feature, MethodDecl, VarDecl};
 
 #[derive(Debug)]
 pub struct Tables {
