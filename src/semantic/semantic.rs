@@ -1,10 +1,23 @@
 use crate::{
-    grammar::ast::{Class, Feature},
+    // grammar::ast::{Class, Feature, MethodDecl},
+    grammar::ast::{
+        class::{Class, Feature},
+        Identifier, Type,
+    },
     table::ClassTable,
+    utils::table::SymbolTable,
 };
 
+/// * install constants and basic classes.
+/// * get all classes not just user defined but also include IO, Object and so on.
+/// * check Main
+/// * check inherit
+/// * check attributes
+/// * check method override
+/// * check all expressions
 pub struct SemanticChecker {
     classes: Vec<Class>,
+    symbol_table: SymbolTable<Identifier, Type>,
 }
 
 pub struct SemanticError {
@@ -12,18 +25,13 @@ pub struct SemanticError {
 }
 
 impl SemanticChecker {
-    // * install constants and basic classes.
-    // * get all classes not just user defined but also include IO, Object and so on.
-    // * check Main
-    // * check inherit
-    // * check attributes
-    // * check method override
-    // * check all expressions
-
     pub fn new(classes_: Vec<Class>) -> SemanticChecker {
-        SemanticChecker { classes: classes_ }
+        SemanticChecker {
+            classes: classes_,
+            symbol_table: SymbolTable::new(),
+        }
     }
-    pub fn check(&self, class_table: &mut ClassTable) -> Result<bool, SemanticError> {
+    pub fn check(&mut self, class_table: &mut ClassTable) -> Result<bool, SemanticError> {
         let mut main_flag = false;
         let mut main_method_flag = false;
 
@@ -64,6 +72,7 @@ impl SemanticChecker {
         for i in &self.classes {
             let mut inherit_vec: Vec<Class> = Vec::new();
             let mut curr_parent: Option<String>;
+            inherit_vec.insert(0, i.clone());
             curr_parent = i.parent.clone();
             loop {
                 match curr_parent {
@@ -100,9 +109,11 @@ impl SemanticChecker {
         // check attribute (optional)
 
         // check  method
+        println!();
         for i in &self.classes {
             // Main: Object -> A
-            println!("{}", &i.name);
+            
+            println!("{} inheritance diagram", &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
                     println!(" -> {}", &curr_parent.name);
@@ -112,23 +123,60 @@ impl SemanticChecker {
                             Feature::Method(method_) => {
                                 if i.features.contains(&feature) {
                                     // check returan_type and attr
-                                    // if i.features.
-
-                                    // TODO: if object has a fuction , these will be an error
-                                } else {
-                                    return Err(SemanticError {
-                                        err_msg: "An error occurred in the parameter type or return type of the method <"
-                                            .to_string()
-                                            + &method_.name
-                                            + "> overridden by class " + &i.name + "!",
-                                    });
+                                    let index =
+                                        i.features.iter().position(|r| r == feature).unwrap();
+                                    if !i.features[index].clone().check_param(&feature)
+                                        || !i.features[index].clone().check_return_type(&feature)
+                                    {
+                                        return Err(SemanticError {
+                                            err_msg: "An error occurred in the parameter type or return type of the method <"
+                                                .to_string()
+                                                + &method_.name
+                                                + "> overridden by class " + &i.name + "!",
+                                        });
+                                    }
                                 }
                             }
+                            // TODO: check attr
                             _ => {}
                         }
                     }
                 }
             }
+        }
+
+        // check all expression
+        println!();
+        println!("Now check all expression");
+        for i in &self.classes {
+            println!("current class is {}", i.name);
+
+            self.symbol_table.enter_scope();
+            if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
+                for curr_parent in v.iter().rev() {
+                    for feature in &curr_parent.features {
+                        if let Feature::Attribute(attr) = feature {
+                            self.symbol_table.add(&attr.name, &attr.type_)
+                        }
+                    }
+                }
+            }
+            for j in &i.features {
+                if let Feature::Method(method) = j {
+                    // self.symbol_table.add(me, v)
+                    for param in *method.param.clone() {
+                        self.symbol_table.add(&param.0, &param.1);
+                    }
+                    if let Some(v) = *method.body.clone(){
+                        for expr in v{
+                            expr.check_type(&mut self.symbol_table);
+                        }
+                    }
+
+                }
+            }
+            self.symbol_table.debug();
+            self.symbol_table.exit_scope();
         }
 
         return Ok(true);

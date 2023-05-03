@@ -1,10 +1,10 @@
 // this is a comment.
 
 class Main inherits A{
-    a : Int = 0;
+    b : Int = 0;
 
     function main(ii:Int) -> Int {
-        let t:String = "hello";
+        let s:String = "hello";
         let t:Int = 0;
         t = 1;
         t.print(1,t + t * t);
@@ -27,7 +27,8 @@ class Main inherits A{
 };
 
 class A {
-    function funa(a:Int) -> Int{
+    a:Int = 0;
+    fun funa(a:Int) -> Int{
         
     };
 };

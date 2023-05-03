@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate lalrpop_util;
 lalrpop_mod!(pub strawberry);
-use std::fs::File;
-use std::io::prelude::*;
 use grammar::lexer::Lexer;
 use semantic::semantic::{SemanticChecker, SemanticError};
-use utils::table::{Tables, self, ClassTable};
+use std::fs::File;
+use std::io::prelude::*;
+use utils::table::{self, ClassTable, Tables};
 mod grammar;
 mod semantic;
 mod utils;
@@ -31,8 +31,8 @@ fn main() {
     print_table(&table);
     match program {
         Ok(v) => {
-            // println!("Res: {:?}", v);
-            let semantic_checker: SemanticChecker = SemanticChecker::new(v);
+            println!("Res: {:?}", &v);
+            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v);
             let result: Result<bool, SemanticError> = semantic_checker.check(&mut class_table);
             match result {
                 Ok(_) => {
@@ -48,7 +48,6 @@ fn main() {
             println!("Oops, syntax error has occurred!");
             println!("Err: {:?}", e);
         }
-        
     }
 }
 
@@ -71,7 +70,10 @@ fn print_table(table: &Tables) {
     println!();
 }
 
-
 #[test]
 fn test() {
+    let i = vec![1, 2, 3];
+    for j in i.iter().rev() {
+        println!("{}", j);
+    }
 }

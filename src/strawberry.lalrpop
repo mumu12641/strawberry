@@ -1,4 +1,6 @@
-use crate::grammar::ast::*;
+use crate::grammar::ast::class::*;
+use crate::grammar::ast::expr::*;
+use crate::grammar::ast::program::*;
 use crate::grammar::token::Token;
 use crate::grammar::lexer::{LineNum, LexicalError};
 
@@ -11,15 +13,17 @@ grammar<'input>;
 pub Program = <class*>;
 
 class: Class = {
-    "CLASS" <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+    <l:"CLASS"> <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
         name: class_name,
         parent: None,
-        features: f
+        features: f,
+        line_num:l
     },
-    "CLASS" <class_name:"TYPE"> "INHERITS" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+    <l:"CLASS"> <class_name:"TYPE"> "INHERITS" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
         name: class_name,
         parent: Some(parent_name),
-        features: f
+        features: f,
+        line_num:l
     },
 };
 
@@ -208,7 +212,7 @@ extern {
 
     // Map parser terms to token values:
     enum Token{
-        "CLASS" => Token::Class_,
+        "CLASS" => Token::Class_(<usize>),
         "FUN" => Token::Function,
         "RETURN" => Token::Return,
         "IF" => Token::If,

@@ -1,12 +1,12 @@
 extern crate plex;
-use crate::{table::Tables, grammar::token::Token};
+use crate::{grammar::token::Token, table::Tables};
 
 use plex::lexer;
 
 lexer! {
 
     fn next_token(text:'a) -> Token;
-    "class" => Token::Class_,
+    "class" => Token::Class_(1),
     "function"=>Token::Function,
     "fun" => Token::Function,
     "fn" => Token::Function,
@@ -86,9 +86,8 @@ fn parse_string(text: &str) -> Token {
 pub struct Lexer<'a> {
     current_line: usize,
     offset: usize,
-    original: &'a str,
+    // original: &'a str,
     remaining: &'a str,
-    // tables: &'a mut Vec<String>,
     tables: &'a mut Tables,
 }
 
@@ -97,7 +96,7 @@ impl<'a> Lexer<'a> {
         Lexer {
             current_line: 1,
             offset: 0,
-            original: text,
+            // original: text,
             remaining: text,
             tables,
         }
@@ -148,6 +147,13 @@ impl<'a> Iterator for Lexer<'a> {
                     return Some(Ok((
                         self.current_line,
                         Token::Identifier(text),
+                        self.offset,
+                    )));
+                }
+                Token::Class_(_) => {
+                    return Some(Ok((
+                        self.current_line,
+                        Token::Class_(self.current_line),
                         self.offset,
                     )));
                 }
