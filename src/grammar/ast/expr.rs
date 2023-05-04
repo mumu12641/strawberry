@@ -1,6 +1,9 @@
-use crate::utils::table::SymbolTable;
+use std::fmt::Debug;
+
+use crate::{utils::table::SymbolTable, OBJECT};
 
 use super::{class::VarDecl, Boolean, Identifier, Int, Str, Type};
+use crate::utils::table::*;
 
 #[derive(Debug, Clone)]
 pub enum MathOp {
@@ -16,52 +19,94 @@ pub enum MathOp {
 }
 
 #[derive(Debug, Clone)]
+pub struct Dispatch {
+    pub target: Box<Option<Expr>>,
+    pub fun_name: Identifier,
+    pub actual: Box<Vec<Expr>>,
+}
+#[derive(Debug, Clone)]
+pub struct Cond {
+    pub test: Box<Expr>,
+    pub then_body: Box<Expr>,
+    pub else_body: Box<Expr>,
+}
+#[derive(Debug, Clone)]
+pub struct While {
+    pub test: Box<Expr>,
+    pub body: Box<Expr>,
+}
+#[derive(Debug, Clone)]
+pub struct Math {
+    pub left: Box<Expr>,
+    pub op: Box<MathOp>,
+    pub right: Box<Expr>,
+}
+#[derive(Debug, Clone)]
+pub struct Return {
+    pub val: Box<Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Let {
+    pub var_decls: Box<Vec<VarDecl>>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(Identifier),
     Bool(Boolean),
     Int(Int),
     Str(Str),
     Assignment(Identifier, Box<Expr>),
-    Dispatch {
-        target: Box<Option<Expr>>,
-        fun_name: Identifier,
-        actual: Box<Vec<Expr>>,
-    },
-    Cond {
-        test: Box<Expr>,
-        then_body: Box<Expr>,
-        else_body: Box<Expr>,
-    },
-    While {
-        test: Box<Expr>,
-        body: Box<Expr>,
-    },
+
+    Dispatch(Dispatch),
+    Cond(Cond),
+    While(While),
     Block(Box<Vec<Expr>>),
-    Let(Box<Vec<VarDecl>>),
+    Let(Let),
     New(Type),
     Isvoid(Box<Expr>),
 
-    Math {
-        left: Box<Expr>,
-        op: Box<MathOp>,
-        right: Box<Expr>,
-    },
+    Math(Math),
 
-    Return {
-        val: Box<Expr>,
-    },
+    Return(Return),
+}
+pub trait TypeChecker: Debug {
+    fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type;
+}
+// impl Expr {
+//     pub fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> bool {
+//         match self {
+//             Expr::Let(e) => {
+//                 for i in *(e.clone()) {
+//                     symbol_table.add(&i.name, &i.type_);
+//                 }
+//             }
+//             _ => {}
+//         }
+//         return true;
+//     }
+// }
+
+impl TypeChecker for Expr {
+    fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
+        println!("check expr");
+        return OBJECT.to_string();
+    }
 }
 
-impl Expr {
-    pub fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> bool {
-        match self {
-            Expr::Let(e) => {
-                for i in *(e.clone()) {
-                    symbol_table.add(&i.name, &i.type_);
-                }
-            }
-            _ => {}
+impl TypeChecker for Dispatch {
+    fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
+        return OBJECT.to_string();
+    }
+}
+
+impl TypeChecker for Let {
+    fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
+        println!("for let expr check ");
+        for i in *(self.var_decls.clone()) {
+            symbol_table.add(&i.name, &i.type_);
         }
-        return true;
+        return OBJECT.to_string();
     }
 }

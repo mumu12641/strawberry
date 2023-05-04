@@ -86,48 +86,48 @@ var: VarDecl = {
 
 // let assign if while 
 expr: Expr = {
-    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Box::new(var_)),
+    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
     <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(id, Box::new(expr)),
 
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
-        Expr::Dispatch {
+        Expr::Dispatch (Dispatch{
             target: Box::new(Some(e)),
             fun_name: id,
             actual: Box::new(args.unwrap_or(vec![])),
-        }
+        })
     },
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
-        Expr::Dispatch {
+        Expr::Dispatch (Dispatch{
             target: Box::new(None),
             fun_name: id,
             actual: Box::new(args.unwrap_or(vec![])),
-        }
+        })
     },
 
-    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
+    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
-    },
+    }),
 
-    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond{
+    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
-    },
+    }),
 
-    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr> "}" => Expr::While{
+    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
-    },
+    }),
 
-    "WHILE" <test_:cond_expr> "{" <body_:expr> "}" => Expr::While{
+    "WHILE" <test_:cond_expr> "{" <body_:expr> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
-    },
-    "RETURN"  <val:math_expr> ";"=> Expr::Return{
+    }),
+    "RETURN"  <val:math_expr> ";"=> Expr::Return(Return{
         val: Box::new(val),
-    },
+    }),
     math_expr,
 
 };
@@ -159,29 +159,29 @@ cond_op: MathOp = {
 }
 
 math_term:Expr ={
-    <l:math_term> <op:mul_div> <r:single_expr> => Expr::Math {
+    <l:math_term> <op:mul_div> <r:single_expr> => Expr::Math(Math {
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
-    },
+    }),
     single_expr,
 };
 
 math_expr: Expr = {
-    <l:math_expr> <op:add_minus> <r:math_term> => Expr::Math {
+    <l:math_expr> <op:add_minus> <r:math_term> => Expr::Math(Math {
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
-    },
+    }),
     math_term,
 };
 
 cond_expr: Expr = {
-    <l:math_expr> <op:cond_op> <r:math_expr> => Expr::Math { 
+    <l:math_expr> <op:cond_op> <r:math_expr> => Expr::Math(Math { 
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
-    },
+    }),
     math_expr,
 }
 

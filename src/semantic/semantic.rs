@@ -2,6 +2,7 @@ use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
     grammar::ast::{
         class::{Class, Feature},
+        expr::TypeChecker,
         Identifier, Type,
     },
     table::ClassTable,
@@ -112,7 +113,7 @@ impl SemanticChecker {
         println!();
         for i in &self.classes {
             // Main: Object -> A
-            
+
             println!("{} inheritance diagram", &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
@@ -163,16 +164,14 @@ impl SemanticChecker {
             }
             for j in &i.features {
                 if let Feature::Method(method) = j {
-                    // self.symbol_table.add(me, v)
                     for param in *method.param.clone() {
                         self.symbol_table.add(&param.0, &param.1);
                     }
-                    if let Some(v) = *method.body.clone(){
-                        for expr in v{
+                    if let Some(v) = *method.body.clone() {
+                        for expr in v {
                             expr.check_type(&mut self.symbol_table);
                         }
                     }
-
                 }
             }
             self.symbol_table.debug();

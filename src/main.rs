@@ -1,7 +1,8 @@
+#![feature(const_trait_impl)]
 #[macro_use]
 extern crate lalrpop_util;
 lalrpop_mod!(pub strawberry);
-use grammar::lexer::Lexer;
+use grammar::{ast::Type, lexer::Lexer};
 use semantic::semantic::{SemanticChecker, SemanticError};
 use std::fs::File;
 use std::io::prelude::*;
@@ -9,6 +10,10 @@ use utils::table::{self, ClassTable, Tables};
 mod grammar;
 mod semantic;
 mod utils;
+const STRING: &str = "String";
+const OBJECT: &str = "Object";
+const INT: &str = "Int";
+const BOOL: &str = "Bool";
 
 fn main() {
     // get input file
@@ -71,9 +76,4 @@ fn print_table(table: &Tables) {
 }
 
 #[test]
-fn test() {
-    let i = vec![1, 2, 3];
-    for j in i.iter().rev() {
-        println!("{}", j);
-    }
-}
+fn test() {}

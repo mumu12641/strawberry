@@ -1,10 +1,13 @@
 use std::{
-    collections::{btree_map::Values, HashMap, HashSet},
+    collections::{HashMap, HashSet},
     fmt::Display,
     hash::Hash,
 };
 
-use crate::grammar::ast::class::{Class, Feature, MethodDecl, VarDecl};
+use crate::{
+    grammar::ast::class::{Class, Feature, MethodDecl, VarDecl},
+    BOOL, INT, OBJECT, STRING,
+};
 
 #[derive(Debug)]
 pub struct Tables {
@@ -37,30 +40,26 @@ impl ClassTable {
 
     pub fn install_basic_class(&mut self) -> bool {
         // install basic classes
-        let string = "String".to_string();
-        let object = "Object".to_string();
-        let int = "Int".to_string();
-        let bool = "Bool".to_string();
 
         self.classes.insert(
-            object.clone(),
+            OBJECT.to_string().clone(),
             Class {
-                name: object.clone(),
+                name: OBJECT.to_string().clone(),
                 parent: Some("None".to_string()),
                 features: vec![Feature::Method(MethodDecl {
                     name: "print".to_string(),
-                    param: Box::new(vec![("s".to_string(), string.clone())]),
-                    return_type: object.clone(),
+                    param: Box::new(vec![("s".to_string(), STRING.to_string().clone())]),
+                    return_type: OBJECT.to_string().clone(),
                     body: Box::new(None),
                 })],
                 line_num: 0, // features: vec![],
             },
         );
         self.classes.insert(
-            string.clone(),
+            STRING.to_string().clone(),
             Class {
-                name: string.clone(),
-                parent: Some(object.clone()),
+                name: STRING.to_string().clone(),
+                parent: Some(OBJECT.to_string().clone()),
                 features: vec![Feature::Attribute(VarDecl {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
@@ -70,10 +69,10 @@ impl ClassTable {
             },
         );
         self.classes.insert(
-            int.clone(),
+            INT.to_string().clone(),
             Class {
-                name: int.clone(),
-                parent: Some(object.clone()),
+                name: INT.to_string().clone(),
+                parent: Some(OBJECT.to_string().clone()),
                 features: vec![Feature::Attribute(VarDecl {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
@@ -83,10 +82,10 @@ impl ClassTable {
             },
         );
         self.classes.insert(
-            bool.clone(),
+            BOOL.to_string().clone(),
             Class {
-                name: bool.clone(),
-                parent: Some(object.clone()),
+                name: BOOL.to_string().clone(),
+                parent: Some(OBJECT.to_string().clone()),
                 features: vec![Feature::Attribute(VarDecl {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
@@ -97,11 +96,14 @@ impl ClassTable {
         );
 
         // Option
-        match self.classes.get(&object.clone()) {
+        match self.classes.get(&OBJECT.to_string().clone()) {
             Some(c) => {
-                self.inheritance.insert(string.clone(), vec![c.clone()]);
-                self.inheritance.insert(int.clone(), vec![c.clone()]);
-                self.inheritance.insert(bool.clone(), vec![c.clone()]);
+                self.inheritance
+                    .insert(STRING.to_string().clone(), vec![c.clone()]);
+                self.inheritance
+                    .insert(INT.to_string().clone(), vec![c.clone()]);
+                self.inheritance
+                    .insert(BOOL.to_string().clone(), vec![c.clone()]);
             }
             None => {}
         }

@@ -1,35 +1,38 @@
 use std::hash::{Hash, Hasher};
 
-use super::{Type, Identifier, expr::Expr};
+use super::{
+    expr::{Expr, TypeChecker},
+    Identifier, Type,
+};
 
 #[derive(Debug, Clone)]
-pub struct Class {
+pub struct Class<'a> {
     pub name: Type,
     pub parent: Option<Type>,
-    pub features: Vec<Feature>,
+    pub features: Vec<Feature<'a>>,
     pub line_num: usize,
 }
 
-impl PartialEq for Class {
+impl PartialEq for Class<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
     }
 }
 
-impl Hash for Class {
+impl Hash for Class<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.name.hash(state);
     }
 }
-impl Eq for Class {}
+impl Eq for Class<'_> {}
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Feature {
+pub enum Feature<'a> {
     Attribute(VarDecl),
-    Method(MethodDecl),
+    Method(MethodDecl<'a>),
 }
 
-impl Feature {
+impl Feature<'_> {
     pub fn check_param(&self, other: &Self) -> bool {
         match self {
             Self::Method(m) => {
@@ -66,19 +69,20 @@ impl PartialEq for VarDecl {
 }
 
 #[derive(Debug, Clone)]
-pub struct MethodDecl {
+pub struct MethodDecl <'a> {
     pub name: Identifier,
     pub param: Box<Vec<ParamDecl>>,
     pub return_type: Type,
-    pub body: Box<Option<Vec<Expr>>>,
+    // pub body: Box<Option<Vec<Expr>>>,
+    pub body: Box<Option<Vec<&'a dyn TypeChecker>>>,
 }
 
-impl PartialEq for MethodDecl {
+impl PartialEq for MethodDecl<'_> {
     fn eq(&self, other: &Self) -> bool {
         return self.name == other.name;
     }
 }
-impl MethodDecl {
+impl MethodDecl<'_> {
     pub fn check_param(&self, other: &Feature) -> bool {
         if let Feature::Method(m) = other {
             return crate::utils::util::do_vecs_match::<(String, String)>(

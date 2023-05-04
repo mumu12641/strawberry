@@ -29,6 +29,6 @@ class Main inherits A{
 class A {
     a:Int = 0;
     fun funa(a:Int) -> Int{
-        
+        let i:Int = 0;
     };
 };
