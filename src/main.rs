@@ -2,7 +2,7 @@
 #[macro_use]
 extern crate lalrpop_util;
 lalrpop_mod!(pub strawberry);
-use grammar::{ast::Type, lexer::Lexer};
+use grammar::lexer::Lexer;
 use semantic::semantic::{SemanticChecker, SemanticError};
 use std::fs::File;
 use std::io::prelude::*;
@@ -75,5 +75,24 @@ fn print_table(table: &Tables) {
     println!();
 }
 
+struct A {
+    a: String,
+}
+
 #[test]
-fn test() {}
+fn test() {
+    // let a = OBJECT.to_string();
+    // let b = OBJECT.to_string();
+
+    // println!("{b}")
+    let a = A {
+        a: "ss".to_string(),
+    };
+    test1(&a);
+    println!("{}", a.a);
+}
+
+
+fn test1(a: &A) {
+    println!("{}", a.a.clone())
+}

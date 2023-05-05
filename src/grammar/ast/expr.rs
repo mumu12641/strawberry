@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use crate::{utils::table::SymbolTable, OBJECT};
 
 use super::{class::VarDecl, Boolean, Identifier, Int, Str, Type};
-use crate::utils::table::*;
 
 #[derive(Debug, Clone)]
 pub enum MathOp {
@@ -52,12 +51,18 @@ pub struct Let {
 }
 
 #[derive(Debug, Clone)]
+pub struct Assignment {
+    pub id: Identifier,
+    pub compute: Box<Expr>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(Identifier),
     Bool(Boolean),
     Int(Int),
     Str(Str),
-    Assignment(Identifier, Box<Expr>),
+    Assignment(Assignment),
 
     Dispatch(Dispatch),
     Cond(Cond),
@@ -74,19 +79,21 @@ pub enum Expr {
 pub trait TypeChecker: Debug {
     fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type;
 }
-// impl Expr {
-//     pub fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> bool {
-//         match self {
-//             Expr::Let(e) => {
-//                 for i in *(e.clone()) {
-//                     symbol_table.add(&i.name, &i.type_);
-//                 }
-//             }
-//             _ => {}
-//         }
-//         return true;
-//     }
-// }
+impl Expr {
+    pub fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
+        match self {
+            Expr::Let(e) => {
+                return e.check_type(symbol_table);
+            }
+            Expr::Assignment(a) => {
+                return a.check_type(symbol_table);
+            }
+
+            _ => {}
+        }
+        return OBJECT.to_string();
+    }
+}
 
 impl TypeChecker for Expr {
     fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
@@ -107,6 +114,15 @@ impl TypeChecker for Let {
         for i in *(self.var_decls.clone()) {
             symbol_table.add(&i.name, &i.type_);
         }
+        return OBJECT.to_string();
+    }
+}
+
+impl TypeChecker for Assignment {
+    fn check_type(&self, symbol_table: &mut SymbolTable<Identifier, Type>) -> Type {
+        // let type_ = *(self.compute.clone()).check_type(symbol_table);
+        let type_ = (*self.compute).check_type(symbol_table);
+
         return OBJECT.to_string();
     }
 }

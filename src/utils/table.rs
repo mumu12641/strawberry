@@ -4,10 +4,8 @@ use std::{
     hash::Hash,
 };
 
-use crate::{
-    grammar::ast::class::{Class, Feature, MethodDecl, VarDecl},
-    BOOL, INT, OBJECT, STRING,
-};
+use crate::{grammar::ast::class::{Class, Feature, MethodDecl, VarDecl}, STRING, OBJECT, INT, BOOL};
+
 
 #[derive(Debug)]
 pub struct Tables {
@@ -98,12 +96,9 @@ impl ClassTable {
         // Option
         match self.classes.get(&OBJECT.to_string().clone()) {
             Some(c) => {
-                self.inheritance
-                    .insert(STRING.to_string().clone(), vec![c.clone()]);
-                self.inheritance
-                    .insert(INT.to_string().clone(), vec![c.clone()]);
-                self.inheritance
-                    .insert(BOOL.to_string().clone(), vec![c.clone()]);
+                self.inheritance.insert(STRING.to_string().clone(), vec![c.clone()]);
+                self.inheritance.insert(INT.to_string().clone(), vec![c.clone()]);
+                self.inheritance.insert(BOOL.to_string().clone(), vec![c.clone()]);
             }
             None => {}
         }

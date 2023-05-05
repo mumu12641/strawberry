@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
     grammar::ast::{
@@ -168,8 +170,10 @@ impl SemanticChecker {
                         self.symbol_table.add(&param.0, &param.1);
                     }
                     if let Some(v) = *method.body.clone() {
+                        // v as Vec<&dyn TypeChecker>;
                         for expr in v {
                             expr.check_type(&mut self.symbol_table);
+                            
                         }
                     }
                 }

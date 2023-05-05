@@ -9,7 +9,6 @@ grammar<'input>;
 // * => zero or more
 // + => once or more
 // ? => zero or once
-
 pub Program = <class*>;
 
 class: Class = {
@@ -52,6 +51,7 @@ feature: Feature = {
             param: Box::new(param_.unwrap_or(vec![])),
             return_type:r_type,
             body: Box::new(Some(e)),
+            // body: Box::new(Box::new(e)),
         })
     },
 
@@ -87,7 +87,7 @@ var: VarDecl = {
 // let assign if while 
 expr: Expr = {
     "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
-    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(id, Box::new(expr)),
+    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(Assignment{id:id, compute:Box::new(expr)}),
 
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch (Dispatch{
