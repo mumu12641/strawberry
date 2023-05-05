@@ -14,6 +14,7 @@ const STRING: &str = "String";
 const OBJECT: &str = "Object";
 const INT: &str = "Int";
 const BOOL: &str = "Bool";
+const SELF: &str = "self";
 
 fn main() {
     // get input file
@@ -85,13 +86,16 @@ fn test() {
     // let b = OBJECT.to_string();
 
     // println!("{b}")
-    let a = A {
-        a: "ss".to_string(),
-    };
-    test1(&a);
-    println!("{}", a.a);
+    //     let a = A {
+    //         a: "ss".to_string(),
+    //     };
+    //     test1(&a);
+    //     println!("{}", a.a);
+    // }
+    let v = vec!["asd", "Asd"];
+    println!("{}", v[0]);
+    println!("{}", v[1]);
 }
-
 
 fn test1(a: &A) {
     println!("{}", a.a.clone())

@@ -7,17 +7,9 @@ class Main inherits A{
         let s:String = "hello";
         let t:Int = 0;
         t = 1;
-        t.print(1,t + t * t);
-        if (t <= 1) then {
-            t.print(1);
-        } 
-        else{
-             t.print(0);
-        }
-        t.print(1);
-        while (1 + 2 +3 *4) {
-            t.parse();
-        }   
+        t.print_str(s);
+        self.print_int(1 + 1);
+        print_int(1 + s);
         return 0;
     };
 

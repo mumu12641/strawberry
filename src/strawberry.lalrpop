@@ -98,7 +98,8 @@ expr: Expr = {
     },
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
         Expr::Dispatch (Dispatch{
-            target: Box::new(None),
+            // target: Box::new(Some("self".to_string())),
+            target:Box::new(Some(Expr::Identifier("self".to_string()))),
             fun_name: id,
             actual: Box::new(args.unwrap_or(vec![])),
         })
@@ -138,7 +139,9 @@ single_expr:Expr = {
     <b:"BOOL"> => Expr::Bool(b),
     <i:"INT"> => Expr::Int(i.parse().unwrap()), 
     "NEW" <class_name:"TYPE"> => Expr::New(<>), 
+
 };
+
 
 add_minus: MathOp = {
     "+" => MathOp::Add,
@@ -213,6 +216,7 @@ extern {
     // Map parser terms to token values:
     enum Token{
         "CLASS" => Token::Class_(<usize>),
+        // "SELF" => Token::Self_,
         "FUN" => Token::Function,
         "RETURN" => Token::Return,
         "IF" => Token::If,

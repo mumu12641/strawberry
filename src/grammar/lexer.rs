@@ -7,6 +7,7 @@ lexer! {
 
     fn next_token(text:'a) -> Token;
     "class" => Token::Class_(1),
+    // "self" => Token::Self_,
     "function"=>Token::Function,
     "fun" => Token::Function,
     "fn" => Token::Function,

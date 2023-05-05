@@ -9,6 +9,7 @@ use crate::{
     },
     table::ClassTable,
     utils::table::SymbolTable,
+    SELF,
 };
 
 /// * install constants and basic classes.
@@ -23,6 +24,7 @@ pub struct SemanticChecker {
     symbol_table: SymbolTable<Identifier, Type>,
 }
 
+#[derive(Debug)]
 pub struct SemanticError {
     pub err_msg: String,
 }
@@ -44,7 +46,7 @@ impl SemanticChecker {
                 main_flag = true;
                 for feature in &i.features {
                     if let Feature::Method(m) = feature {
-                        if m.name.clone() == "main".to_string() {
+                        if m.name == "main".to_string() {
                             main_method_flag = true;
                         }
                     }
@@ -52,7 +54,7 @@ impl SemanticChecker {
             }
             if class_table.classes.contains_key(&i.name) {
                 return Err(SemanticError {
-                    err_msg: "Class ".to_string() + &i.name.clone() + " has been redefined!",
+                    err_msg: "Class ".to_string() + &i.name + " has been redefined!",
                 });
             } else {
                 class_table.classes.insert(i.name.clone(), i.clone());
@@ -83,10 +85,10 @@ impl SemanticChecker {
                         if s.clone() == "None".to_string() {
                             // current is object
                             break;
-                        } else if s.clone() == i.name.clone() {
+                        } else if s == &i.name {
                             return Err(SemanticError {
                                 err_msg: "There is an inheritance cycle about class ".to_string()
-                                    + &s.clone()
+                                    + &s
                                     + " !",
                             });
                         } else {
@@ -128,8 +130,8 @@ impl SemanticChecker {
                                     // check returan_type and attr
                                     let index =
                                         i.features.iter().position(|r| r == feature).unwrap();
-                                    if !i.features[index].clone().check_param(&feature)
-                                        || !i.features[index].clone().check_return_type(&feature)
+                                    if !i.features[index].check_param(&feature)
+                                        || !i.features[index].check_return_type(&feature)
                                     {
                                         return Err(SemanticError {
                                             err_msg: "An error occurred in the parameter type or return type of the method <"
@@ -155,6 +157,7 @@ impl SemanticChecker {
             println!("current class is {}", i.name);
 
             self.symbol_table.enter_scope();
+            self.symbol_table.add(&SELF.to_string(), &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
                     for feature in &curr_parent.features {
@@ -169,15 +172,17 @@ impl SemanticChecker {
                     for param in *method.param.clone() {
                         self.symbol_table.add(&param.0, &param.1);
                     }
-                    if let Some(v) = *method.body.clone() {
+                    if let Some(v) = *(method.body.clone()) {
                         // v as Vec<&dyn TypeChecker>;
                         for expr in v {
-                            expr.check_type(&mut self.symbol_table);
-                            
+                            if let Err(e) = expr.check_type(&mut self.symbol_table, class_table) {
+                                return Err(e);
+                            }
                         }
                     }
                 }
             }
+            println!();
             self.symbol_table.debug();
             self.symbol_table.exit_scope();
         }

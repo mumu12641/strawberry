@@ -1,6 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum Token {
     Class_(usize),
+    // Self_,
     Function,
     Return,
     If,
