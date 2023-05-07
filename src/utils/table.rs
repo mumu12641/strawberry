@@ -9,7 +9,7 @@ use crate::{
         class::{Class, Feature, MethodDecl, VarDecl},
         Type,
     },
-    BOOL, INT, OBJECT, STRING,
+    BOOL, EMPTY, INT, OBJECT, STRING,
 };
 
 #[derive(Debug)]
@@ -62,15 +62,18 @@ impl ClassTable {
                         param: Box::new(vec![("val".to_string(), STRING.to_string())]),
                         return_type: OBJECT.to_string(),
                         body: Box::new(None),
+                        position: EMPTY,
                     }),
                     Feature::Method(MethodDecl {
                         name: "print_int".to_string(),
                         param: Box::new(vec![("val".to_string(), INT.to_string())]),
                         return_type: OBJECT.to_string(),
                         body: Box::new(None),
+                        position: EMPTY,
                     }),
                 ],
-                line_num: 0, // features: vec![],
+                position: (0, 0), // features: vec![],
+                file_name: OBJECT.to_string(),
             },
         );
         self.classes.insert(
@@ -82,8 +85,10 @@ impl ClassTable {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
                     init: Box::new(None),
+                    position: EMPTY,
                 })],
-                line_num: 0,
+                position: (0, 0),
+                file_name: STRING.to_string(),
             },
         );
         self.classes.insert(
@@ -95,8 +100,10 @@ impl ClassTable {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
                     init: Box::new(None),
+                    position: EMPTY,
                 })],
-                line_num: 0,
+                position: (0, 0),
+                file_name: INT.to_string(),
             },
         );
         self.classes.insert(
@@ -108,8 +115,10 @@ impl ClassTable {
                     name: "val".to_string(),
                     type_: "prim_slot".to_string(),
                     init: Box::new(None),
+                    position: EMPTY,
                 })],
-                line_num: 0,
+                position: (0, 0),
+                file_name: BOOL.to_string(),
             },
         );
 
@@ -184,9 +193,9 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
     }
 
     pub fn debug(&mut self) {
-        println!("Print Symbol Table");
+        println!();
+        println!("before exit scope, Print Symbol Table");
         for i in self.scopes.iter().rev() {
-            // println!("{}")
             println!("***scope***");
             for j in &i.type_map {
                 println!("key -> {}    value -> {}", j.0, j.1);

@@ -1,16 +1,16 @@
 use std::hash::{Hash, Hasher};
 
-use super::{
-    expr::{Expr},
-    Identifier, Type,
-};
+use crate::{grammar::lexer::Position, EMPTY, SELF};
+
+use super::{expr::Expr, Identifier, Type};
 
 #[derive(Debug, Clone)]
 pub struct Class {
     pub name: Type,
     pub parent: Option<Type>,
     pub features: Vec<Feature>,
-    pub line_num: usize,
+    pub position: Position,
+    pub file_name: String,
 }
 
 impl PartialEq for Class {
@@ -52,6 +52,14 @@ impl Feature {
         }
         return false;
     }
+
+    pub fn get_position(&self) -> Position {
+        if let Self::Method(m) = self {
+            return m.position;
+        } else {
+            return EMPTY;
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -59,21 +67,23 @@ pub struct VarDecl {
     pub name: Identifier,
     pub type_: Type,
     pub init: Box<Option<Expr>>,
+    pub position: Position,
 }
 
 impl PartialEq for VarDecl {
     fn eq(&self, other: &Self) -> bool {
         // TODO: type_
-        return self.name == other.name && self.type_ == other.type_;
+        return self.name == other.name;
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct MethodDecl  {
+pub struct MethodDecl {
     pub name: Identifier,
     pub param: Box<Vec<ParamDecl>>,
     pub return_type: Type,
     pub body: Box<Option<Vec<Expr>>>,
+    pub position: Position,
 }
 
 impl PartialEq for MethodDecl {

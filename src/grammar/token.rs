@@ -1,17 +1,19 @@
+use super::lexer::Position;
+
 #[derive(Debug, Clone)]
 pub enum Token {
-    Class_(usize),
+    Class_(Position, String),
     // Self_,
-    Function,
-    Return,
-    If,
+    Function(Position),
+    Return(Position),
+    If(Position),
     Then,
-    Else,
+    Else(Position),
 
     Inherits,
-    Let,
-    While,
-    New,
+    Let(Position),
+    While(Position),
+    New(Position),
     Isvoid,
     Not,
 
@@ -19,9 +21,9 @@ pub enum Token {
     IntConst(String),
     BoolConst(bool),
     TypeId(String),
-    Identifier(String),
+    Identifier(String,Position),
 
-    Assign,
+    Assign(Position),
     Arrow,
 
     Plus,

@@ -15,6 +15,7 @@ const OBJECT: &str = "Object";
 const INT: &str = "Int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
+const EMPTY: (usize, usize) = (0, 0);
 
 fn main() {
     // get input file
@@ -31,20 +32,22 @@ fn main() {
     class_table.install_basic_class();
 
     // start compiler
-    let lexer: Lexer = Lexer::new(&content, &mut table);
+    let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
     let program = strawberry::ProgramParser::new().parse(lexer);
 
     print_table(&table);
     match program {
         Ok(v) => {
             println!("Res: {:?}", &v);
-            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v);
+            let mut semantic_checker: SemanticChecker =
+                SemanticChecker::new(v, "test.st".to_string());
             let result: Result<bool, SemanticError> = semantic_checker.check(&mut class_table);
             match result {
                 Ok(_) => {
                     println!("Congratulations you passed the semantic check!");
                 }
                 Err(e) => {
+                    println!();
                     println!("Oops, semantic error has occurred!");
                     println!("{}", e.err_msg);
                 }
@@ -74,29 +77,4 @@ fn print_table(table: &Tables) {
         println!("{i}");
     }
     println!();
-}
-
-struct A {
-    a: String,
-}
-
-#[test]
-fn test() {
-    // let a = OBJECT.to_string();
-    // let b = OBJECT.to_string();
-
-    // println!("{b}")
-    //     let a = A {
-    //         a: "ss".to_string(),
-    //     };
-    //     test1(&a);
-    //     println!("{}", a.a);
-    // }
-    let v = vec!["asd", "Asd"];
-    println!("{}", v[0]);
-    println!("{}", v[1]);
-}
-
-fn test1(a: &A) {
-    println!("{}", a.a.clone())
 }

@@ -2,6 +2,7 @@
 
 class Main inherits A{
     b : Int = 0;
+    // a : Bool = true;
 
     function main(ii:Int) -> Int {
         let s:String = "hello";
@@ -32,7 +33,7 @@ class A {
     a:Int = 0;
     fun funa(a:Int) -> Int{
         let i:Int = 0;
-         let flag :Bool= true;
+        let flag :Bool= true;
         while(flag)
         {
              let flag:Int = 0;

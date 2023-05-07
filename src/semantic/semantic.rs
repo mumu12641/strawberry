@@ -1,4 +1,4 @@
-
+use std::fmt::format;
 
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
@@ -30,7 +30,7 @@ pub struct SemanticError {
 }
 
 impl SemanticChecker {
-    pub fn new(classes_: Vec<Class>) -> SemanticChecker {
+    pub fn new(classes_: Vec<Class>, filename: String) -> SemanticChecker {
         SemanticChecker {
             classes: classes_,
             symbol_table: SymbolTable::new(),
@@ -54,7 +54,10 @@ impl SemanticChecker {
             }
             if class_table.classes.contains_key(&i.name) {
                 return Err(SemanticError {
-                    err_msg: "Class ".to_string() + &i.name + " has been redefined!",
+                    err_msg: format!(
+                        "{}:{}:{} ---> Class {} has been redefined!",
+                        i.file_name, i.position.0, i.position.1, i.name
+                    ),
                 });
             } else {
                 class_table.classes.insert(i.name.clone(), i.clone());
@@ -64,12 +67,12 @@ impl SemanticChecker {
         // chech main
         if !main_flag {
             return Err(SemanticError {
-                err_msg: "Your program is missing the Main class".to_string(),
+                err_msg: format!("Your program is missing the Main class"),
             });
         }
         if !main_method_flag {
             return Err(SemanticError {
-                err_msg: "Your program is missing the Main function".to_string(),
+                err_msg: format!("Your program is missing the Main function"),
             });
         }
 
@@ -87,9 +90,10 @@ impl SemanticChecker {
                             break;
                         } else if s == &i.name {
                             return Err(SemanticError {
-                                err_msg: "There is an inheritance cycle about class ".to_string()
-                                    + &s
-                                    + " !",
+                                err_msg: format!(
+                                    "{}:{}:{} ---> There is an inheritance cycle about Class {}!",
+                                    i.file_name, i.position.0, i.position.1, s
+                                ),
                             });
                         } else {
                             if let Some(c) = class_table.classes.get(&(s.clone())) {
@@ -116,7 +120,7 @@ impl SemanticChecker {
         // check  method
         println!();
         for i in &self.classes {
-            // Main: Object -> A
+            // Main:  Main -> Object -> A
 
             println!("{} inheritance diagram", &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
@@ -134,16 +138,18 @@ impl SemanticChecker {
                                         || !i.features[index].check_return_type(&feature)
                                     {
                                         return Err(SemanticError {
-                                            err_msg: "An error occurred in the parameter type or return type of the method <"
-                                                .to_string()
-                                                + &method_.name
-                                                + "> overridden by class " + &i.name + "!",
+                                            err_msg:format!("{}:{}:{} ---> An error occurred in the parameter type or return type of the method <{}> overridden by Class {}!",
+                                                i.file_name,i.features[index].get_position().0,i.features[index].get_position().1,method_.name,i.name),
                                         });
                                     }
                                 }
                             }
-                            // TODO: check attr
-                            _ => {}
+                            Feature::Attribute(attr) => {
+                                if &curr_parent.name != &i.name && i.features.contains(&feature) {
+                                    return Err(SemanticError { err_msg: format!("{}:{}:{} ---> You cannot define the same field <{}> in the subclass {} as the superclass {}",
+                                        i.file_name,attr.position.0,attr.position.1,attr.name,i.name,curr_parent.name) });
+                                }
+                            }
                         }
                     }
                 }
@@ -159,7 +165,7 @@ impl SemanticChecker {
             self.symbol_table.enter_scope();
             self.symbol_table.add(&SELF.to_string(), &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
-                for curr_parent in v.iter().rev() {
+                for curr_parent in v.iter() {
                     for feature in &curr_parent.features {
                         if let Feature::Attribute(attr) = feature {
                             self.symbol_table.add(&attr.name, &attr.type_)
@@ -183,8 +189,11 @@ impl SemanticChecker {
                                             if !class_table
                                                 .is_less_or_equal(&type_, &method.return_type)
                                             {
-                                                return Err(SemanticError { err_msg: "The return type of your ".to_string()+ &method.name
-                                                +" method is different from the declared type!" });
+                                                return Err(SemanticError {
+                                                     err_msg: format!("{}:{}:{} ---> The return type of your {} method is different from the declared type!",
+                                                                i.file_name,re.position.0,re.position.1,method.name), 
+                                                    }
+                                                );
                                             }
                                         }
                                     }
@@ -193,7 +202,7 @@ impl SemanticChecker {
                                     if let Err(e) =
                                         expr.check_type(&mut self.symbol_table, class_table)
                                     {
-                                        return Err(e);
+                                        return Err(SemanticError { err_msg: format!("{}:{}",i.file_name,e.err_msg)})
                                     }
                                 }
                             }

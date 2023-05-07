@@ -1,6 +1,7 @@
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use crate::{
+    grammar::lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
     BOOL, INT, OBJECT, STRING,
@@ -13,15 +14,6 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub enum MathOp {
-    // Add,
-    // Minus,
-    // Mul,
-    // Divide,
-    // Equal,
-    // More,
-    // MoreE,
-    // Less,
-    // LessE,
     ComputeOp(ComputeOp),
     CondOp(CondOp),
 }
@@ -44,7 +36,7 @@ pub enum CondOp {
 #[derive(Debug, Clone)]
 pub struct Dispatch {
     pub target: Box<Option<Expr>>,
-    pub fun_name: Identifier,
+    pub fun_name: (Identifier, Position),
     pub actual: Box<Vec<Expr>>,
 }
 #[derive(Debug, Clone)]
@@ -52,11 +44,13 @@ pub struct Cond {
     pub test: Box<Expr>,
     pub then_body: Box<Vec<Expr>>,
     pub else_body: Box<Vec<Expr>>,
+    pub postion: Position,
 }
 #[derive(Debug, Clone)]
 pub struct While {
     pub test: Box<Expr>,
     pub body: Box<Vec<Expr>>,
+    pub postion: Position,
 }
 #[derive(Debug, Clone)]
 pub struct Math {
@@ -67,6 +61,7 @@ pub struct Math {
 #[derive(Debug, Clone)]
 pub struct Return {
     pub val: Box<Expr>,
+    pub position: Position,
 }
 
 #[derive(Debug, Clone)]
@@ -76,13 +71,13 @@ pub struct Let {
 
 #[derive(Debug, Clone)]
 pub struct Assignment {
-    pub id: Identifier,
+    pub id: (Identifier, Position),
     pub compute: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Identifier(Identifier),
+    Identifier(Identifier, Position),
     Bool(Boolean),
     Int(Int),
     Str(Str),
@@ -119,13 +114,12 @@ impl TypeChecker for Expr {
             Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(type_) => return Ok(type_.clone()),
 
-            Expr::Identifier(e) => {
+            Expr::Identifier(e, pos) => {
                 if let Some(s) = symbol_table.find(e) {
                     return Ok(s.clone());
                 } else {
                     return Err(SemanticError {
-                        err_msg: "The identifier does not exist or it has gone out of scope!"
-                            .to_string(),
+                        err_msg: format!("{}:{} ---> The identifier {} does not exist or it has gone out of scope!",pos.0,pos.1,e)
                     });
                 }
             }
@@ -157,23 +151,20 @@ impl TypeChecker for Dispatch {
     ) -> Result<Type, SemanticError> {
         println!();
         println!("*****dispatch type check*****");
-        println!("{}", &self.fun_name);
         match *(self.target.clone()) {
             Some(e) => {
                 if let Ok(target_type) = e.check_type(symbol_table, class_table) {
                     if let Some(class) = class_table.get_classes().get(&target_type) {
-                        println!("class name = {}", &class.name);
                         if let Some(v) = class_table.get_inheritance().get(&class.name) {
                             for class in v {
-                                println!("current class is {}", &class.name);
                                 for f in &class.features {
                                     if let Feature::Method(method) = f {
-                                        println!("methd name is {}", &method.name);
-                                        if &method.name == &self.fun_name {
+                                        if &method.name == &self.fun_name.0 {
+                                            println!("methd name is {}", &method.name);
                                             let method_param = *(method.param.clone());
                                             let actuals = *(self.actual.clone());
                                             if actuals.len() != method_param.len() {
-                                                return Err(SemanticError { err_msg: "The actual number of parameters of your method call is not equal to the number of declared formal parameters".to_string(), });
+                                                return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.fun_name.1.0,self.fun_name.1.1), });
                                             }
                                             for index in 0..method_param.len() {
                                                 let actual_type = actuals[index]
@@ -184,7 +175,7 @@ impl TypeChecker for Dispatch {
                                                             &type_,
                                                             &method_param[index].1,
                                                         ) {
-                                                            return Err(SemanticError { err_msg:"The actual parameter type of your method call is not the same as the declared formal parameter type".to_string() });
+                                                            return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.fun_name.1.0,self.fun_name.1.1), });
                                                         }
                                                     }
                                                     Err(e) => return Err(e),
@@ -220,7 +211,7 @@ impl TypeChecker for Let {
                             symbol_table.add(&i.name, &i.type_);
                             return Ok(OBJECT.to_string());
                         } else {
-                            return Err(SemanticError { err_msg: "The type of your let expression init is inconsistent with the declared type!".to_string() });
+                            return Err(SemanticError { err_msg: format!("{}:{} ---> The type of your let expression init is inconsistent with the declared type!",i.position.0,i.position.1), });
                         }
                     }
                     Err(e) => {
@@ -242,7 +233,7 @@ impl TypeChecker for Assignment {
     ) -> Result<Type, SemanticError> {
         let compute_type = (*self.compute).check_type(symbol_table, class_table);
         // type_ <= id.type
-        if let Some(id_type) = symbol_table.find(&self.id) {
+        if let Some(id_type) = symbol_table.find(&self.id.0) {
             // s< compute_type
             if let Ok(t) = compute_type {
                 if class_table.is_less_or_equal(id_type, &t) {
@@ -250,7 +241,7 @@ impl TypeChecker for Assignment {
                 }
             }
         }
-        return Err(SemanticError { err_msg: "Some semantic errors occurred in your Assignment! It may be because you have different types on both sides of the equal sign! ".to_string() });
+        return Err(SemanticError { err_msg: format!("{}:{} ---> Some semantic errors occurred in your Assignment! It may be because you have different types on both sides of the equal sign!",self.id.1.0,self.id.1.1) });
     }
 }
 
@@ -282,8 +273,7 @@ impl TypeChecker for Math {
                     } else {
                         return Err(SemanticError {
                         err_msg:
-                            "The left and right sides of your mathematical operation are not all INT types!"
-                                .to_string(),
+                            format!("The left and right sides of your mathematical operation are not all INT types!"),
                     });
                     }
                 }
@@ -291,7 +281,6 @@ impl TypeChecker for Math {
             },
             Err(e) => return Err(e),
         }
-        // matches!()
     }
 }
 
@@ -308,7 +297,10 @@ impl TypeChecker for Cond {
             Ok(test) => {
                 if test != BOOL.to_string() {
                     return Err(SemanticError {
-                        err_msg: "The type in your If condition is not BOOL".to_string(),
+                        err_msg: format!(
+                            "{}:{} ---> The type in your If condition is not BOOL",
+                            self.postion.0, self.postion.1
+                        ),
                     });
                 }
             }
@@ -347,7 +339,7 @@ impl TypeChecker for While {
             Ok(test) => {
                 if test != BOOL.to_string() {
                     return Err(SemanticError {
-                        err_msg: "The type in your Loop condition is not BOOL".to_string(),
+                        err_msg: format!("{}:{} ---> The type in your Loop condition is not BOOL",self.postion.0,self.postion.1),
                     });
                 }
             }

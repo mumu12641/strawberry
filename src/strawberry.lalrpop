@@ -16,13 +16,15 @@ class: Class = {
         name: class_name,
         parent: None,
         features: f,
-        line_num:l
+        position: l.0,
+        file_name: l.1,
     },
     <l:"CLASS"> <class_name:"TYPE"> "INHERITS" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
         name: class_name,
         parent: Some(parent_name),
         features: f,
-        line_num:l
+        position: l.0,
+        file_name: l.1,
     },
 };
 
@@ -30,57 +32,63 @@ feature: Feature = {
     // attr
     <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
         Feature::Attribute(VarDecl {
-            name: attr_name,
+            name: attr_name.0,
             type_: type_name,
             init: Box::new(None),
+            position: attr_name.1
         })
     },
 
     <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
         Feature::Attribute(VarDecl{
-            name:attr_name,
+            name:attr_name.0,
             type_:type_name,
             init:Box::new(Some(e)),
+            position: attr_name.1
         })
     },
     
     // function
-    "FUN" <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
-            name: method_name,
+            name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
             return_type:r_type,
             body: Box::new(Some(e)),
+            position: pos,
             // body: Box::new(Box::new(e)),
         })
     },
 
-    "FUN" <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
-            name: method_name,
+            name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
             return_type:r_type,
             body: Box::new(None),
+            position: pos,
         })
     },
 
 };
 
 param: ParamDecl = {
-    <id:"ID"> ":" <t:"TYPE"> => (<>),
+    <id:"ID"> ":" <t:"TYPE"> => (id.0,t),
 };
 
 // let var
 var: VarDecl = {
     <id:"ID"> ":" <type_name:"TYPE"> => VarDecl{
-        name:id,
+        name:id.0,
         type_: type_name,
         init: Box::new(None),
+        position: id.1,
     },
     <id:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> => VarDecl{
-        name:id,
+        name:id.0,
         type_: type_name,
         init: Box::new(Some(e)),
+        position: id.1,
     },
 };
 
@@ -99,42 +107,47 @@ expr: Expr = {
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
         Expr::Dispatch (Dispatch{
             // target: Box::new(Some("self".to_string())),
-            target:Box::new(Some(Expr::Identifier("self".to_string()))),
+            target:Box::new(Some(Expr::Identifier("self".to_string(), (0,0)))),
             fun_name: id,
             actual: Box::new(args.unwrap_or(vec![])),
         })
     },
 
-    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "IF"> "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
+        postion: pos,
     }),
 
-    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "IF"> <test_:cond_expr>  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
+        postion: pos,
     }),
 
-    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
+    <pos:"WHILE">  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
+        postion: pos,
     }),
 
-    "WHILE" <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
+    <pos: "WHILE"> <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
+        postion: pos,
     }),
-    "RETURN"  <val:math_expr> ";"=> Expr::Return(Return{
+    <pos: "RETURN">  <val:math_expr> ";"=> Expr::Return(Return{
         val: Box::new(val),
+        position: pos,
     }),
     math_expr,
 
 };
 
 single_expr:Expr = {
-    <id:"ID"> => Expr::Identifier(<>),
+    <id:"ID"> => Expr::Identifier(id.0,id.1),
     <s:"STR"> => Expr::Str(s),
     <b:"BOOL"> => Expr::Bool(b),
     <i:"INT"> => Expr::Int(i.parse().unwrap()), 
@@ -216,20 +229,21 @@ semi_list<T>:Vec<T> = {
 extern {
     type Location = LineNum;
     type Error = LexicalError;
+    // type Pos = Position;
 
     // Map parser terms to token values:
     enum Token{
-        "CLASS" => Token::Class_(<usize>),
+        "CLASS" => Token::Class_(<(usize,usize)>,<String>),
         // "SELF" => Token::Self_,
-        "FUN" => Token::Function,
-        "RETURN" => Token::Return,
-        "IF" => Token::If,
+        "FUN" => Token::Function(<(usize,usize)>),
+        "RETURN" => Token::Return(<(usize,usize)>),
+        "IF" => Token::If(<(usize,usize)>),
         "THEN" => Token::Then,
-        "ELSE" => Token::Else,
+        "ELSE" => Token::Else(<(usize,usize)>),
         "INHERITS" => Token::Inherits,
-        "LET" => Token::Let,
-        "WHILE" => Token::While,
-        "NEW" => Token::New,
+        "LET" => Token::Let(<(usize,usize)>),
+        "WHILE" => Token::While(<(usize,usize)>),
+        "NEW" => Token::New(<(usize,usize)>),
         "ISVOID" => Token::Isvoid,
         "!" => Token::Not,
         "->" => Token::Arrow,
@@ -238,9 +252,9 @@ extern {
         "INT" => Token::IntConst(<String>),
         "BOOL" => Token::BoolConst(<bool>),
         "TYPE" => Token::TypeId(<String>),
-        "ID" => Token::Identifier(<String>),
+        "ID" => Token::Identifier(<String>,<(usize,usize)>),
 
-        "=" => Token::Assign,
+        "=" => Token::Assign(<(usize,usize)>),
         "+" => Token::Plus,
         "-" => Token::Minus,
         "/" => Token::Divide,

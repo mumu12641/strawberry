@@ -1,0 +1,116 @@
+***String Table***
+hello
+
+***Int Table***
+0
+1
+
+***Id Table***
+b
+ii
+a
+i
+s
+print_str
+main
+flag
+t
+self
+print_int
+funa
+
+Res: [Class { name: "Main", parent: Some("A"), features: [Attribute(VarDecl { name: "b", type_: "Int", init: Some(Int(0)) }), Method(MethodDecl { name: "main", param: [("ii", "Int")], return_type: "Int", body: Some([Let(Let { var_decls: [VarDecl { name: "s", type_: "String", init: Some(Str("hello")) }] }), Let(Let { var_decls: [VarDecl { name: "t", type_: "Int", init: Some(Int(0)) }] }), Let(Let { var_decls: [VarDecl { name: "flag", type_: "Bool", init: Some(Bool(true)) }] }), Assignment(Assignment { id: "t", compute: Int(1) }), Dispatch(Dispatch { target: Some(Identifier("t")), fun_name: "print_str", actual: [Identifier("s")] }), Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Math(Math { left: Int(1), op: ComputeOp(Add), right: Int(1) })] }), Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Math(Math { left: Int(1), op: ComputeOp(Add), right: Int(0) })] }), Cond(Cond { test: Identifier("flag"), then_body: [Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Int(1)] }), Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Int(1)] })], else_body: [Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Int(0)] })] }), While(While { test: Bool(true), body: [Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Int(1)] })] }), Return(Return { val: New("Int") })]) }), Method(MethodDecl { name: "funa", param: [("a", "Int")], return_type: "Int", body: None })], line_num: 3 }, Class { name: "A", parent: None, features: [Attribute(VarDecl { name: "a", type_: "Int", init: Some(Int(0)) }), Method(MethodDecl { name: "funa", param: [("a", "Int")], return_type: "Int", body: Some([Let(Let { var_decls: [VarDecl { name: "i", type_: "Int", init: Some(Int(0)) }] }), Let(Let { var_decls: [VarDecl { name: "flag", type_: "Bool", init: Some(Bool(true)) }] }), While(While { test: Identifier("flag"), body: [Let(Let { var_decls: [VarDecl { name: "flag", type_: "Int", init: Some(Int(0)) }] }), Dispatch(Dispatch { target: Some(Identifier("self")), fun_name: "print_int", actual: [Identifier("flag")] })] }), Return(Return { val: Int(0) })]) })], line_num: 32 }]
+
+Main inheritance diagram
+ -> Main
+ -> A
+ -> Object
+A inheritance diagram
+ -> A
+ -> Object
+
+Now check all expression
+current class is Main
+
+*****dispatch type check*****
+methd name is print_str
+
+*****dispatch type check*****
+methd name is print_int
+
+*****check math *****
+
+*****dispatch type check*****
+methd name is print_int
+
+*****check math *****
+
+*****dispatch type check*****
+methd name is print_int
+
+*****dispatch type check*****
+methd name is print_int
+
+*****dispatch type check*****
+methd name is print_int
+
+before exit scope, Print Symbol Table
+***scope***
+***scope***
+key -> t    value -> Int
+key -> b    value -> Int
+key -> ii    value -> Int
+key -> s    value -> String
+key -> self    value -> Main
+key -> flag    value -> Bool
+key -> a    value -> Int
+
+
+*****dispatch type check*****
+methd name is print_int
+
+before exit scope, Print Symbol Table
+***scope***
+***scope***
+key -> t    value -> Int
+key -> b    value -> Int
+key -> ii    value -> Int
+key -> s    value -> String
+key -> self    value -> Main
+key -> flag    value -> Bool
+key -> a    value -> Int
+
+
+before exit scope, Print Symbol Table
+***scope***
+key -> t    value -> Int
+key -> b    value -> Int
+key -> ii    value -> Int
+key -> s    value -> String
+key -> self    value -> Main
+key -> flag    value -> Bool
+key -> a    value -> Int
+
+current class is A
+
+*****dispatch type check*****
+methd name is print_int
+
+before exit scope, Print Symbol Table
+***scope***
+key -> flag    value -> Int
+***scope***
+key -> flag    value -> Bool
+key -> i    value -> Int
+key -> a    value -> Int
+key -> self    value -> A
+
+
+before exit scope, Print Symbol Table
+***scope***
+key -> flag    value -> Bool
+key -> i    value -> Int
+key -> a    value -> Int
+key -> self    value -> A
+
+Congratulations you passed the semantic check!
