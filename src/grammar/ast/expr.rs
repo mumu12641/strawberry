@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::DerefMut};
+use std::{fmt::Debug};
 
 use crate::{
     semantic::semantic::SemanticError,
@@ -13,10 +13,27 @@ use super::{
 
 #[derive(Debug, Clone)]
 pub enum MathOp {
+    // Add,
+    // Minus,
+    // Mul,
+    // Divide,
+    // Equal,
+    // More,
+    // MoreE,
+    // Less,
+    // LessE,
+    ComputeOp(ComputeOp),
+    CondOp(CondOp),
+}
+#[derive(Debug, Clone)]
+pub enum ComputeOp {
     Add,
     Minus,
     Mul,
     Divide,
+}
+#[derive(Debug, Clone)]
+pub enum CondOp {
     Equal,
     More,
     MoreE,
@@ -33,13 +50,13 @@ pub struct Dispatch {
 #[derive(Debug, Clone)]
 pub struct Cond {
     pub test: Box<Expr>,
-    pub then_body: Box<Expr>,
-    pub else_body: Box<Expr>,
+    pub then_body: Box<Vec<Expr>>,
+    pub else_body: Box<Vec<Expr>>,
 }
 #[derive(Debug, Clone)]
 pub struct While {
     pub test: Box<Expr>,
-    pub body: Box<Expr>,
+    pub body: Box<Vec<Expr>>,
 }
 #[derive(Debug, Clone)]
 pub struct Math {
@@ -100,11 +117,10 @@ impl TypeChecker for Expr {
             Expr::Bool(_) => return Ok(BOOL.to_string()),
             Expr::Str(_) => return Ok(STRING.to_string()),
             Expr::Int(_) => return Ok(INT.to_string()),
+            Expr::New(type_) => return Ok(type_.clone()),
 
             Expr::Identifier(e) => {
-                println!("check id");
                 if let Some(s) = symbol_table.find(e) {
-                    println!("{}", s);
                     return Ok(s.clone());
                 } else {
                     return Err(SemanticError {
@@ -120,6 +136,12 @@ impl TypeChecker for Expr {
             Expr::Dispatch(e) => return e.check_type(symbol_table, class_table),
 
             Expr::Math(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::Cond(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::While(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::Return(e) => return e.check_type(symbol_table, class_table),
 
             _ => {}
         }
@@ -188,10 +210,25 @@ impl TypeChecker for Let {
     fn check_type(
         &self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
-        _class_table: &mut ClassTable,
+        class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
         for i in *(self.var_decls.clone()) {
-            symbol_table.add(&i.name, &i.type_);
+            match *(i.init.clone()) {
+                Some(e) => match e.check_type(symbol_table, class_table) {
+                    Ok(type_) => {
+                        if class_table.is_less_or_equal(&type_, &i.type_) {
+                            symbol_table.add(&i.name, &i.type_);
+                            return Ok(OBJECT.to_string());
+                        } else {
+                            return Err(SemanticError { err_msg: "The type of your let expression init is inconsistent with the declared type!".to_string() });
+                        }
+                    }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                },
+                _ => {}
+            }
         }
         return Ok(OBJECT.to_string());
     }
@@ -227,11 +264,21 @@ impl TypeChecker for Math {
         println!("*****check math *****");
         let left_type = (*self.left).check_type(symbol_table, class_table);
         let right_type = (*self.right).check_type(symbol_table, class_table);
+        let is_compute: bool;
+
+        match *(self.op.clone()) {
+            MathOp::ComputeOp(_) => is_compute = true,
+            MathOp::CondOp(_) => is_compute = false,
+        }
         match left_type {
             Ok(left) => match right_type {
                 Ok(right) => {
                     if left == INT.to_string() && right == INT.to_string() {
-                        return Ok(INT.to_string());
+                        if is_compute {
+                            return Ok(INT.to_string());
+                        } else {
+                            return Ok(BOOL.to_string());
+                        }
                     } else {
                         return Err(SemanticError {
                         err_msg:
@@ -242,6 +289,94 @@ impl TypeChecker for Math {
                 }
                 Err(e) => return Err(e),
             },
+            Err(e) => return Err(e),
+        }
+        // matches!()
+    }
+}
+
+impl TypeChecker for Cond {
+    fn check_type(
+        &self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        symbol_table.enter_scope();
+
+        let test_type = (*self.test).check_type(symbol_table, class_table);
+        match test_type {
+            Ok(test) => {
+                if test != BOOL.to_string() {
+                    return Err(SemanticError {
+                        err_msg: "The type in your If condition is not BOOL".to_string(),
+                    });
+                }
+            }
+            Err(e) => return Err(e),
+        }
+        for then_expr in *(self.then_body.clone()) {
+            let then_type = then_expr.check_type(symbol_table, class_table);
+            match then_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+        for else_expr in *(self.else_body.clone()) {
+            let else_type = else_expr.check_type(symbol_table, class_table);
+            match else_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+
+        symbol_table.exit_scope();
+        return Ok(OBJECT.to_string());
+    }
+}
+
+impl TypeChecker for While {
+    fn check_type(
+        &self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        symbol_table.enter_scope();
+
+        let test_type = (*self.test).check_type(symbol_table, class_table);
+        match test_type {
+            Ok(test) => {
+                if test != BOOL.to_string() {
+                    return Err(SemanticError {
+                        err_msg: "The type in your Loop condition is not BOOL".to_string(),
+                    });
+                }
+            }
+            Err(e) => return Err(e),
+        }
+
+        for body_expr in *(self.body.clone()) {
+            let body_type = body_expr.check_type(symbol_table, class_table);
+            match body_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+
+        symbol_table.exit_scope();
+        return Ok(OBJECT.to_string());
+    }
+}
+
+impl TypeChecker for Return {
+    fn check_type(
+        &self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        match (*self.val).check_type(symbol_table, class_table) {
+            Ok(e) => {
+                return Ok(e);
+            }
             Err(e) => return Err(e),
         }
     }

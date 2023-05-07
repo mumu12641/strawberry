@@ -1,4 +1,4 @@
-use std::sync::Arc;
+
 
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
@@ -175,15 +175,33 @@ impl SemanticChecker {
                     if let Some(v) = *(method.body.clone()) {
                         // v as Vec<&dyn TypeChecker>;
                         for expr in v {
-                            if let Err(e) = expr.check_type(&mut self.symbol_table, class_table) {
-                                return Err(e);
+                            match expr {
+                                crate::grammar::ast::expr::Expr::Return(re) => {
+                                    match re.check_type(&mut self.symbol_table, class_table) {
+                                        Err(e) => return Err(e),
+                                        Ok(type_) => {
+                                            if !class_table
+                                                .is_less_or_equal(&type_, &method.return_type)
+                                            {
+                                                return Err(SemanticError { err_msg: "The return type of your ".to_string()+ &method.name
+                                                +" method is different from the declared type!" });
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => {
+                                    if let Err(e) =
+                                        expr.check_type(&mut self.symbol_table, class_table)
+                                    {
+                                        return Err(e);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-            println!();
-            self.symbol_table.debug();
+
             self.symbol_table.exit_scope();
         }
 

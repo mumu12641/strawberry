@@ -105,24 +105,24 @@ expr: Expr = {
         })
     },
 
-    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond(Cond{
+    "IF" "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
     }),
 
-    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr> "}" "ELSE" "{" <else_:expr> "}"  => Expr::Cond(Cond{
+    "IF" <test_:cond_expr>  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
     }),
 
-    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr> "}" => Expr::While(While{
+    "WHILE"  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
     }),
 
-    "WHILE" <test_:cond_expr> "{" <body_:expr> "}" => Expr::While(While{
+    "WHILE" <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
     }),
@@ -144,21 +144,25 @@ single_expr:Expr = {
 
 
 add_minus: MathOp = {
-    "+" => MathOp::Add,
-    "-" => MathOp::Minus,
+    "+" => MathOp::ComputeOp(ComputeOp::Add),
+    "-" => MathOp::ComputeOp(ComputeOp::Minus),
 };
 
 mul_div: MathOp = {
-    "/" => MathOp::Divide,
-    "*" => MathOp::Mul,
+    "/" => MathOp::ComputeOp(ComputeOp::Divide),
+    "*" => MathOp::ComputeOp(ComputeOp::Mul),
 };
 
 cond_op: MathOp = {
-    ">" => MathOp::More,
-    "=>" => MathOp::MoreE,
-    "<" => MathOp::Less,
-    "<=" => MathOp::LessE,
-    "==" => MathOp::Equal,
+    ">" => MathOp::CondOp(CondOp::More),
+    "=>" => MathOp::CondOp(CondOp::MoreE),
+    "<" => MathOp::CondOp(CondOp::Less),
+    "<=" => MathOp::CondOp(CondOp::LessE),
+    "==" => MathOp::CondOp(CondOp::Equal),
+    // "=>" => MathOp::CondOp::MoreE,
+    // "<" => MathOp::CondOp::Less,
+    // "<=" => MathOp::CondOp::LessE,
+    // "==" => MathOp::CondOp::Equal,
 }
 
 math_term:Expr ={

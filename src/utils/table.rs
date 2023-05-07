@@ -20,7 +20,6 @@ pub struct Tables {
 }
 impl Tables {
     pub fn new() -> Tables {
-        
         Tables {
             string_table: HashSet::new(),
             int_table: HashSet::new(),
@@ -42,11 +41,11 @@ impl ClassTable {
         }
     }
     pub fn get_classes(&mut self) -> HashMap<String, Class> {
-        return  self.classes.clone();
+        return self.classes.clone();
     }
 
     pub fn get_inheritance(&mut self) -> HashMap<String, Vec<Class>> {
-        return  self.inheritance.clone();
+        return self.inheritance.clone();
     }
 
     pub fn install_basic_class(&mut self) -> bool {
@@ -163,6 +162,7 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
     }
 
     pub fn exit_scope(&mut self) {
+        self.debug();
         self.scopes.pop();
     }
 
@@ -186,6 +186,8 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
     pub fn debug(&mut self) {
         println!("Print Symbol Table");
         for i in self.scopes.iter().rev() {
+            // println!("{}")
+            println!("***scope***");
             for j in &i.type_map {
                 println!("key -> {}    value -> {}", j.0, j.1);
             }
@@ -194,7 +196,7 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Scope<K: PartialEq + Eq + Hash + Display, V: PartialEq + Eq + Display> {
     pub type_map: HashMap<K, V>,
 }
