@@ -21,7 +21,7 @@ pub enum Token {
     IntConst(String),
     BoolConst(bool),
     TypeId(String),
-    Identifier(String,Position),
+    Identifier(String, Position),
 
     Assign(Position),
     Arrow,

@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
     grammar::ast::{
@@ -30,7 +28,7 @@ pub struct SemanticError {
 }
 
 impl SemanticChecker {
-    pub fn new(classes_: Vec<Class>, filename: String) -> SemanticChecker {
+    pub fn new(classes_: Vec<Class>) -> SemanticChecker {
         SemanticChecker {
             classes: classes_,
             symbol_table: SymbolTable::new(),
@@ -191,7 +189,7 @@ impl SemanticChecker {
                                             {
                                                 return Err(SemanticError {
                                                      err_msg: format!("{}:{}:{} ---> The return type of your {} method is different from the declared type!",
-                                                                i.file_name,re.position.0,re.position.1,method.name), 
+                                                                i.file_name,re.position.0,re.position.1,method.name)
                                                     }
                                                 );
                                             }
@@ -202,7 +200,9 @@ impl SemanticChecker {
                                     if let Err(e) =
                                         expr.check_type(&mut self.symbol_table, class_table)
                                     {
-                                        return Err(SemanticError { err_msg: format!("{}:{}",i.file_name,e.err_msg)})
+                                        return Err(SemanticError {
+                                            err_msg: format!("{}:{}", i.file_name, e.err_msg),
+                                        });
                                     }
                                 }
                             }

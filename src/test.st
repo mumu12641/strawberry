@@ -10,7 +10,7 @@ class Main inherits A{
         let flag :Bool= true;
         t = 1;
         t.print_str(s);
-        self.print_int(1 + 1);
+        self.print_int(1);
         print_int(1 + 0);
         if(flag) then {
             print_int(1);

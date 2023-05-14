@@ -7,7 +7,10 @@ use semantic::semantic::{SemanticChecker, SemanticError};
 use std::fs::File;
 use std::io::prelude::*;
 use utils::table::{self, ClassTable, Tables};
+
+use crate::llvm::ir::IrGenerator;
 mod grammar;
+mod llvm;
 mod semantic;
 mod utils;
 const STRING: &str = "String";
@@ -38,13 +41,16 @@ fn main() {
     print_table(&table);
     match program {
         Ok(v) => {
+            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
             println!("Res: {:?}", &v);
-            let mut semantic_checker: SemanticChecker =
-                SemanticChecker::new(v, "test.st".to_string());
             let result: Result<bool, SemanticError> = semantic_checker.check(&mut class_table);
             match result {
                 Ok(_) => {
                     println!("Congratulations you passed the semantic check!");
+                    unsafe {
+                        let ir = IrGenerator::new("test.st".to_string(), v.clone());
+                        ir.ir_generate(&table);
+                    }
                 }
                 Err(e) => {
                     println!();

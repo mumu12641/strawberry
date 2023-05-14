@@ -1,6 +1,5 @@
 use crate::grammar::ast::class::*;
 use crate::grammar::ast::expr::*;
-use crate::grammar::ast::program::*;
 use crate::grammar::token::Token;
 use crate::grammar::lexer::{LineNum, LexicalError};
 
@@ -95,21 +94,23 @@ var: VarDecl = {
 // let assign if while 
 expr: Expr = {
     "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
-    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(Assignment{id:id, compute:Box::new(expr)}),
+    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(Assignment{id:id.0, compute:Box::new(expr),position:id.1}),
 
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch (Dispatch{
             target: Box::new(Some(e)),
-            fun_name: id,
+            fun_name: id.0,
             actual: Box::new(args.unwrap_or(vec![])),
+            position: id.1
         })
     },
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
         Expr::Dispatch (Dispatch{
             // target: Box::new(Some("self".to_string())),
             target:Box::new(Some(Expr::Identifier("self".to_string(), (0,0)))),
-            fun_name: id,
+            fun_name: id.0,
             actual: Box::new(args.unwrap_or(vec![])),
+            position: id.1
         })
     },
 

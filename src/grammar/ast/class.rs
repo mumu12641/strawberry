@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::{grammar::lexer::Position, EMPTY, SELF};
+use crate::{grammar::lexer::Position, EMPTY};
 
 use super::{expr::Expr, Identifier, Type};
 
