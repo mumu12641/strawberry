@@ -6,6 +6,7 @@ class Main inherits A{
 
     function main(ii:Int) -> Int {
         let s:String = "hello";
+        let s_:String = "hello___";
         let t:Int = 0;
         let flag :Bool= true;
         t = 1;

@@ -9,6 +9,8 @@ use std::io::prelude::*;
 use utils::table::{self, ClassTable, Tables};
 
 use crate::llvm::ir::IrGenerator;
+
+
 mod grammar;
 mod llvm;
 mod semantic;
@@ -48,8 +50,12 @@ fn main() {
                 Ok(_) => {
                     println!("Congratulations you passed the semantic check!");
                     unsafe {
-                        let ir = IrGenerator::new("test.st".to_string(), v.clone());
-                        ir.ir_generate(&table);
+                        // let ir = IrGenerator::new("test.st".to_string(), v.clone());
+                        // ir.ir_generate(&table);
+
+                        // inkewll_test();
+                        let ir = IrGenerator::new(v.clone());
+                        ir.ir_generate(&table, "test.st".to_string());
                     }
                 }
                 Err(e) => {

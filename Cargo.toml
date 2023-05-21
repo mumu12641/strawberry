@@ -9,7 +9,7 @@ edition = "2021"
 plex = "0.2.5"
 lalrpop-util = "0.17.2"
 regex = "0.2.0"
-llvm-sys = "140.0.5"
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm14-0"] }
 
 [build-dependencies]
 lalrpop = "0.17.2"
