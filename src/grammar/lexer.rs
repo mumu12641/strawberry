@@ -153,6 +153,12 @@ impl<'a> Iterator for Lexer<'a> {
                         self.offset,
                     )));
                 }
+                Token::TypeId(text) => {
+                    self.tables.string_table.insert(text.clone());
+
+                    return Some(Ok((self.current_line, Token::TypeId(text), self.offset)));
+                }
+
                 Token::Class_(_, _) => {
                     return Some(Ok((
                         self.current_line,

@@ -2,11 +2,12 @@
 
 class Main inherits A{
     b : Int = 0;
+    str: String = "str_test";
     // a : Bool = true;
 
     function main(ii:Int) -> Int {
         let s:String = "hello";
-        let s_:String = "hello___";
+        // let s_:String = "hello___";
         let t:Int = 0;
         let flag :Bool= true;
         t = 1;
