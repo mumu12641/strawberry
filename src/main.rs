@@ -3,13 +3,13 @@
 extern crate lalrpop_util;
 lalrpop_mod!(pub strawberry);
 use grammar::lexer::Lexer;
-use inkwell::context::Context;
+
 use semantic::semantic::{SemanticChecker, SemanticError};
 use std::fs::File;
 use std::io::prelude::*;
 use utils::table::{self, ClassTable, Tables};
 
-use crate::{cgen::cgen::CodeGenerator, llvm::ir::IrGenerator};
+use crate::{cgen::cgen::CodeGenerator};
 
 mod cgen;
 mod grammar;
@@ -23,6 +23,8 @@ const BOOL: &str = "Bool";
 const SELF: &str = "self";
 const EMPTY: (usize, usize) = (0, 0);
 
+const DEBUG: bool = false;
+
 fn main() {
     // get input file
     let mut file = File::open("src/helloworld.st").unwrap();
@@ -34,6 +36,7 @@ fn main() {
     let mut table = table::Tables::new();
     table.string_table.insert("".to_string());
     table.string_table.insert("Object".to_string());
+    table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 
     // install constants
@@ -42,12 +45,15 @@ fn main() {
     // start compiler
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
     let program = strawberry::ProgramParser::new().parse(lexer);
-
-    print_table(&table);
+    // if DEBUG {
+        print_table(&table);
+    // }
     match program {
         Ok(v) => {
             let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
-            println!("Res: {:?}", &v);
+            if DEBUG {
+                println!("Res: {:?}", &v);
+            }
             let result: Result<bool, SemanticError> = semantic_checker.check(&mut class_table);
             match result {
                 Ok(_) => {
@@ -65,13 +71,9 @@ fn main() {
                     // }
                     let mut asm_file = std::fs::File::create("test.s").expect("create failed");
                     // file.write_all("简单教程".as_bytes()).expect("write failed");
-                    let mut cgen = CodeGenerator {
-                        classes: v.clone(),
-                        tables: table,
-                        asm_file: &mut asm_file,
-                    };
+                    let mut cgen = CodeGenerator::new(&mut class_table, table, &mut asm_file);
+                    // classes: v.clone(),
                     cgen.code_generate();
-
                 }
                 Err(e) => {
                     println!();

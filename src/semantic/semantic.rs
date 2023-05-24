@@ -7,6 +7,7 @@ use crate::{
     },
     table::ClassTable,
     utils::table::SymbolTable,
+    DEBUG,
     SELF,
 };
 
@@ -116,14 +117,17 @@ impl SemanticChecker {
         // check attribute (optional)
 
         // check  method
-        println!();
         for i in &self.classes {
             // Main:  Main -> Object -> A
+            if DEBUG {
+                println!("{} inheritance diagram", &i.name);
+            }
 
-            println!("{} inheritance diagram", &i.name);
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
-                    println!(" -> {}", &curr_parent.name);
+                    if DEBUG {
+                        println!(" -> {}", &curr_parent.name);
+                    }
 
                     for feature in &curr_parent.features {
                         match feature {
@@ -155,10 +159,14 @@ impl SemanticChecker {
         }
 
         // check all expression
-        println!();
-        println!("Now check all expression");
+        if DEBUG {
+            println!();
+            println!("Now check all expression");
+        }
         for i in &self.classes {
-            println!("current class is {}", i.name);
+            if DEBUG {
+                println!("current class is {}", i.name);
+            }
 
             self.symbol_table.enter_scope();
             self.symbol_table.add(&SELF.to_string(), &i.name);
