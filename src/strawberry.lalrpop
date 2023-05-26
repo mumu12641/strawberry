@@ -104,6 +104,8 @@ expr: Expr = {
             position: id.1
         })
     },
+
+
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
         Expr::Dispatch (Dispatch{
             // target: Box::new(Some("self".to_string())),
@@ -152,6 +154,8 @@ single_expr:Expr = {
     <s:"STR"> => Expr::Str(s),
     <b:"BOOL"> => Expr::Bool(b),
     <i:"INT"> => Expr::Int(i.parse().unwrap()), 
+    // <s:"SELF"> => Expr::Self_(s),
+    
     "NEW" <class_name:"TYPE"> => Expr::New(<>), 
 
 };
@@ -246,6 +250,7 @@ extern {
         "WHILE" => Token::While(<(usize,usize)>),
         "NEW" => Token::New(<(usize,usize)>),
         "ISVOID" => Token::Isvoid,
+        // "SELF" => Token::Self_(<String>),
         "!" => Token::Not,
         "->" => Token::Arrow,
 

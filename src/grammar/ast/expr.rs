@@ -91,6 +91,7 @@ pub enum Expr {
     Block(Box<Vec<Expr>>),
     Let(Let),
     New(Type),
+    Self_(Identifier),
     Isvoid(Box<Expr>),
 
     Math(Math),

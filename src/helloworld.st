@@ -1,10 +1,15 @@
 class Main inherits A{
-    b:Int = 114514;
+    b:Int = 12;
     fun main() -> Int{
-        let a:Int = new Int;
-        return 0;
+        // let a:Int = new Int;
+        test(b);
+        return 1;
+    };
+
+    fun test(a:Int) -> Int{
+        return a;
     };
 };
 class A{
-    c:Int = 0;
+    // c:Int = 0;
 };

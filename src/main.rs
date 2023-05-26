@@ -70,8 +70,8 @@ fn main() {
                     // ir.ir_generate(&table);
                     // }
                     let mut asm_file = std::fs::File::create("test.s").expect("create failed");
-                    // file.write_all("简单教程".as_bytes()).expect("write failed");
-                    let mut cgen = CodeGenerator::new(&mut class_table, table, &mut asm_file);
+                    let mut cgen =
+                        CodeGenerator::new(v.clone(), &mut class_table, table, &mut asm_file);
                     // classes: v.clone(),
                     cgen.code_generate();
                 }
@@ -110,7 +110,22 @@ fn print_table(table: &Tables) {
 
 #[test]
 fn test() {
-    let mut v = vec![1, 2, 3, 4];
-    // v = v.pop();
-    println!("{}", v.get(v.len() - 2).unwrap());
+    let mut file = File::open("src/helloworld.st").unwrap();
+    let mut content = String::new();
+    file.read_to_string(&mut content).expect("error");
+    // println!("{content}");
+
+    // init
+    let mut table = table::Tables::new();
+    let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
+    for i in lexer {
+        println!("{:?}", i);
+    }
 }
+
+// Ok((5, Return((5, 14)), 14))
+// Ok((5, Identifier("test", (5, 19)), 19))
+// Ok((5, Lparen, 20))
+// Ok((5, Identifier("b", (5, 21)), 21))
+// Ok((5, Rparen, 22))
+// Ok((5, Semicolon, 23))
