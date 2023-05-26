@@ -51,94 +51,87 @@ impl ClassTable {
     pub fn install_basic_class(&mut self) -> bool {
         // install basic classes
 
-        self.classes.insert(
-            OBJECT.to_string(),
-            Class {
-                name: OBJECT.to_string(),
-                parent: Some("None".to_string()),
-                features: vec![
-                    Feature::Method(MethodDecl {
-                        name: "print_str".to_string(),
-                        param: Box::new(vec![("val".to_string(), STRING.to_string())]),
-                        return_type: OBJECT.to_string(),
-                        body: Box::new(None),
-                        position: EMPTY,
-                    }),
-                    Feature::Method(MethodDecl {
-                        name: "print_int".to_string(),
-                        param: Box::new(vec![("val".to_string(), INT.to_string())]),
-                        return_type: OBJECT.to_string(),
-                        body: Box::new(None),
-                        position: EMPTY,
-                    }),
+        let object_ = Class {
+            name: OBJECT.to_string(),
+            parent: Some("None".to_string()),
+            features: vec![
+                Feature::Method(MethodDecl {
+                    name: "print_str".to_string(),
+                    param: Box::new(vec![("val".to_string(), STRING.to_string())]),
+                    return_type: OBJECT.to_string(),
+                    body: Box::new(None),
+                    position: EMPTY,
+                }),
+                Feature::Method(MethodDecl {
+                    name: "print_int".to_string(),
+                    param: Box::new(vec![("val".to_string(), INT.to_string())]),
+                    return_type: OBJECT.to_string(),
+                    body: Box::new(None),
+                    position: EMPTY,
+                }),
+                Feature::Method(MethodDecl {
+                    name: "malloc".to_string(),
+                    param: Box::new(vec![("object".to_string(), OBJECT.to_string())]),
+                    return_type: OBJECT.to_string(),
+                    body: Box::new(None),
+                    position: EMPTY,
+                }),
+            ],
+            position: (0, 0), // features: vec![],
+            file_name: OBJECT.to_string(),
+        };
+        let string_ = Class {
+            name: STRING.to_string(),
+            parent: Some(OBJECT.to_string()),
+            features: vec![Feature::Attribute(VarDecl {
+                name: "val".to_string(),
+                type_: "prim_slot".to_string(),
+                init: Box::new(None),
+                position: EMPTY,
+            })],
+            position: (0, 0),
+            file_name: STRING.to_string(),
+        };
+        let int_ = Class {
+            name: INT.to_string(),
+            parent: Some(OBJECT.to_string()),
+            features: vec![Feature::Attribute(VarDecl {
+                name: "val".to_string(),
+                type_: "prim_slot".to_string(),
+                init: Box::new(None),
+                position: EMPTY,
+            })],
+            position: (0, 0),
+            file_name: INT.to_string(),
+        };
+        let bool_ = Class {
+            name: BOOL.to_string(),
+            parent: Some(OBJECT.to_string()),
+            features: vec![Feature::Attribute(VarDecl {
+                name: "val".to_string(),
+                type_: "prim_slot".to_string(),
+                init: Box::new(None),
+                position: EMPTY,
+            })],
+            position: (0, 0),
+            file_name: BOOL.to_string(),
+        };
 
-                    Feature::Method(MethodDecl {
-                        name: "malloc".to_string(),
-                        param: Box::new(vec![("object".to_string(), OBJECT.to_string())]),
-                        return_type: OBJECT.to_string(),
-                        body: Box::new(None),
-                        position: EMPTY,
-                    }),
-
-                ],
-                position: (0, 0), // features: vec![],
-                file_name: OBJECT.to_string(),
-            },
-        );
-        self.classes.insert(
-            STRING.to_string(),
-            Class {
-                name: STRING.to_string(),
-                parent: Some(OBJECT.to_string()),
-                features: vec![Feature::Attribute(VarDecl {
-                    name: "val".to_string(),
-                    type_: "prim_slot".to_string(),
-                    init: Box::new(None),
-                    position: EMPTY,
-                })],
-                position: (0, 0),
-                file_name: STRING.to_string(),
-            },
-        );
-        self.classes.insert(
-            INT.to_string(),
-            Class {
-                name: INT.to_string(),
-                parent: Some(OBJECT.to_string()),
-                features: vec![Feature::Attribute(VarDecl {
-                    name: "val".to_string(),
-                    type_: "prim_slot".to_string(),
-                    init: Box::new(None),
-                    position: EMPTY,
-                })],
-                position: (0, 0),
-                file_name: INT.to_string(),
-            },
-        );
-        self.classes.insert(
-            BOOL.to_string(),
-            Class {
-                name: BOOL.to_string(),
-                parent: Some(OBJECT.to_string()),
-                features: vec![Feature::Attribute(VarDecl {
-                    name: "val".to_string(),
-                    type_: "prim_slot".to_string(),
-                    init: Box::new(None),
-                    position: EMPTY,
-                })],
-                position: (0, 0),
-                file_name: BOOL.to_string(),
-            },
-        );
+        self.classes.insert(OBJECT.to_string(), object_.clone());
+        self.classes.insert(STRING.to_string(), string_.clone());
+        self.classes.insert(INT.to_string(), int_.clone());
+        self.classes.insert(BOOL.to_string(), bool_.clone());
 
         // Option
         match self.classes.get(&OBJECT.to_string()) {
             Some(c) => {
-                self.inheritance.insert(STRING.to_string(), vec![c.clone()]);
-                self.inheritance.insert(INT.to_string(), vec![c.clone()]);
-                self.inheritance.insert(BOOL.to_string(), vec![c.clone()]);
+                self.inheritance
+                    .insert(STRING.to_string(), vec![c.clone(), string_.clone()]);
+                self.inheritance
+                    .insert(INT.to_string(), vec![c.clone(), int_.clone()]);
+                self.inheritance
+                    .insert(BOOL.to_string(), vec![c.clone(), bool_.clone()]);
                 self.inheritance.insert(OBJECT.to_string(), vec![c.clone()]);
-
             }
             None => {}
         }
@@ -159,6 +152,22 @@ impl ClassTable {
             }
         }
         return false;
+    }
+
+    pub fn get_parent(&mut self, child: &Type) -> String {
+        let binding = self.get_inheritance();
+        let v = binding.get(child).unwrap();
+        v.get(v.len() - 2).unwrap().name.clone()
+    }
+
+    pub fn get_attr_num_recursive(&mut self, child: &Type) -> usize {
+        if child.clone() == OBJECT {
+            return 0;
+        }
+        let parent = self.get_parent(child);
+        let attr_nums = self.get_classes().get(child).unwrap().features.len();
+        let nums = self.get_attr_num_recursive(&parent) + attr_nums;
+        return nums;
     }
 }
 

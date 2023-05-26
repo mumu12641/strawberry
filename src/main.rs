@@ -9,7 +9,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use utils::table::{self, ClassTable, Tables};
 
-use crate::{cgen::cgen::CodeGenerator};
+use crate::cgen::cgen::CodeGenerator;
 
 mod cgen;
 mod grammar;
@@ -46,7 +46,7 @@ fn main() {
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
     let program = strawberry::ProgramParser::new().parse(lexer);
     // if DEBUG {
-        print_table(&table);
+    print_table(&table);
     // }
     match program {
         Ok(v) => {
@@ -106,4 +106,11 @@ fn print_table(table: &Tables) {
         println!("{i}");
     }
     println!();
+}
+
+#[test]
+fn test() {
+    let mut v = vec![1, 2, 3, 4];
+    // v = v.pop();
+    println!("{}", v.get(v.len() - 2).unwrap());
 }
