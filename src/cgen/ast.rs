@@ -59,28 +59,20 @@ impl CodeGenerate for Return {
         let e = *(self.val.clone());
         e.code_generate(code_generator);
 
-        // code_generator.write(format!("movq 16(%rax), %rax"), true);
-
-        // code_generator.write(format!("ret "), true);
         code_generator.method_end();
     }
 }
 
 impl CodeGenerate for Dispatch {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        // self.actual
-        // self.fun_name
-        // self.target
 
-        // push actual
         for i in *self.actual.clone() {
             i.code_generate(code_generator);
             code_generator.write(format!("push %rax"), true);
         }
-        // if let Some(expr_) = *(method.body.clone()) {
         if let Some(target) = *self.target.clone() {
             target.code_generate(code_generator);
-            code_generator.write(format!("movq *16(%rax), %rdi"), true);
+            code_generator.write(format!("movq 8(%rax), %rdi"), true);
             code_generator.write(
                 format!(
                     "call *{}(%rdi)",
@@ -94,6 +86,9 @@ impl CodeGenerate for Dispatch {
                 ),
                 true,
             );
+        }
+        for _ in *self.actual.clone() {
+            code_generator.write(format!("addq $8, %rsp"), true);
         }
     }
 }

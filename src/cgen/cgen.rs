@@ -285,6 +285,7 @@ impl<'a> CodeGenerator<'a> {
                     index += 1;
                 }
             }
+            self.write(format!("movq ${}_dispatch_table, 8(%rbx)", class_.0), true);
             self.method_end();
         }
 
@@ -340,24 +341,36 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn code_main(&mut self) {
-        self.write(format!(".globl main"), true);
-        self.write(format!("main:"), false);
-        self.method_start();
-        self.write(format!("pushq $Main_prototype"), true);
-        self.write(format!("call Object.malloc"), true);
-
-        self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("call Main.init"), true);
-        self.write(format!("call Main.main"), true);
-        self.method_end();
+        self.write(
+            format!(
+                "   .globl main
+main:
+    pushq $Main_prototype
+    call Object.malloc
+    addq $8, %rsp
+    movq %rax, %rbx
+    call Main.init
+    movq %rbx, %rax
+    call Main.main
+    movq 16(%rax), %rax
+    ret "
+            ),
+            true,
+        );
     }
 
     fn code_malloc(&mut self) {
         self.write(format!("Object.malloc:"), false);
         self.method_start();
-        self.write(format!("movq 24(%rbp), %rax"), true);
-        self.write(format!("movq (%rax), %rdi"), true);
-        self.write(format!("call malloc"), true);
+        self.write(
+            format!(
+                "
+    movq 24(%rbp), %rax
+    movq (%rax), %rdi
+    call malloc"
+            ),
+            true,
+        );
 
         self.method_end();
     }

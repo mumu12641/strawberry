@@ -1,9 +1,9 @@
 class Main inherits A{
-    b:Int = 12;
+    b:Int = 1024;
     fun main() -> Int{
         // let a:Int = new Int;
         test(b);
-        return 1;
+        return b;
     };
 
     fun test(a:Int) -> Int{
