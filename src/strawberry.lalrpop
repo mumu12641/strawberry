@@ -106,7 +106,7 @@ expr: Expr = {
     },
 
 
-    <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" ";"=> {
+    <id:"ID"> "(" <args:comma_list<math_expr>?>  ")"  ";"=> {
         Expr::Dispatch (Dispatch{
             // target: Box::new(Some("self".to_string())),
             target:Box::new(Some(Expr::Identifier("self".to_string(), (0,0)))),
@@ -157,6 +157,24 @@ single_expr:Expr = {
     // <s:"SELF"> => Expr::Self_(s),
     
     "NEW" <class_name:"TYPE"> => Expr::New(<>), 
+
+    <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" => {
+        Expr::Dispatch (Dispatch{
+            // target: Box::new(Some("self".to_string())),
+            target:Box::new(Some(Expr::Identifier("self".to_string(), (0,0)))),
+            fun_name: id.0,
+            actual: Box::new(args.unwrap_or(vec![])),
+            position: id.1
+        })
+    },
+    <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" => {
+        Expr::Dispatch (Dispatch{
+            target: Box::new(Some(e)),
+            fun_name: id.0,
+            actual: Box::new(args.unwrap_or(vec![])),
+            position: id.1
+        })
+    },
 
 };
 

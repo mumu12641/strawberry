@@ -5,7 +5,7 @@ lalrpop_mod!(pub strawberry);
 use grammar::lexer::Lexer;
 
 use semantic::semantic::{SemanticChecker, SemanticError};
-use std::fs::File;
+use std::{fs::File, process::Command};
 use std::io::prelude::*;
 use utils::table::{self, ClassTable, Tables};
 
@@ -43,13 +43,15 @@ fn main() {
     class_table.install_basic_class();
 
     // start compiler
-    let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
+    let lexer: Lexer = Lexer::new(&content, &mut table, "helloworld.st");
+    println!("Congratulations you passped the lexical analysis!");
     let program = strawberry::ProgramParser::new().parse(lexer);
     // if DEBUG {
-    print_table(&table);
+    // print_table(&table);
     // }
     match program {
         Ok(v) => {
+            println!("Congratulations you passped the syntax analysis!");
             let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
             if DEBUG {
                 println!("Res: {:?}", &v);
@@ -58,22 +60,16 @@ fn main() {
             match result {
                 Ok(_) => {
                     println!("Congratulations you passped the semantic check!");
-                    // unsafe {
-                    // let context = Context::create();
-                    // let module = context.create_module("test.st");
-                    // let ir = IrGenerator {
-                    //     classes: v.clone(),
-                    //     context: &context,
-                    //     module,
-                    //     builder: context.create_builder(),
-                    // };
-                    // ir.ir_generate(&table);
-                    // }
                     let mut asm_file = std::fs::File::create("test.s").expect("create failed");
                     let mut cgen =
                         CodeGenerator::new(v.clone(), &mut class_table, table, &mut asm_file);
-                    // classes: v.clone(),
                     cgen.code_generate();
+                    Command::new("gcc")
+                        .arg("-no-pie")
+                        .arg("-static")
+                        .arg("./test.s")
+                        .spawn()
+                        .expect("ls command failed to start");
                 }
                 Err(e) => {
                     println!();

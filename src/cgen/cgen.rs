@@ -11,7 +11,7 @@ use super::ast::CodeGenerate;
 #[derive(PartialEq, Eq, Clone)]
 pub struct Location {
     pub reg: String,
-    pub offset: usize,
+    pub offset: i32,
 }
 
 impl Display for Location {
@@ -145,8 +145,8 @@ impl<'a> CodeGenerator<'a> {
         for int_ in &self.tables.int_table.clone() {
             self.write(".align 8".to_string(), true);
             self.write(format!("int_const_{}:", index), false);
+            self.write(format!(".quad {}", 3 * 8), true);
             self.write(format!(".quad Int_dispatch_table"), true);
-            self.write(format!(".quad {}", 4 * 8), true);
             self.write(format!(".quad {}", int_), true);
             // self.write(format!(".quad 1"), true);
 
@@ -275,7 +275,7 @@ impl<'a> CodeGenerator<'a> {
                         &attr.name,
                         &Location {
                             reg: "%rbx".to_string(),
-                            offset: offset_,
+                            offset: offset_ as i32,
                         },
                     );
                     if let Some(expr_) = *(attr.init.clone()) {
@@ -304,12 +304,12 @@ impl<'a> CodeGenerator<'a> {
                         &"self".to_string(),
                         &Location {
                             reg: "%rbp".to_string(),
-                            offset: usize::MAX,
+                            offset: i32::MAX,
                         },
                     );
 
                     let mut offset = 0;
-                    let len = (*method.param.clone()).len();
+                    let len = (*method.param.clone()).len() as i32;
                     for param in *(method.param.clone()) {
                         self.environment.env.get_mut(&class_.name).unwrap().add(
                             &param.0,
@@ -322,13 +322,46 @@ impl<'a> CodeGenerator<'a> {
                     }
 
                     if let Some(expr_) = *(method.body.clone()) {
-                        // expr_.code_generate(self);
+                        self.environment
+                            .env
+                            .get_mut(&class_.name)
+                            .unwrap()
+                            .enter_scope();
+
                         self.write(format!("{}.{}:", class_.name, method.name), false);
                         self.method_start();
+
+                        // sub rsp to store local var
+                        let mut var_vec = Vec::new();
+                        for expr in &expr_ {
+                            var_vec.append(&mut expr.get_var_num());
+                        }
+                        self.write(format!("sub ${}, %rsp", var_vec.len() * 8), true);
+                        // self.write(format!(), tab)
+                        let mut var_index = 1;
+                        for var in &var_vec {
+                            self.environment.env.get_mut(&class_.name).unwrap().add(
+                                var,
+                                &Location {
+                                    reg: "%rbp".to_string(),
+                                    offset: -8 * (var_index),
+                                },
+                            );
+                            var_index += 1;
+                        }
+
                         for expr in expr_ {
                             expr.code_generate(self);
                         }
-                        // self.method_end();
+
+                        self.write(format!("addq ${}, %rsp", var_vec.len() * 8), true);
+                        self.method_end();
+
+                        self.environment
+                            .env
+                            .get_mut(&class_.name)
+                            .unwrap()
+                            .exit_scope();
                     }
                     self.environment
                         .env
@@ -364,8 +397,7 @@ main:
         self.method_start();
         self.write(
             format!(
-                "
-    movq 24(%rbp), %rax
+                "movq 24(%rbp), %rax
     movq (%rax), %rdi
     call malloc"
             ),
@@ -379,13 +411,10 @@ main:
         self.method_start();
         self.method_end();
     }
+
     fn code_print_int(&mut self) {
         self.write(format!("Object.print_int:"), false);
         self.method_start();
         self.method_end();
     }
-    // fn code_print_str(&mut self){
-    //     self.method_start();
-    //     self.method_end();
-    // }
 }

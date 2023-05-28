@@ -152,8 +152,6 @@ impl TypeChecker for Dispatch {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        println!();
-        println!("*****dispatch type check*****");
         match *(self.target.clone()) {
             Some(e) => {
                 if let Ok(target_type) = e.check_type(symbol_table, class_table) {
@@ -163,7 +161,6 @@ impl TypeChecker for Dispatch {
                                 for f in &class.features {
                                     if let Feature::Method(method) = f {
                                         if &method.name == &self.fun_name {
-                                            println!("methd name is {}", &method.name);
                                             let method_param = *(method.param.clone());
                                             let actuals = *(self.actual.clone());
                                             if actuals.len() != method_param.len() {
@@ -212,7 +209,6 @@ impl TypeChecker for Let {
                     Ok(type_) => {
                         if class_table.is_less_or_equal(&type_, &i.type_) {
                             symbol_table.add(&i.name, &i.type_);
-                            return Ok(OBJECT.to_string());
                         } else {
                             return Err(SemanticError { err_msg: format!("{}:{} ---> The type of your let expression init is inconsistent with the declared type!",i.position.0,i.position.1), });
                         }
@@ -254,8 +250,6 @@ impl TypeChecker for Math {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        println!();
-        println!("*****check math *****");
         let left_type = (*self.left).check_type(symbol_table, class_table);
         let right_type = (*self.right).check_type(symbol_table, class_table);
         let is_compute: bool;

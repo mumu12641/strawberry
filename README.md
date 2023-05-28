@@ -1,6 +1,14 @@
 # Strawberry
 ## TODO
-* Math expression have no postion.
+'''
+let 表达式的类型推断
+dispatch 的时候类型可能是 NULL
+print 函数
+
+private public
+'''
+
+
 
 https://github.com/maekawatoshiki/vicis.git
 https://gitlab.com/taricorp/llvm-sys.rs
@@ -17,4 +25,6 @@ rdi 为temp
 然后调用 Main.init 这个传进去
 
 然后调用函数的时候，expr.function()，先计算 expr ，把 expr 的指针存到rax，然后调用的时候，被调用方会先保存调用方的 rbx，然后把 rax -> rbx ！！调用完把栈里的 rbx 恢复即可，rax还是函数的返回值
+
+
 
