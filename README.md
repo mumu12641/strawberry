@@ -1,30 +1,13 @@
-# Strawberry
-## TODO
-'''
-let 表达式的类型推断
-dispatch 的时候类型可能是 NULL
-print 函数
-
-private public
-'''
-
-
-
-https://github.com/maekawatoshiki/vicis.git
-https://gitlab.com/taricorp/llvm-sys.rs
-https://github.com/cdisselkoen/llvm-ir
-https://github.com/TheDan64/inkwell
-https://github.com/mun-lang/lld-rs
-
-使用 rbp 存函数帧
-rsp 存栈
-rbx 存 self 对象
-rdi 为temp
-
-第一次 malloc 的时候，应该返回在 rax 中是对象指针，先把 rax -> rbx，
-然后调用 Main.init 这个传进去
-
-然后调用函数的时候，expr.function()，先计算 expr ，把 expr 的指针存到rax，然后调用的时候，被调用方会先保存调用方的 rbx，然后把 rax -> rbx ！！调用完把栈里的 rbx 恢复即可，rax还是函数的返回值
-
-
-
+<p align="center"> 
+	<img src="asset/logo.png" width=160 height=160  >
+</p>
+<div align="center">
+    <img alt="License" src="https://img.shields.io/github/license/mumu12641/strawberry?color=red&style=flat-square">
+    <img alt="GitHub last commit" src="https://img.shields.io/github/last-commit/mumu12641/strawberry?color=red&style=flat-square">
+<h1 align="center">
+	Strawberry
+</h1>
+<p align="center">
+  A toy object-oriented programming language
+</p>
+</div>
