@@ -98,6 +98,13 @@ impl SemanticChecker {
                             if let Some(c) = class_table.classes.get(&(s.clone())) {
                                 inherit_vec.insert(0, c.clone());
                                 curr_parent = c.parent.clone();
+                            } else {
+                                return Err(SemanticError {
+                                    err_msg: format!(
+                                        "{}:{}:{} ---> Your Class {} inherits an undefined Class {} !",
+                                        i.file_name, i.position.0, i.position.1,i.name,s
+                                    ),
+                                });
                             }
                         }
                     }

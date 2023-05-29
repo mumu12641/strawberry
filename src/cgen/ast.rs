@@ -1,5 +1,5 @@
-use crate::grammar::{
-    ast::expr::{Assignment, ComputeOp, Cond, Dispatch, Expr, Let, Math, MathOp, Return, While},
+use crate::grammar::ast::expr::{
+    Assignment, ComputeOp, Cond, Dispatch, Expr, Let, Math, MathOp, Return, While,
 };
 
 use super::cgen::CodeGenerator;
@@ -193,12 +193,10 @@ impl CodeGenerate for Assignment {
             true,
         );
     }
-
 }
 
 impl CodeGenerate for Math {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-
         // r10-r11 for temp register
         let left = *self.left.clone();
         left.code_generate(code_generator);
@@ -207,6 +205,7 @@ impl CodeGenerate for Math {
         let right = *self.right.clone();
         right.code_generate(code_generator);
 
+        // %r10 is right, %r11 is left
         code_generator.write(format!("movq 16(%rax), %r10"), true);
         code_generator.write(format!("movq (%rsp), %r11"), true);
         code_generator.write(format!("movq 16(%r11), %r11"), true);
@@ -215,28 +214,34 @@ impl CodeGenerate for Math {
             MathOp::ComputeOp(op_) => match op_ {
                 ComputeOp::Add => {
                     code_generator.write(format!("addq %r10, %r11"), true);
-                    code_generator.write(format!("pushq %r11"), true);
-                    // %r11 is the result
-                    code_generator.write(
-                        format!(
-                            "
-                pushq $Int_prototype
-                call Object.malloc
-                addq $8, %rsp`
-                call Int.init
-                movq (%rsp), %r11
-                movq %r11, 16(%rax)
-                "
-                        ),
-                        true,
-                    );
-                    code_generator.write(format!("addq $8, %rsp"), true);
+                    
+                }
+                ComputeOp::Minus => {
+                    code_generator.write(format!("subq %r10, %r11"), true);
+                }
+                ComputeOp::Mul => {
+                    code_generator.write(format!("movq %r11, %rax"), true);
+                    code_generator.write(format!("mulq %r10"), true);
+                    code_generator.write(format!("movq %rax, %r11"), true);
+                }
+                ComputeOp::Divide => {
+                    code_generator.write(format!("movq %r11, %rax"), true);
+                    code_generator.write(format!("divq %r10"), true);
+                    code_generator.write(format!("movq %rax, %r11"), true);
                 }
                 _ => {}
             },
             MathOp::CondOp(_) => todo!(),
         }
-
+        // %r11 is the result
+        code_generator.write(format!("pushq %r11"), true);
+        code_generator.write(format!("pushq $Int_prototype"), true);
+        code_generator.write(format!("call Object.malloc"), true);
+        code_generator.write(format!("addq $8, %rsp"), true);
+        code_generator.write(format!("call Int.init"), true);
+        code_generator.write(format!("movq (%rsp), %r11"), true);
+        code_generator.write(format!("movq %r11, 16(%rax)"), true);
+        code_generator.write(format!("addq $8, %rsp"), true);
         code_generator.write(format!("addq $8, %rsp"), true);
     }
 }

@@ -85,8 +85,7 @@ impl<'a> CodeGenerator<'a> {
 
         // code for malloc
         self.code_malloc();
-        self.code_print_str();
-        self.code_print_int();
+        self.code_print();
 
         // code for main
         self.code_main();
@@ -132,7 +131,8 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!(".quad {}", 5 * 8), true);
             self.write(format!(".quad String_dispatch_table"), true);
             self.write(format!(".quad str_const_ascii_{}", index), true);
-            self.write(format!(".quad {}", str_.len()), true);
+
+            self.write(format!(".quad {}", str_.len() + 1), true);
             // self.write(format!(".quad 2"), true);
 
             self.write("".to_string(), false);
@@ -337,7 +337,6 @@ impl<'a> CodeGenerator<'a> {
                             var_vec.append(&mut expr.get_var_num());
                         }
                         self.write(format!("sub ${}, %rsp", var_vec.len() * 8), true);
-                        // self.write(format!(), tab)
                         let mut var_index = 1;
                         for var in &var_vec {
                             self.environment.env.get_mut(&class_.name).unwrap().add(
@@ -406,15 +405,30 @@ main:
 
         self.method_end();
     }
-    fn code_print_str(&mut self) {
-        self.write(format!("Object.print_str:"), false);
+    fn code_print(&mut self) {
+        self.write(format!("Object.print:"), false);
         self.method_start();
-        self.method_end();
-    }
+        // attr is str_ascii
+        self.write(format!("movq 24(%rbp), %rax"), true);
+        // %rax is str_const
+        self.write(format!("pushq 24(%rax)"), true);
 
-    fn code_print_int(&mut self) {
-        self.write(format!("Object.print_int:"), false);
-        self.method_start();
+        self.write(format!("movq 16(%rax), %rax"), true);
+
+        self.write(format!("pushq %rax"), true);
+
+        self.write(format!("movq $1, %rax"), true);
+        self.write(format!("movq $1, %rdi"), true);
+        self.write(format!("movq (%rsp), %rsi"), true);
+        self.write(format!("movq 8(%rsp), %rdx"), true);
+        self.write(format!("syscall"), true);
+
+        // movq $1, %rdi
+        // movq $string, %rsi
+        // movq $len, %rdx
+        // syscall
+        self.write(format!("addq $8, %rsp"), true);
+        self.write(format!("addq $8, %rsp"), true);
         self.method_end();
     }
 }

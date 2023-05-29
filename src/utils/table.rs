@@ -56,19 +56,19 @@ impl ClassTable {
             parent: Some("None".to_string()),
             features: vec![
                 Feature::Method(MethodDecl {
-                    name: "print_str".to_string(),
+                    name: "print".to_string(),
                     param: Box::new(vec![("val".to_string(), STRING.to_string())]),
                     return_type: OBJECT.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
                 }),
-                Feature::Method(MethodDecl {
-                    name: "print_int".to_string(),
-                    param: Box::new(vec![("val".to_string(), INT.to_string())]),
-                    return_type: OBJECT.to_string(),
-                    body: Box::new(None),
-                    position: EMPTY,
-                }),
+                // Feature::Method(MethodDecl {
+                //     name: "print_int".to_string(),
+                //     param: Box::new(vec![("val".to_string(), INT.to_string())]),
+                //     return_type: OBJECT.to_string(),
+                //     body: Box::new(None),
+                //     position: EMPTY,
+                // }),
                 Feature::Method(MethodDecl {
                     name: "malloc".to_string(),
                     param: Box::new(vec![("object".to_string(), OBJECT.to_string())]),
