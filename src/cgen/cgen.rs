@@ -1,7 +1,10 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::Write};
 
 use crate::{
-    grammar::ast::class::{Class, Feature},
+    grammar::ast::{
+        class::{Class, Feature},
+        Type,
+    },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, INT, OBJECT, STRING,
 };
@@ -12,6 +15,7 @@ use super::ast::CodeGenerate;
 pub struct Location {
     pub reg: String,
     pub offset: i32,
+    pub type_: Type,
 }
 
 impl Display for Location {
@@ -22,6 +26,7 @@ impl Display for Location {
 
 pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
+    // pub type_env: SymbolTable<String, Type>,
     pub curr_class: String,
 }
 
@@ -65,6 +70,7 @@ impl<'a> CodeGenerator<'a> {
             dispatch_table: HashMap::new(),
             environment: Environment {
                 env: HashMap::new(),
+                // type_env: SymbolTable::new(),
                 curr_class: "none".to_string(),
             },
         }
@@ -133,7 +139,6 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!(".quad str_const_ascii_{}", index), true);
 
             self.write(format!(".quad {}", str_.len() + 1), true);
-            // self.write(format!(".quad 2"), true);
 
             self.write("".to_string(), false);
 
@@ -148,7 +153,6 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!(".quad {}", 3 * 8), true);
             self.write(format!(".quad Int_dispatch_table"), true);
             self.write(format!(".quad {}", int_), true);
-            // self.write(format!(".quad 1"), true);
 
             self.write("".to_string(), false);
 
@@ -260,6 +264,7 @@ impl<'a> CodeGenerator<'a> {
             self.environment
                 .env
                 .insert(class_.0.to_string(), SymbolTable::new());
+
             self.environment
                 .env
                 .get_mut(class_.0)
@@ -276,6 +281,7 @@ impl<'a> CodeGenerator<'a> {
                         &Location {
                             reg: "%rbx".to_string(),
                             offset: offset_ as i32,
+                            type_: attr.type_.clone(),
                         },
                     );
                     if let Some(expr_) = *(attr.init.clone()) {
@@ -286,6 +292,7 @@ impl<'a> CodeGenerator<'a> {
                 }
             }
             self.write(format!("movq ${}_dispatch_table, 8(%rbx)", class_.0), true);
+            self.write(format!("movq %rbx, %rax"), true);
             self.method_end();
         }
 
@@ -305,6 +312,7 @@ impl<'a> CodeGenerator<'a> {
                         &Location {
                             reg: "%rbp".to_string(),
                             offset: i32::MAX,
+                            type_: class_.name.clone(),
                         },
                     );
 
@@ -316,6 +324,7 @@ impl<'a> CodeGenerator<'a> {
                             &Location {
                                 reg: "%rbp".to_string(),
                                 offset: 8 * (3 + len - 1 - offset),
+                                type_: param.1,
                             },
                         );
                         offset += 1;
@@ -336,14 +345,15 @@ impl<'a> CodeGenerator<'a> {
                         for expr in &expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
-                        self.write(format!("sub ${}, %rsp", var_vec.len() * 8), true);
+                        self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
                         let mut var_index = 1;
                         for var in &var_vec {
                             self.environment.env.get_mut(&class_.name).unwrap().add(
-                                var,
+                                &var.0,
                                 &Location {
                                     reg: "%rbp".to_string(),
                                     offset: -8 * (var_index),
+                                    type_: var.1.clone(),
                                 },
                             );
                             var_index += 1;
@@ -411,6 +421,7 @@ main:
         // attr is str_ascii
         self.write(format!("movq 24(%rbp), %rax"), true);
         // %rax is str_const
+
         self.write(format!("pushq 24(%rax)"), true);
 
         self.write(format!("movq 16(%rax), %rax"), true);

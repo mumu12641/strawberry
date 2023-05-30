@@ -1,18 +1,22 @@
-use crate::grammar::ast::expr::{
-    Assignment, ComputeOp, Cond, Dispatch, Expr, Let, Math, MathOp, Return, While,
+use crate::{
+    grammar::ast::{
+        expr::{Assignment, ComputeOp, Cond, Dispatch, Expr, Let, Math, MathOp, Return, While},
+        Identifier, Type,
+    },
+    BOOL, INT, STRING,
 };
 
 use super::cgen::CodeGenerator;
 
 impl Expr {
-    pub fn get_var_num(&self) -> Vec<String> {
-        let mut vec: Vec<String> = Vec::new();
+    pub fn get_var_num(&self) -> Vec<(Identifier, Type)> {
+        let mut vec: Vec<(Identifier, Type)> = Vec::new();
 
         match self {
             Expr::Let(e) => {
                 let decls = *(e.var_decls.clone());
                 for decl_ in decls {
-                    vec.push(decl_.name);
+                    vec.push((decl_.name, decl_.type_));
                 }
                 return vec.clone();
             }
@@ -87,7 +91,24 @@ impl CodeGenerate for Expr {
                 code_generator.write(format!(""), true);
             }
 
-            Expr::New(e) => {}
+            Expr::New(e) => {
+                code_generator.write(format!("push ${}_prototype", e), true);
+                code_generator.write(format!("call Object.malloc"), true);
+                code_generator.write(format!("addq $8, %rsp"), true);
+                code_generator.write(format!("call {}.init", e), true);
+
+                // "   .globl main
+                // main:
+                //     pushq $Main_prototype
+                //     call Object.malloc
+                //     addq $8, %rsp
+                //     movq %rax, %rbx
+                //     call Main.init
+                //     movq %rbx, %rax
+                //     call Main.main
+                //     movq 16(%rax), %rax
+                //     ret "
+            }
 
             Expr::Dispatch(e) => e.code_generate(code_generator),
 
@@ -120,13 +141,39 @@ impl CodeGenerate for Return {
 
 impl CodeGenerate for Dispatch {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        let temp = code_generator.environment.curr_class.clone();
         for i in *self.actual.clone() {
             i.code_generate(code_generator);
             code_generator.write(format!("push %rax"), true);
         }
-        if let Some(target) = *self.target.clone() {
-            target.code_generate(code_generator);
+        if let Some(target_) = *self.target.clone() {
+            // change curr_class to target
+            target_.code_generate(code_generator);
+
+            let symbol_table = code_generator
+                .environment
+                .env
+                .get_mut(&code_generator.environment.curr_class)
+                .unwrap();
+
+            // TODO: opt code!!!!!!!!!!!!!!!!
+            match &target_ {
+                Expr::Identifier(name, _) => {
+                    code_generator.environment.curr_class =
+                        symbol_table.find(name).unwrap().type_.clone();
+                }
+                Expr::Dispatch(_) => {
+                    // e.
+                }
+                Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
+                Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),
+                Expr::Bool(_) => code_generator.environment.curr_class = BOOL.to_string(),
+
+                _ => {}
+            }
+
             code_generator.write(format!("movq 8(%rax), %rdi"), true);
+
             // TODO: the class might be NULL
             code_generator.write(
                 format!(
@@ -145,6 +192,7 @@ impl CodeGenerate for Dispatch {
         for _ in *self.actual.clone() {
             code_generator.write(format!("addq $8, %rsp"), true);
         }
+        code_generator.environment.curr_class = temp;
     }
 }
 
@@ -214,7 +262,6 @@ impl CodeGenerate for Math {
             MathOp::ComputeOp(op_) => match op_ {
                 ComputeOp::Add => {
                     code_generator.write(format!("addq %r10, %r11"), true);
-                    
                 }
                 ComputeOp::Minus => {
                     code_generator.write(format!("subq %r10, %r11"), true);

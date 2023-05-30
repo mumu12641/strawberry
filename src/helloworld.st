@@ -1,14 +1,24 @@
 class Main {
-    b:Int = 1;
+    a:String = "Main's a";
     fun main() -> Int{
-        // let a:Int = new Int;
-        let s :String= "hello world!!!! \\n";
-        print(s);
+        // let a : A = new A;
+        let s : String= "hello world!!!! \\n";
+        
+        a.print(a);
+        
+//        print(s);
         return 0;
     };
 
     fun test(a:Int) -> Int{
         let a:Int = 5;
         return a;
+    };
+};
+
+class A{
+
+    fun get() -> String {
+        return "A.str\\n";
     };
 };

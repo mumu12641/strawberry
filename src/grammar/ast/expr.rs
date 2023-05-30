@@ -157,10 +157,12 @@ impl TypeChecker for Dispatch {
                 if let Ok(target_type) = e.check_type(symbol_table, class_table) {
                     if let Some(class) = class_table.get_classes().get(&target_type) {
                         if let Some(v) = class_table.get_inheritance().get(&class.name) {
+                            let mut find = false;
                             for class in v {
                                 for f in &class.features {
                                     if let Feature::Method(method) = f {
                                         if &method.name == &self.fun_name {
+                                            find = true;
                                             let method_param = *(method.param.clone());
                                             let actuals = *(self.actual.clone());
                                             if actuals.len() != method_param.len() {
@@ -185,6 +187,14 @@ impl TypeChecker for Dispatch {
                                         }
                                     }
                                 }
+                            }
+                            if !find {
+                                return Err(SemanticError {
+                                    err_msg: format!(
+                                        "{}:{} ---> The expression no method called {}() !",
+                                        self.position.0, self.position.1, &self.fun_name
+                                    ),
+                                });
                             }
                         }
                     }
