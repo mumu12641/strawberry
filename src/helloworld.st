@@ -1,10 +1,10 @@
 class Main {
-    a:String = "Main's a";
+    a:String = "Main's a\\n";
     fun main() -> Int{
-        // let a : A = new A;
+        let a : A = new A;
         let s : String= "hello world!!!! \\n";
         
-        a.print(a);
+        a.get().print(s).print(s).print(s).print(s).print(s).print(s).print(s);
         
 //        print(s);
         return 0;

@@ -39,6 +39,7 @@ pub struct Dispatch {
     pub fun_name: Identifier,
     pub actual: Box<Vec<Expr>>,
     pub position: Position,
+    pub type_: Type,
 }
 #[derive(Debug, Clone)]
 pub struct Cond {
@@ -79,7 +80,7 @@ pub struct Assignment {
 
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Identifier(Identifier, Position),
+    Identifier(Identifier, Position, Type),
     Bool(Boolean),
     Int(Int),
     Str(Str),
@@ -100,14 +101,14 @@ pub enum Expr {
 }
 pub trait TypeChecker: Debug {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError>;
 }
 impl TypeChecker for Expr {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
@@ -117,8 +118,9 @@ impl TypeChecker for Expr {
             Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(type_) => return Ok(type_.clone()),
 
-            Expr::Identifier(e, pos) => {
+            Expr::Identifier(e, pos, type_) => {
                 if let Some(s) = symbol_table.find(e) {
+                    // type_ = e;
                     return Ok(s.clone());
                 } else {
                     return Err(SemanticError {
@@ -148,57 +150,64 @@ impl TypeChecker for Expr {
 
 impl TypeChecker for Dispatch {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
         match *(self.target.clone()) {
-            Some(e) => {
-                if let Ok(target_type) = e.check_type(symbol_table, class_table) {
-                    if let Some(class) = class_table.get_classes().get(&target_type) {
-                        if let Some(v) = class_table.get_inheritance().get(&class.name) {
-                            let mut find = false;
-                            for class in v {
-                                for f in &class.features {
-                                    if let Feature::Method(method) = f {
-                                        if &method.name == &self.fun_name {
-                                            find = true;
-                                            let method_param = *(method.param.clone());
-                                            let actuals = *(self.actual.clone());
-                                            if actuals.len() != method_param.len() {
-                                                return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
-                                            }
-                                            for index in 0..method_param.len() {
-                                                let actual_type = actuals[index]
-                                                    .check_type(symbol_table, class_table);
-                                                match actual_type {
-                                                    Ok(type_) => {
-                                                        if !class_table.is_less_or_equal(
-                                                            &type_,
-                                                            &method_param[index].1,
-                                                        ) {
-                                                            return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.position.0,self.position.1), });
-                                                        }
-                                                    }
-                                                    Err(e) => return Err(e),
+            Some(mut e) => {
+                match e.check_type(symbol_table, class_table) {
+                    Ok(target_type) => {
+                        if let Some(class) = class_table.get_classes().get(&target_type) {
+                            if let Some(v) = class_table.get_inheritance().get(&class.name) {
+                                let mut find = false;
+                                for class in v {
+                                    for f in &class.features {
+                                        if let Feature::Method(method) = f {
+                                            if &method.name == &self.fun_name {
+                                                find = true;
+                                                let method_param = *(method.param.clone());
+                                                let mut actuals = *(self.actual.clone());
+                                                if actuals.len() != method_param.len() {
+                                                    return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
                                                 }
+                                                for index in 0..method_param.len() {
+                                                    let actual_type = actuals[index]
+                                                        .check_type(symbol_table, class_table);
+                                                    match actual_type {
+                                                        Ok(type_) => {
+                                                            if !class_table.is_less_or_equal(
+                                                                &type_,
+                                                                &method_param[index].1,
+                                                            ) {
+                                                                return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.position.0,self.position.1), });
+                                                            }
+                                                        }
+                                                        Err(e) => return Err(e),
+                                                    }
+                                                }
+
+                                                self.type_ = method.return_type.clone();
+                                                return Ok(method.return_type.clone());
                                             }
-                                            return Ok(method.return_type.clone());
                                         }
                                     }
                                 }
-                            }
-                            if !find {
-                                return Err(SemanticError {
-                                    err_msg: format!(
-                                        "{}:{} ---> The expression no method called {}() !",
-                                        self.position.0, self.position.1, &self.fun_name
-                                    ),
-                                });
+                                if !find {
+                                    return Err(SemanticError {
+                                        err_msg: format!(
+                                            "{}:{} ---> The expression no method called {}() !",
+                                            self.position.0, self.position.1, &self.fun_name
+                                        ),
+                                    });
+                                }
                             }
                         }
                     }
-                }
+                    Err(e) => {
+                        return Err(e);
+                    }
+                };
             }
             _ => {}
         }
@@ -209,13 +218,13 @@ impl TypeChecker for Dispatch {
 
 impl TypeChecker for Let {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
         for i in *(self.var_decls.clone()) {
             match *(i.init.clone()) {
-                Some(e) => match e.check_type(symbol_table, class_table) {
+                Some(mut e) => match e.check_type(symbol_table, class_table) {
                     Ok(type_) => {
                         if class_table.is_less_or_equal(&type_, &i.type_) {
                             symbol_table.add(&i.name, &i.type_);
@@ -236,7 +245,7 @@ impl TypeChecker for Let {
 
 impl TypeChecker for Assignment {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
@@ -256,7 +265,7 @@ impl TypeChecker for Assignment {
 
 impl TypeChecker for Math {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
@@ -293,7 +302,7 @@ impl TypeChecker for Math {
 
 impl TypeChecker for Cond {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
@@ -313,14 +322,14 @@ impl TypeChecker for Cond {
             }
             Err(e) => return Err(e),
         }
-        for then_expr in *(self.then_body.clone()) {
+        for mut then_expr in *(self.then_body.clone()) {
             let then_type = then_expr.check_type(symbol_table, class_table);
             match then_type {
                 Err(e) => return Err(e),
                 _ => {}
             }
         }
-        for else_expr in *(self.else_body.clone()) {
+        for mut else_expr in *(self.else_body.clone()) {
             let else_type = else_expr.check_type(symbol_table, class_table);
             match else_type {
                 Err(e) => return Err(e),
@@ -335,7 +344,7 @@ impl TypeChecker for Cond {
 
 impl TypeChecker for While {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
@@ -356,7 +365,7 @@ impl TypeChecker for While {
             Err(e) => return Err(e),
         }
 
-        for body_expr in *(self.body.clone()) {
+        for mut body_expr in *(self.body.clone()) {
             let body_type = body_expr.check_type(symbol_table, class_table);
             match body_type {
                 Err(e) => return Err(e),
@@ -371,7 +380,7 @@ impl TypeChecker for While {
 
 impl TypeChecker for Return {
     fn check_type(
-        &self,
+        &mut self,
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {

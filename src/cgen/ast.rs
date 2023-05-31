@@ -73,7 +73,7 @@ impl CodeGenerate for Expr {
                 code_generator.write(format!("movq $bool_const_{}, %rax", index), true);
             }
 
-            Expr::Identifier(e, _) => {
+            Expr::Identifier(e, _, _) => {
                 let map = code_generator
                     .environment
                     .env
@@ -158,12 +158,12 @@ impl CodeGenerate for Dispatch {
 
             // TODO: opt code!!!!!!!!!!!!!!!!
             match &target_ {
-                Expr::Identifier(name, _) => {
+                Expr::Identifier(name, _, _) => {
                     code_generator.environment.curr_class =
                         symbol_table.find(name).unwrap().type_.clone();
                 }
-                Expr::Dispatch(_) => {
-                    // e.
+                Expr::Dispatch(e) => {
+                    code_generator.environment.curr_class = e.type_.clone();
                 }
                 Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
                 Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),

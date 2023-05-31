@@ -193,9 +193,9 @@ impl SemanticChecker {
                     }
                     if let Some(v) = *(method.body.clone()) {
                         // v as Vec<&dyn TypeChecker>;
-                        for expr in v {
+                        for mut expr in v {
                             match expr {
-                                crate::grammar::ast::expr::Expr::Return(re) => {
+                                crate::grammar::ast::expr::Expr::Return(mut re) => {
                                     match re.check_type(&mut self.symbol_table, class_table) {
                                         Err(e) => return Err(e),
                                         Ok(type_) => {

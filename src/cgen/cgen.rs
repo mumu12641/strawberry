@@ -91,6 +91,7 @@ impl<'a> CodeGenerator<'a> {
 
         // code for malloc
         self.code_malloc();
+
         self.code_print();
 
         // code for main
@@ -440,6 +441,7 @@ main:
         // syscall
         self.write(format!("addq $8, %rsp"), true);
         self.write(format!("addq $8, %rsp"), true);
+        self.write(format!("movq %rbx, %rax"), true);
         self.method_end();
     }
 }
