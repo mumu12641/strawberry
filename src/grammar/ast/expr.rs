@@ -1,4 +1,7 @@
-use std::fmt::Debug;
+use std::{
+    fmt::Debug,
+    ops::{Deref, DerefMut},
+};
 
 use crate::{
     grammar::lexer::Position,
@@ -79,8 +82,15 @@ pub struct Assignment {
 }
 
 #[derive(Debug, Clone)]
+pub struct IdentifierSrtuct {
+    pub name: Identifier,
+    pub pos: Position,
+    pub type_: Type,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
-    Identifier(Identifier, Position, Type),
+    Identifier(IdentifierSrtuct),
     Bool(Boolean),
     Int(Int),
     Str(Str),
@@ -118,13 +128,13 @@ impl TypeChecker for Expr {
             Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(type_) => return Ok(type_.clone()),
 
-            Expr::Identifier(e, pos, type_) => {
-                if let Some(s) = symbol_table.find(e) {
-                    // type_ = e;
+            Expr::Identifier(e) => {
+                if let Some(s) = symbol_table.find(&e.name) {
+                    e.type_ = s.clone();
                     return Ok(s.clone());
                 } else {
                     return Err(SemanticError {
-                        err_msg: format!("{}:{} ---> The identifier {} does not exist or it has gone out of scope!",pos.0,pos.1,e)
+                        err_msg: format!("{}:{} ---> The identifier {} does not exist or it has gone out of scope!",e.pos.0,e.pos.1,e.name)
                     });
                 }
             }
@@ -154,8 +164,8 @@ impl TypeChecker for Dispatch {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        match *(self.target.clone()) {
-            Some(mut e) => {
+        match self.target.deref_mut() {
+            Some(e) => {
                 match e.check_type(symbol_table, class_table) {
                     Ok(target_type) => {
                         if let Some(class) = class_table.get_classes().get(&target_type) {
@@ -166,8 +176,8 @@ impl TypeChecker for Dispatch {
                                         if let Feature::Method(method) = f {
                                             if &method.name == &self.fun_name {
                                                 find = true;
-                                                let method_param = *(method.param.clone());
-                                                let mut actuals = *(self.actual.clone());
+                                                let method_param = method.param.deref();
+                                                let actuals = self.actual.deref_mut();
                                                 if actuals.len() != method_param.len() {
                                                     return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
                                                 }
@@ -186,7 +196,6 @@ impl TypeChecker for Dispatch {
                                                         Err(e) => return Err(e),
                                                     }
                                                 }
-
                                                 self.type_ = method.return_type.clone();
                                                 return Ok(method.return_type.clone());
                                             }
@@ -209,7 +218,7 @@ impl TypeChecker for Dispatch {
                     }
                 };
             }
-            _ => {}
+            None => todo!(),
         }
         // class_table.classes.get(self.target)
         return Ok(OBJECT.to_string());
@@ -222,9 +231,9 @@ impl TypeChecker for Let {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        for i in *(self.var_decls.clone()) {
-            match *(i.init.clone()) {
-                Some(mut e) => match e.check_type(symbol_table, class_table) {
+        for i in self.var_decls.deref_mut() {
+            match i.init.deref_mut() {
+                Some(e) => match e.check_type(symbol_table, class_table) {
                     Ok(type_) => {
                         if class_table.is_less_or_equal(&type_, &i.type_) {
                             symbol_table.add(&i.name, &i.type_);
@@ -236,7 +245,7 @@ impl TypeChecker for Let {
                         return Err(e);
                     }
                 },
-                _ => {}
+                None => todo!(),
             }
         }
         return Ok(OBJECT.to_string());
@@ -273,7 +282,7 @@ impl TypeChecker for Math {
         let right_type = (*self.right).check_type(symbol_table, class_table);
         let is_compute: bool;
 
-        match *(self.op.clone()) {
+        match self.op.deref() {
             MathOp::ComputeOp(_) => is_compute = true,
             MathOp::CondOp(_) => is_compute = false,
         }
@@ -322,14 +331,15 @@ impl TypeChecker for Cond {
             }
             Err(e) => return Err(e),
         }
-        for mut then_expr in *(self.then_body.clone()) {
+        for then_expr in self.then_body.deref_mut() {
             let then_type = then_expr.check_type(symbol_table, class_table);
             match then_type {
                 Err(e) => return Err(e),
                 _ => {}
             }
         }
-        for mut else_expr in *(self.else_body.clone()) {
+
+        for else_expr in self.else_body.deref_mut() {
             let else_type = else_expr.check_type(symbol_table, class_table);
             match else_type {
                 Err(e) => return Err(e),
@@ -364,15 +374,13 @@ impl TypeChecker for While {
             }
             Err(e) => return Err(e),
         }
-
-        for mut body_expr in *(self.body.clone()) {
+        for body_expr in self.body.deref_mut() {
             let body_type = body_expr.check_type(symbol_table, class_table);
             match body_type {
                 Err(e) => return Err(e),
                 _ => {}
             }
         }
-
         symbol_table.exit_scope();
         return Ok(OBJECT.to_string());
     }

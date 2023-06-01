@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, fs::File, io::Write};
+use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
     grammar::ast::{
@@ -28,6 +28,7 @@ pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
     // pub type_env: SymbolTable<String, Type>,
     pub curr_class: String,
+    pub lable: usize,
 }
 
 /// * Build constant
@@ -72,6 +73,7 @@ impl<'a> CodeGenerator<'a> {
                 env: HashMap::new(),
                 // type_env: SymbolTable::new(),
                 curr_class: "none".to_string(),
+                lable: 0,
             },
         }
     }
@@ -285,7 +287,7 @@ impl<'a> CodeGenerator<'a> {
                             type_: attr.type_.clone(),
                         },
                     );
-                    if let Some(expr_) = *(attr.init.clone()) {
+                    if let Some(expr_) = attr.init.deref() {
                         expr_.code_generate(self);
                     }
                     self.write(format!("movq %rax, {}(%rbx)", offset_), true);
@@ -318,20 +320,20 @@ impl<'a> CodeGenerator<'a> {
                     );
 
                     let mut offset = 0;
-                    let len = (*method.param.clone()).len() as i32;
-                    for param in *(method.param.clone()) {
+                    let len = method.param.deref().len() as i32;
+                    for param in method.param.deref() {
                         self.environment.env.get_mut(&class_.name).unwrap().add(
                             &param.0,
                             &Location {
                                 reg: "%rbp".to_string(),
                                 offset: 8 * (3 + len - 1 - offset),
-                                type_: param.1,
+                                type_: param.1.clone(),
                             },
                         );
                         offset += 1;
                     }
 
-                    if let Some(expr_) = *(method.body.clone()) {
+                    if let Some(expr_) = method.body.deref() {
                         self.environment
                             .env
                             .get_mut(&class_.name)
@@ -343,7 +345,7 @@ impl<'a> CodeGenerator<'a> {
 
                         // sub rsp to store local var
                         let mut var_vec = Vec::new();
-                        for expr in &expr_ {
+                        for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
                         self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);

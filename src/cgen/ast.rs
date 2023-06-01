@@ -1,6 +1,10 @@
+use std::ops::Deref;
+
 use crate::{
     grammar::ast::{
-        expr::{Assignment, ComputeOp, Cond, Dispatch, Expr, Let, Math, MathOp, Return, While},
+        expr::{
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Let, Math, MathOp, Return, While,
+        },
         Identifier, Type,
     },
     BOOL, INT, STRING,
@@ -14,19 +18,19 @@ impl Expr {
 
         match self {
             Expr::Let(e) => {
-                let decls = *(e.var_decls.clone());
+                let decls = e.var_decls.deref();
                 for decl_ in decls {
-                    vec.push((decl_.name, decl_.type_));
+                    vec.push((decl_.name.clone(), decl_.type_.clone()));
                 }
                 return vec.clone();
             }
             Expr::Cond(e) => {
                 // let mut num = 0;
-                for then_ in *(e.then_body.clone()) {
+                for then_ in e.then_body.deref() {
                     // num += then_.get_var_num();
                     vec.append(&mut then_.get_var_num());
                 }
-                for else_ in *(e.else_body.clone()) {
+                for else_ in e.else_body.deref() {
                     // num += else_.get_var_num();
                     vec.append(&mut else_.get_var_num());
                 }
@@ -35,7 +39,7 @@ impl Expr {
             }
             Expr::While(e) => {
                 // let mut num = 0;
-                for expr_ in *(e.body.clone()) {
+                for expr_ in e.body.deref() {
                     // num += expr_.get_var_num();
                     vec.append(&mut expr_.get_var_num());
                 }
@@ -73,13 +77,13 @@ impl CodeGenerate for Expr {
                 code_generator.write(format!("movq $bool_const_{}, %rax", index), true);
             }
 
-            Expr::Identifier(e, _, _) => {
+            Expr::Identifier(e) => {
                 let map = code_generator
                     .environment
                     .env
                     .get(&code_generator.environment.curr_class)
                     .unwrap();
-                let location = map.find(e).unwrap();
+                let location = map.find(&e.name).unwrap();
                 if location.offset == i32::MAX {
                     code_generator.write(format!("movq %rbx, %rax"), true);
                 } else {
@@ -132,7 +136,7 @@ impl CodeGenerate for Expr {
 impl CodeGenerate for Return {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // todo!()
-        let e = *(self.val.clone());
+        let e = self.val.deref();
         e.code_generate(code_generator);
 
         // code_generator.method_end();
@@ -142,25 +146,17 @@ impl CodeGenerate for Return {
 impl CodeGenerate for Dispatch {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         let temp = code_generator.environment.curr_class.clone();
-        for i in *self.actual.clone() {
+        for i in self.actual.deref() {
             i.code_generate(code_generator);
             code_generator.write(format!("push %rax"), true);
         }
-        if let Some(target_) = *self.target.clone() {
+        if let Some(target_) = self.target.deref() {
             // change curr_class to target
             target_.code_generate(code_generator);
 
-            let symbol_table = code_generator
-                .environment
-                .env
-                .get_mut(&code_generator.environment.curr_class)
-                .unwrap();
-
-            // TODO: opt code!!!!!!!!!!!!!!!!
             match &target_ {
-                Expr::Identifier(name, _, _) => {
-                    code_generator.environment.curr_class =
-                        symbol_table.find(name).unwrap().type_.clone();
+                Expr::Identifier(e) => {
+                    code_generator.environment.curr_class = e.type_.clone();
                 }
                 Expr::Dispatch(e) => {
                     code_generator.environment.curr_class = e.type_.clone();
@@ -168,10 +164,9 @@ impl CodeGenerate for Dispatch {
                 Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
                 Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),
                 Expr::Bool(_) => code_generator.environment.curr_class = BOOL.to_string(),
-
+                Expr::New(e) => code_generator.environment.curr_class = e.clone(),
                 _ => {}
             }
-
             code_generator.write(format!("movq 8(%rax), %rdi"), true);
 
             // TODO: the class might be NULL
@@ -189,7 +184,7 @@ impl CodeGenerate for Dispatch {
                 true,
             );
         }
-        for _ in *self.actual.clone() {
+        for _ in self.actual.deref() {
             code_generator.write(format!("addq $8, %rsp"), true);
         }
         code_generator.environment.curr_class = temp;
@@ -198,11 +193,11 @@ impl CodeGenerate for Dispatch {
 
 impl CodeGenerate for Let {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        for decl_ in *(self.var_decls.clone()) {
+        for decl_ in self.var_decls.deref() {
             // expr_.init.
             // for expr_ in decl_.init
 
-            if let Some(expr_) = *(decl_.init.clone()) {
+            if let Some(expr_) = decl_.init.deref() {
                 expr_.code_generate(code_generator);
                 // decl_.name
                 let location = code_generator
@@ -224,7 +219,7 @@ impl CodeGenerate for Let {
 
 impl CodeGenerate for Assignment {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        let expr = *self.compute.clone();
+        let expr = self.compute.deref();
 
         let location = code_generator
             .environment
@@ -246,56 +241,86 @@ impl CodeGenerate for Assignment {
 impl CodeGenerate for Math {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // r10-r11 for temp register
-        let left = *self.left.clone();
+        let left = self.left.deref();
         left.code_generate(code_generator);
         code_generator.write(format!("pushq %rax"), true);
 
-        let right = *self.right.clone();
+        let right = self.right.deref();
         right.code_generate(code_generator);
 
         // %r10 is right, %r11 is left
         code_generator.write(format!("movq 16(%rax), %r10"), true);
         code_generator.write(format!("movq (%rsp), %r11"), true);
         code_generator.write(format!("movq 16(%r11), %r11"), true);
+        code_generator.write(format!("addq $8, %rsp"), true);
 
-        match *self.op.clone() {
-            MathOp::ComputeOp(op_) => match op_ {
-                ComputeOp::Add => {
-                    code_generator.write(format!("addq %r10, %r11"), true);
+        match self.op.deref() {
+            MathOp::ComputeOp(op_) => {
+                match op_ {
+                    ComputeOp::Add => {
+                        code_generator.write(format!("addq %r10, %r11"), true);
+                    }
+                    ComputeOp::Minus => {
+                        code_generator.write(format!("subq %r10, %r11"), true);
+                    }
+                    ComputeOp::Mul => {
+                        code_generator.write(format!("movq %r11, %rax"), true);
+                        code_generator.write(format!("mulq %r10"), true);
+                        code_generator.write(format!("movq %rax, %r11"), true);
+                    }
+                    ComputeOp::Divide => {
+                        code_generator.write(format!("movq %r11, %rax"), true);
+                        code_generator.write(format!("divq %r10"), true);
+                        code_generator.write(format!("movq %rax, %r11"), true);
+                    }
+                };
+                code_generator.write(format!("pushq %r11"), true);
+                code_generator.write(format!("pushq $Int_prototype"), true);
+                code_generator.write(format!("call Object.malloc"), true);
+                code_generator.write(format!("addq $8, %rsp"), true);
+                code_generator.write(format!("call Int.init"), true);
+                code_generator.write(format!("movq (%rsp), %r11"), true);
+                code_generator.write(format!("movq %r11, 16(%rax)"), true);
+                
+                code_generator.write(format!("addq $8, %rsp"), true);
+            }
+            MathOp::CondOp(op_) => {
+                // sub
+                // if true jmp then
+                // else
+                code_generator.write(format!("subq %r10, %r11"), true);
+                match op_ {
+                    CondOp::More => {
+                        code_generator.write(
+                            format!("ja label_{}", code_generator.environment.lable),
+                            true,
+                        );
+                    }
+                    _ => {
+                       
+                    }
                 }
-                ComputeOp::Minus => {
-                    code_generator.write(format!("subq %r10, %r11"), true);
-                }
-                ComputeOp::Mul => {
-                    code_generator.write(format!("movq %r11, %rax"), true);
-                    code_generator.write(format!("mulq %r10"), true);
-                    code_generator.write(format!("movq %rax, %r11"), true);
-                }
-                ComputeOp::Divide => {
-                    code_generator.write(format!("movq %r11, %rax"), true);
-                    code_generator.write(format!("divq %r10"), true);
-                    code_generator.write(format!("movq %rax, %r11"), true);
-                }
-                _ => {}
-            },
-            MathOp::CondOp(_) => todo!(),
+            }
         }
         // %r11 is the result
-        code_generator.write(format!("pushq %r11"), true);
-        code_generator.write(format!("pushq $Int_prototype"), true);
-        code_generator.write(format!("call Object.malloc"), true);
-        code_generator.write(format!("addq $8, %rsp"), true);
-        code_generator.write(format!("call Int.init"), true);
-        code_generator.write(format!("movq (%rsp), %r11"), true);
-        code_generator.write(format!("movq %r11, 16(%rax)"), true);
-        code_generator.write(format!("addq $8, %rsp"), true);
-        code_generator.write(format!("addq $8, %rsp"), true);
     }
 }
 
 impl CodeGenerate for Cond {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        todo!()
+        // todo!()
+        // self.else_body
+        // self.test
+        // self.then_body
+        self.test.code_generate(code_generator);
+        // self.else_body.
+        for else_ in self.else_body.deref() {
+            else_.code_generate(code_generator);
+        }
+        code_generator.write(format!("label_{}:", code_generator.environment.lable), false);
+        for then in self.then_body.deref() {
+            then.code_generate(code_generator);
+        }
     }
 }
 

@@ -5,11 +5,12 @@ lalrpop_mod!(pub strawberry);
 use grammar::lexer::Lexer;
 
 use semantic::semantic::{SemanticChecker, SemanticError};
-use std::{fs::File, process::Command};
 use std::io::prelude::*;
+use std::{fs::File, process::Command};
 use utils::table::{self, ClassTable, Tables};
 
 use crate::cgen::cgen::CodeGenerator;
+use crate::grammar::ast::class::Class;
 
 mod cgen;
 mod grammar;
@@ -56,13 +57,13 @@ fn main() {
             if DEBUG {
                 println!("Res: {:?}", &v);
             }
-            let result: Result<bool, SemanticError> = semantic_checker.check(&mut class_table);
+            let result: Result<Vec<Class>, SemanticError> =
+                semantic_checker.check(&mut class_table);
             match result {
-                Ok(_) => {
+                Ok(v) => {
                     println!("Congratulations you passped the semantic check!");
                     let mut asm_file = std::fs::File::create("test.s").expect("create failed");
-                    let mut cgen =
-                        CodeGenerator::new(v.clone(), &mut class_table, table, &mut asm_file);
+                    let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
                     cgen.code_generate();
                     Command::new("gcc")
                         .arg("-no-pie")
@@ -113,10 +114,33 @@ fn test() {
 
     // init
     let mut table = table::Tables::new();
+    table.string_table.insert("".to_string());
+    table.string_table.insert("Object".to_string());
+    table.int_table.insert("0".to_string());
+    let mut class_table = ClassTable::new();
+
+    // install constants
+    class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
-    for i in lexer {
-        println!("{:?}", i);
-    }
+    // for i in lexer {
+    //     println!("{:?}", i);
+    // }
+    let program = strawberry::ProgramParser::new().parse(lexer);
+    match program {
+        Ok(v) => {
+            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
+            // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
+            let result = semantic_checker.check(&mut class_table);
+            match result {
+                Ok(v) => {
+                    println!("{:?}", v);
+                }
+                _ => {}
+            }
+            // }
+        }
+        Err(_) => todo!(),
+    };
 }
 
 // Ok((5, Return((5, 14)), 14))

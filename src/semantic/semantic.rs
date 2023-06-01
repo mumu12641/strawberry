@@ -1,8 +1,10 @@
+use std::ops::DerefMut;
+
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
     grammar::ast::{
         class::{Class, Feature},
-        expr::TypeChecker,
+        expr::{Expr, TypeChecker},
         Identifier, Type,
     },
     table::ClassTable,
@@ -35,7 +37,7 @@ impl SemanticChecker {
             symbol_table: SymbolTable::new(),
         }
     }
-    pub fn check(&mut self, class_table: &mut ClassTable) -> Result<bool, SemanticError> {
+    pub fn check(&mut self, class_table: &mut ClassTable) -> Result<Vec<Class>, SemanticError> {
         let mut main_flag = false;
         let mut main_method_flag = false;
 
@@ -126,9 +128,6 @@ impl SemanticChecker {
         // check  method
         for i in &self.classes {
             // Main:  Main -> Object -> A
-            if DEBUG {
-                println!("{} inheritance diagram", &i.name);
-            }
 
             if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
@@ -170,7 +169,8 @@ impl SemanticChecker {
             println!();
             println!("Now check all expression");
         }
-        for i in &self.classes {
+        // mut to add type to expression;
+        for i in &mut self.classes {
             if DEBUG {
                 println!("current class is {}", i.name);
             }
@@ -186,16 +186,16 @@ impl SemanticChecker {
                     }
                 }
             }
-            for j in &i.features {
+            for j in &mut i.features {
                 if let Feature::Method(method) = j {
-                    for param in *method.param.clone() {
+                    for param in &*method.param {
                         self.symbol_table.add(&param.0, &param.1);
                     }
-                    if let Some(v) = *(method.body.clone()) {
+                    if let Some(v) = method.body.deref_mut() {
                         // v as Vec<&dyn TypeChecker>;
-                        for mut expr in v {
+                        for expr in v {
                             match expr {
-                                crate::grammar::ast::expr::Expr::Return(mut re) => {
+                                Expr::Return(re) => {
                                     match re.check_type(&mut self.symbol_table, class_table) {
                                         Err(e) => return Err(e),
                                         Ok(type_) => {
@@ -229,6 +229,6 @@ impl SemanticChecker {
             self.symbol_table.exit_scope();
         }
 
-        return Ok(true);
+        return Ok(self.classes.clone());
     }
 }
