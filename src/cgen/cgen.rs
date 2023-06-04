@@ -28,7 +28,7 @@ pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
     // pub type_env: SymbolTable<String, Type>,
     pub curr_class: String,
-    pub lable: usize,
+    pub label: usize,
 }
 
 /// * Build constant
@@ -73,7 +73,7 @@ impl<'a> CodeGenerator<'a> {
                 env: HashMap::new(),
                 // type_env: SymbolTable::new(),
                 curr_class: "none".to_string(),
-                lable: 0,
+                label: 0,
             },
         }
     }

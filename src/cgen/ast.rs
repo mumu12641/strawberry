@@ -281,7 +281,7 @@ impl CodeGenerate for Math {
                 code_generator.write(format!("call Int.init"), true);
                 code_generator.write(format!("movq (%rsp), %r11"), true);
                 code_generator.write(format!("movq %r11, 16(%rax)"), true);
-                
+
                 code_generator.write(format!("addq $8, %rsp"), true);
             }
             MathOp::CondOp(op_) => {
@@ -290,15 +290,29 @@ impl CodeGenerate for Math {
                 // else
                 code_generator.write(format!("subq %r10, %r11"), true);
                 match op_ {
-                    CondOp::More => {
-                        code_generator.write(
-                            format!("ja label_{}", code_generator.environment.lable),
-                            true,
-                        );
-                    }
-                    _ => {
-                       
-                    }
+                    CondOp::More => code_generator.write(
+                        format!("ja label_{}", code_generator.environment.label),
+                        true,
+                    ),
+
+                    CondOp::MoreE => code_generator.write(
+                        format!("jae label_{}", code_generator.environment.label),
+                        true,
+                    ),
+
+                    CondOp::Less => code_generator.write(
+                        format!("jb label_{}", code_generator.environment.label),
+                        true,
+                    ),
+                    CondOp::LessE => code_generator.write(
+                        format!("jbe label_{}", code_generator.environment.label),
+                        true,
+                    ),
+
+                    CondOp::Equal => code_generator.write(
+                        format!("je label_{}", code_generator.environment.label),
+                        true,
+                    ),
                 }
             }
         }
@@ -308,24 +322,61 @@ impl CodeGenerate for Math {
 
 impl CodeGenerate for Cond {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        // todo!()
-        // self.else_body
-        // self.test
-        // self.then_body
+        code_generator.environment.label += 1;
+        let label_then = code_generator.environment.label;
+
+        // if jump to then
+        // eval test
+        // jmp -> label_0
         self.test.code_generate(code_generator);
-        // self.else_body.
+
+        code_generator.environment.label += 1;
+        let label_done = code_generator.environment.label;
+
+        // else body
         for else_ in self.else_body.deref() {
             else_.code_generate(code_generator);
         }
-        code_generator.write(format!("label_{}:", code_generator.environment.lable), false);
+
+        // jmp  label_1
+        code_generator.write(format!("jmp label_{}", label_done), true);
+
+        // label_0: then body
+        code_generator.write(format!("label_{}:", label_then), false);
         for then in self.then_body.deref() {
             then.code_generate(code_generator);
         }
+
+        //  done:
+        code_generator.write(format!("label_{}:", label_done), false);
     }
 }
 
 impl CodeGenerate for While {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        todo!()
+
+        // jmp test ->label_loop + 1
+        // loop:    label_loop
+        //      body
+        // test:
+        //      test.code
+        //      goto loop
+
+        // jmp to loop
+
+        code_generator.environment.label += 1;
+        let label_loop = code_generator.environment.label;
+
+        code_generator.write(format!("# jmp to test"), true);
+        code_generator.write(format!("jmp label_{}", label_loop + 1), true);
+
+        code_generator.write(format!("label_{}:", label_loop), false);
+        for body_ in self.body.deref() {
+            body_.code_generate(code_generator);
+        }
+
+        code_generator.write(format!("label_{}:", label_loop + 1), false);
+        self.test.code_generate(code_generator);
+        code_generator.environment.label += 1;
     }
 }
