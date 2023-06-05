@@ -281,38 +281,21 @@ impl CodeGenerate for Math {
                 code_generator.write(format!("call Int.init"), true);
                 code_generator.write(format!("movq (%rsp), %r11"), true);
                 code_generator.write(format!("movq %r11, 16(%rax)"), true);
-
                 code_generator.write(format!("addq $8, %rsp"), true);
             }
             MathOp::CondOp(op_) => {
                 // sub
                 // if true jmp then
                 // else
+                code_generator.write(format!("movq $1, %rdi"), true);
+                code_generator.write(format!("movq $0, %rax"), true);
                 code_generator.write(format!("subq %r10, %r11"), true);
                 match op_ {
-                    CondOp::More => code_generator.write(
-                        format!("ja label_{}", code_generator.environment.label),
-                        true,
-                    ),
-
-                    CondOp::MoreE => code_generator.write(
-                        format!("jae label_{}", code_generator.environment.label),
-                        true,
-                    ),
-
-                    CondOp::Less => code_generator.write(
-                        format!("jb label_{}", code_generator.environment.label),
-                        true,
-                    ),
-                    CondOp::LessE => code_generator.write(
-                        format!("jbe label_{}", code_generator.environment.label),
-                        true,
-                    ),
-
-                    CondOp::Equal => code_generator.write(
-                        format!("je label_{}", code_generator.environment.label),
-                        true,
-                    ),
+                    CondOp::More => code_generator.write(format!("cmova %rdi, %rax"), true),
+                    CondOp::MoreE => code_generator.write(format!("cmovae %rdi, %rax"), true),
+                    CondOp::Less => code_generator.write(format!("cmovb %rdi, %rax"), true),
+                    CondOp::LessE => code_generator.write(format!("cmovbe %rdi, %rax"), true),
+                    CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
                 }
             }
         }
@@ -322,22 +305,28 @@ impl CodeGenerate for Math {
 
 impl CodeGenerate for Cond {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        code_generator.environment.label += 1;
-        let label_then = code_generator.environment.label;
+        let label_then = code_generator.environment.label + 1;
+        let label_done = code_generator.environment.label + 2;
+        code_generator.environment.label += 2;
 
         // if jump to then
         // eval test
         // jmp -> label_0
+
         self.test.code_generate(code_generator);
-
-        code_generator.environment.label += 1;
-        let label_done = code_generator.environment.label;
-
+        match self.test.deref() {
+            Expr::Math(_) => {}
+            _ => {
+                // else is bool type
+                code_generator.write(format!("movq 16(%rax), %rax"), true);
+            }
+        }
+        code_generator.write(format!("subq $1, %rax"), true);
+        code_generator.write(format!("jz label_{}", label_then), true);
         // else body
         for else_ in self.else_body.deref() {
             else_.code_generate(code_generator);
         }
-
         // jmp  label_1
         code_generator.write(format!("jmp label_{}", label_done), true);
 
@@ -354,7 +343,6 @@ impl CodeGenerate for Cond {
 
 impl CodeGenerate for While {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-
         // jmp test ->label_loop + 1
         // loop:    label_loop
         //      body
@@ -362,21 +350,29 @@ impl CodeGenerate for While {
         //      test.code
         //      goto loop
 
-        // jmp to loop
+        let label_loop = code_generator.environment.label + 1;
+        let lable_done = label_loop + 1;
 
-        code_generator.environment.label += 1;
-        let label_loop = code_generator.environment.label;
-
-        code_generator.write(format!("# jmp to test"), true);
-        code_generator.write(format!("jmp label_{}", label_loop + 1), true);
+        code_generator.write(format!("jmp label_{}", lable_done), true);
 
         code_generator.write(format!("label_{}:", label_loop), false);
         for body_ in self.body.deref() {
             body_.code_generate(code_generator);
         }
 
-        code_generator.write(format!("label_{}:", label_loop + 1), false);
+        code_generator.write(format!("label_{}:", lable_done), false);
+
         self.test.code_generate(code_generator);
-        code_generator.environment.label += 1;
+        match self.test.deref() {
+            Expr::Math(_) => {}
+            _ => {
+                // else is bool type
+                code_generator.write(format!("movq 16(%rax), %rax"), true);
+            }
+        }
+        code_generator.write(format!("subq $1, %rax"), true);
+        code_generator.write(format!("jz label_{}", label_loop), true);
+
+        code_generator.environment.label += 2;
     }
 }

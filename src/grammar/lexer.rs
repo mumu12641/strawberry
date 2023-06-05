@@ -27,7 +27,7 @@ lexer! {
 
     "[A-Z][a-zA-Z0-9_]*"=>Token::TypeId(text.to_owned()),
     "[a-z][a-zA-Z0-9_]*"=>Token::Identifier(text.to_owned(),EMPTY),
-    "[0-9]+" => Token::IntConst(text.to_owned()),
+    "[-]*[0-9]+" => Token::IntConst(text.to_owned()),
     r#""[^"]*""# => parse_string(text),
 
     "="=>Token::Assign(EMPTY),

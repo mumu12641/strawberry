@@ -1,6 +1,6 @@
 class Main {
     fun main() -> Int{
-        let flag :Int = 1;
+        let flag :Int = -2;
         let i : Int = 30;
         
         while(i > 0){
@@ -8,15 +8,13 @@ class Main {
             i = i - 1;
         }
         
-        if (flag > 0) then {
-            print("flag > 0\\n");
+        if (flag  > -1) then {
+            print("flag > -1\\n");
         }else {
-           //print("flag < 0\\n");
-            
-            if (flag == 0) then{
-                print("flag == 0\\n");
+            if (flag == -1) then{
+                print("flag == -1\\n");
             }else {
-                print("flag < 0\\n");
+                print("flag < -1\\n");
             }
             
         }

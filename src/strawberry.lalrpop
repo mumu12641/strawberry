@@ -164,7 +164,7 @@ single_expr:Expr = {
     }),
     <s:"STR"> => Expr::Str(s),
     <b:"BOOL"> => Expr::Bool(b),
-    <i:"INT"> => Expr::Int(i.parse().unwrap()), 
+    <i:"INT"> => Expr::Int(i.parse::<i32>().unwrap()), 
     // <s:"SELF"> => Expr::Self_(s),
     
     "NEW" <class_name:"TYPE"> => Expr::New(<>), 
