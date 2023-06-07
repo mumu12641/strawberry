@@ -4,7 +4,7 @@ extern crate lalrpop_util;
 extern crate clap;
 
 lalrpop_mod!(pub strawberry);
-use clap::{arg, Arg};
+use clap::{arg, Arg, ColorChoice};
 use grammar::lexer::Lexer;
 use owo_colors::{DynColors, OwoColorize};
 use semantic::semantic::{SemanticChecker, SemanticError};
@@ -53,7 +53,8 @@ fn main() {
 
 fn handle_args() {
     println!("\n{}", LOGO.red());
-    let matches = clap::Command::new("Strawberry")
+    let mut cmd = clap::Command::new("Strawberry")
+        .color(ColorChoice::Auto)
         .version("0.1-beta")
         .about("A toy object-oriented programming language")
         .subcommand(clap::Command::new("build").about("Build the current project directory"))
@@ -65,20 +66,25 @@ fn handle_args() {
                         .required(true)
                         .help("The name of the new project"),
                 ),
-        )
-        .get_matches();
+        );
+    let matches = cmd.clone().get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
         println!("{}", matches.get_one::<String>("name").unwrap());
         create_project_folder(matches.get_one::<String>("name").unwrap());
     } else if let Some(_) = matches.subcommand_matches("build") {
+
         let paths = fs::read_dir("./src").unwrap();
+
         let mut files: Vec<_> = vec![];
 
         for path in paths {
             files.insert(0, path.unwrap().path().to_str().unwrap().to_string());
         }
         compile(files);
+    } else {
+        
+        let _ = cmd.print_long_help();
     }
 }
 
@@ -106,17 +112,19 @@ fn compile(files: Vec<String>) {
                 all_classes.append(&mut v);
             }
             Err(e) => {
-                let err = format!("❌ Oops, syntax error has occurred in {}!",&file_name);
+                let err = format!("❌ Oops, syntax error has occurred in {}!", &file_name);
                 println!("{}", err.red());
-                println!("{}","Err: ".red());
-                println!("{:?}",e.red());
+                println!("{}", "Err: ".red());
+                println!("{:?}", e.red());
                 return;
             }
         }
     }
-    // eprintln!("<green>{} Congratulations you passped the syntax analysis!</green>",tada);
-   
-    println!("{}","🎉 Congratulations you passped the syntax analysis!".green());
+
+    println!(
+        "{}",
+        "🎉 Congratulations you passped the syntax analysis!".green()
+    );
 
     let mut semantic_checker: SemanticChecker = SemanticChecker::new(all_classes.clone());
     if DEBUG {
@@ -125,7 +133,10 @@ fn compile(files: Vec<String>) {
     let result: Result<Vec<Class>, SemanticError> = semantic_checker.check(&mut class_table);
     match result {
         Ok(v) => {
-            println!("{}","🎺 Congratulations you passped the semantic check!".green());
+            println!(
+                "{}",
+                "🎺 Congratulations you passped the semantic check!".green()
+            );
             let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
             let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
             cgen.code_generate();
@@ -140,13 +151,10 @@ fn compile(files: Vec<String>) {
             println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
         }
         Err(e) => {
-
-            println!("{}","❌ Oops, semantic error has occurred!".red());
+            println!("{}", "❌ Oops, semantic error has occurred!".red());
             println!("{}", e.err_msg.red());
         }
     }
-
-    
 }
 
 fn create_project_folder(name: &str) {
@@ -224,4 +232,3 @@ fn test() {
         Err(_) => todo!(),
     };
 }
-

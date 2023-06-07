@@ -1,8 +1,8 @@
 class Main { 
 	fun main() -> Int { 
 		let a:A = new A;
-		print("Hello world!"); 
-		print(a.geta());
-		return 0; 
+		a.print("Hello world!"); 
+		a.print(a.geta());
+		return 0;
 	};
 };
