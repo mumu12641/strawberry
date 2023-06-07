@@ -21,13 +21,14 @@ Just because I happened to be eating strawberrier when I had this idea!
 This is a toy object-oriented language, a practice project after I finished learning CS143, there are many features it does not support, and API will keep changing until version1.0 (if I can do this), so please just think of it as a small language for learning.
 
 ## 🎯Features
-:white_check_mark: Object-oriented and Polymorphism(I guees).
+- :white_check_mark: Object-oriented and Polymorphism(I guees).
 
-:white_check_mark: Output readable x86 assembly code(If you have studied cs143).
+- :white_check_mark: Output readable x86 assembly code(If you have studied cs143).
 
-:construction: Support for generics.
+- :construction: Support for generics.
 
-:construction: More APIs.
+- :construction: More APIs.
+
 
 ## ☀ Getting Started
 
