@@ -1,31 +1,24 @@
 class Main {
     fun main() -> Int{
-        let flag :Int = -2;
-        let i : Int = 30;
-        
-        while(i > 0){
-            print("i > 0\\n");
-            i = i - 1;
-        }
-        
-        if (flag  > -1) then {
-            print("flag > -1\\n");
-        }else {
-            if (flag == -1) then{
-                print("flag == -1\\n");
-            }else {
-                print("flag < -1\\n");
-            }
-            
-        }
-        
+        let a:B = get();
+        print(a.getb());
         return 0;
+    };
+
+    fun get() -> B{
+        return new B;
     };
 
 };
 
 class A{
-    fun get() -> String {
-        return "A.str\\n";
+    fun geta() -> String {
+        return "this is A\\n";
+    };
+};
+
+class B inherits A{
+    fun getb() -> String {
+        return "this is B\\n";
     };
 };

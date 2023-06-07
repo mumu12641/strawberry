@@ -1,12 +1,18 @@
 #![feature(const_trait_impl)]
 #[macro_use]
 extern crate lalrpop_util;
-lalrpop_mod!(pub strawberry);
-use grammar::lexer::Lexer;
+extern crate clap;
 
+lalrpop_mod!(pub strawberry);
+use clap::{arg, Arg};
+use grammar::lexer::Lexer;
+use owo_colors::{DynColors, OwoColorize};
 use semantic::semantic::{SemanticChecker, SemanticError};
+use std::fs::File;
 use std::io::prelude::*;
-use std::{fs::File, process::Command};
+use std::path::Path;
+use std::process::Command;
+use std::{env, fs};
 use utils::table::{self, ClassTable, Tables};
 
 use crate::cgen::cgen::CodeGenerator;
@@ -26,12 +32,58 @@ const EMPTY: (usize, usize) = (0, 0);
 
 const DEBUG: bool = false;
 
+const LOGO: &str = r#"
+______     __                                       __                                               
+/      \   |  \                                     |  \                                              
+|  $$$$$$\ _| $$_     ______   ______   __   __   __ | $$____    ______    ______    ______   __    __ 
+| $$___\$$|   $$ \   /      \ |      \ |  \ |  \ |  \| $$    \  /      \  /      \  /      \ |  \  |  \
+\$$    \  \$$$$$$  |  $$$$$$\ \$$$$$$\| $$ | $$ | $$| $$$$$$$\|  $$$$$$\|  $$$$$$\|  $$$$$$\| $$  | $$
+_\$$$$$$\  | $$ __ | $$   \$$/      $$| $$ | $$ | $$| $$  | $$| $$    $$| $$   \$$| $$   \$$| $$  | $$
+|  \__| $$  | $$|  \| $$     |  $$$$$$$| $$_/ $$_/ $$| $$__/ $$| $$$$$$$$| $$      | $$      | $$__/ $$
+\$$    $$   \$$  $$| $$      \$$    $$ \$$   $$   $$| $$    $$ \$$     \| $$      | $$       \$$    $$
+ \$$$$$$     \$$$$  \$$       \$$$$$$$  \$$$$$\$$$$  \$$$$$$$   \$$$$$$$ \$$       \$$       _\$$$$$$$
+                                                                                            |  \__| $$
+                                                                                             \$$    $$
+                                                                                              \$$$$$$ 
+"#;
+
 fn main() {
-    // get input file
-    let mut file = File::open("src/helloworld.st").unwrap();
-    let mut content = String::new();
-    file.read_to_string(&mut content).expect("error");
-    // println!("{content}");
+    handle_args();
+}
+
+fn handle_args() {
+    println!("\n{}", LOGO.red());
+    let matches = clap::Command::new("Strawberry")
+        .version("0.1-beta")
+        .about("A toy object-oriented programming language")
+        .subcommand(clap::Command::new("build").about("Build the current project directory"))
+        .subcommand(
+            clap::Command::new("new")
+                .about("Create a new empty project folder")
+                .arg(
+                    Arg::new("name")
+                        .required(true)
+                        .help("The name of the new project"),
+                ),
+        )
+        .get_matches();
+
+    if let Some(matches) = matches.subcommand_matches("new") {
+        println!("{}", matches.get_one::<String>("name").unwrap());
+        create_project_folder(matches.get_one::<String>("name").unwrap());
+    } else if let Some(_) = matches.subcommand_matches("build") {
+        let paths = fs::read_dir("./src").unwrap();
+        let mut files: Vec<_> = vec![];
+
+        for path in paths {
+            files.insert(0, path.unwrap().path().to_str().unwrap().to_string());
+        }
+        compile(files);
+    }
+}
+
+fn compile(files: Vec<String>) {
+    let mut all_classes: Vec<Class> = vec![];
 
     // init
     let mut table = table::Tables::new();
@@ -43,49 +95,79 @@ fn main() {
     // install constants
     class_table.install_basic_class();
 
-    // start compiler
-    let lexer: Lexer = Lexer::new(&content, &mut table, "helloworld.st");
-    println!("Congratulations you passped the lexical analysis!");
-    let program = strawberry::ProgramParser::new().parse(lexer);
-    // if DEBUG {
-    // print_table(&table);
-    // }
-    match program {
-        Ok(v) => {
-            println!("Congratulations you passped the syntax analysis!");
-            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
-            if DEBUG {
-                println!("Res: {:?}", &v);
+    for file_name in files {
+        let mut file = File::open(&file_name).unwrap();
+        let mut content = String::new();
+        file.read_to_string(&mut content).expect("error");
+        let lexer: Lexer = Lexer::new(&content, &mut table, &file_name);
+        let program = strawberry::ProgramParser::new().parse(lexer);
+        match program {
+            Ok(mut v) => {
+                all_classes.append(&mut v);
             }
-            let result: Result<Vec<Class>, SemanticError> =
-                semantic_checker.check(&mut class_table);
-            match result {
-                Ok(v) => {
-                    println!("Congratulations you passped the semantic check!");
-                    let mut asm_file = std::fs::File::create("test.s").expect("create failed");
-                    let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
-                    cgen.code_generate();
-                    Command::new("gcc")
-                        .arg("-no-pie")
-                        .arg("-static")
-                        .arg("./test.s")
-                        .spawn()
-                        .expect("ls command failed to start");
-                }
-                Err(e) => {
-                    println!();
-                    println!("Oops, semantic error has occurred!");
-                    println!("{}", e.err_msg);
-                }
+            Err(e) => {
+                let err = format!("❌ Oops, syntax error has occurred in {}!",&file_name);
+                println!("{}", err.red());
+                println!("{}","Err: ".red());
+                println!("{:?}",e.red());
+                return;
             }
-        }
-        Err(e) => {
-            println!("Oops, syntax error has occurred!");
-            println!("Err: {:?}", e);
         }
     }
+    // eprintln!("<green>{} Congratulations you passped the syntax analysis!</green>",tada);
+   
+    println!("{}","🎉 Congratulations you passped the syntax analysis!".green());
+
+    let mut semantic_checker: SemanticChecker = SemanticChecker::new(all_classes.clone());
+    if DEBUG {
+        println!("Res: {:?}", &all_classes);
+    }
+    let result: Result<Vec<Class>, SemanticError> = semantic_checker.check(&mut class_table);
+    match result {
+        Ok(v) => {
+            println!("{}","🎺 Congratulations you passped the semantic check!".green());
+            let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
+            let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
+            cgen.code_generate();
+            Command::new("gcc")
+                .arg("-no-pie")
+                .arg("-static")
+                .arg("./build/a.s")
+                .arg("-o")
+                .arg("./build/a.out")
+                .spawn()
+                .expect("gcc command failed to start");
+            println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
+        }
+        Err(e) => {
+
+            println!("{}","❌ Oops, semantic error has occurred!".red());
+            println!("{}", e.err_msg.red());
+        }
+    }
+
+    
 }
 
+fn create_project_folder(name: &str) {
+    let path = Path::new(name);
+
+    if path.exists() {
+        println!("Error: {} already exists", name);
+        return;
+    }
+
+    fs::create_dir(path).expect("Failed to create project folder");
+    fs::create_dir(path.join("src")).expect("Failed to create project src folder");
+    fs::create_dir(path.join("build")).expect("Failed to create project build folder");
+
+    let mut file = File::create(path.join("src/main.st")).expect("Failed to create main.st");
+
+    file.write(
+        b"class Main { \n\tfun main() -> Int { \n\t\tprint(\"Hello world!\"); \n\t\treturn 0; \n\t};\n};",
+    
+    ).unwrap();
+}
 // for debug
 fn print_table(table: &Tables) {
     println!("***String Table***");
@@ -143,9 +225,3 @@ fn test() {
     };
 }
 
-// Ok((5, Return((5, 14)), 14))
-// Ok((5, Identifier("test", (5, 19)), 19))
-// Ok((5, Lparen, 20))
-// Ok((5, Identifier("b", (5, 21)), 21))
-// Ok((5, Rparen, 22))
-// Ok((5, Semicolon, 23))

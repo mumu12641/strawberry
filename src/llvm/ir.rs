@@ -1,5 +1,3 @@
-
-
 // use inkwell::{
 //     builder::Builder, context::Context, module::Module, types::BasicType, types::BasicTypeEnum,
 //     values::BasicValueEnum, AddressSpace,
@@ -12,7 +10,7 @@
 // /// * Build constant
 // /// * Build class name table
 // /// * Build dispatch table
-// /// * Build class obj table   
+// /// * Build class obj table
 // /// * IO_protObj
 // /// * Emit other code
 // ///

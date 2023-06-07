@@ -5,4 +5,3 @@ macro_rules! c_str {
         format!("{}{}", $s, "\0").as_ptr() as *const i8
     };
 }
-

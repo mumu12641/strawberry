@@ -1,2 +1,2 @@
-pub mod cgen;
 mod ast;
+pub mod cgen;
