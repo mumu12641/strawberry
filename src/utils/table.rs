@@ -85,7 +85,7 @@ impl ClassTable {
             parent: Some(OBJECT.to_string()),
             features: vec![Feature::Attribute(VarDecl {
                 name: "val".to_string(),
-                type_: "prim_slot".to_string(),
+                type_: Some("prim_slot".to_string()),
                 init: Box::new(None),
                 position: EMPTY,
             })],
@@ -97,7 +97,7 @@ impl ClassTable {
             parent: Some(OBJECT.to_string()),
             features: vec![Feature::Attribute(VarDecl {
                 name: "val".to_string(),
-                type_: "prim_slot".to_string(),
+                type_: Some("prim_slot".to_string()),
                 init: Box::new(None),
                 position: EMPTY,
             })],
@@ -109,7 +109,7 @@ impl ClassTable {
             parent: Some(OBJECT.to_string()),
             features: vec![Feature::Attribute(VarDecl {
                 name: "val".to_string(),
-                type_: "prim_slot".to_string(),
+                type_: Some("prim_slot".to_string()),
                 init: Box::new(None),
                 position: EMPTY,
             })],
@@ -188,11 +188,10 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
     pub fn enter_scope(&mut self) {
         self.scopes.push(Scope {
             type_map: HashMap::new(),
-        })
+        });
     }
 
     pub fn exit_scope(&mut self) {
-        // self.debug();
         self.scopes.pop();
     }
 
@@ -213,14 +212,14 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
         }
     }
 
-    // pub fn debug(&mut self) {
-    //     for i in self.scopes.iter().rev() {
-    //         for j in &i.type_map {
-    //             println!("key -> {}    value -> {}", j.0, j.1);
-    //         }
-    //     }
-    //     println!();
-    // }
+    pub fn debug(&mut self) {
+        for i in self.scopes.iter().rev() {
+            for j in &i.type_map {
+                println!("key -> {}    value -> {}", j.0, j.1);
+            }
+        }
+        println!();
+    }
 }
 
 #[derive(Debug, Clone)]

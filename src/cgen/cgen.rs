@@ -196,7 +196,7 @@ impl<'a> CodeGenerator<'a> {
             for curr_class in inheritance.get(class_.0).unwrap() {
                 for attr_ in &curr_class.features {
                     if let Feature::Attribute(attr) = attr_ {
-                        if attr.type_ == STRING {
+                        if attr.type_.clone().unwrap() == STRING {
                             self.write(
                                 format!(
                                     ".quad str_const_{}",
@@ -204,9 +204,9 @@ impl<'a> CodeGenerator<'a> {
                                 ),
                                 true,
                             );
-                        } else if attr.type_ == BOOL {
+                        } else if attr.type_.clone().unwrap() == BOOL {
                             self.write(format!(".quad bool_const_0"), true);
-                        } else if attr.type_ == INT {
+                        } else if attr.type_.clone().unwrap() == INT {
                             self.write(
                                 format!(
                                     ".quad int_const_{}",
@@ -284,7 +284,7 @@ impl<'a> CodeGenerator<'a> {
                         &Location {
                             reg: "%rbx".to_string(),
                             offset: offset_ as i32,
-                            type_: attr.type_.clone(),
+                            type_: attr.type_.clone().unwrap(),
                         },
                     );
                     if let Some(expr_) = attr.init.deref() {

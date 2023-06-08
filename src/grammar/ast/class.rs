@@ -65,7 +65,7 @@ impl Feature {
 #[derive(Debug, Clone)]
 pub struct VarDecl {
     pub name: Identifier,
-    pub type_: Type,
+    pub type_: Option<Type>,
     pub init: Box<Option<Expr>>,
     pub position: Position,
 }

@@ -181,18 +181,21 @@ impl SemanticChecker {
                 for curr_parent in v.iter() {
                     for feature in &curr_parent.features {
                         if let Feature::Attribute(attr) = feature {
-                            self.symbol_table.add(&attr.name, &attr.type_)
+                            // TODO: 在 class 的类里面好像不能推断
+                            self.symbol_table
+                                .add(&attr.name, &attr.type_.clone().unwrap())
                         }
                     }
                 }
             }
+
             for j in &mut i.features {
                 if let Feature::Method(method) = j {
+                    self.symbol_table.enter_scope();
                     for param in &*method.param {
                         self.symbol_table.add(&param.0, &param.1);
                     }
                     if let Some(v) = method.body.deref_mut() {
-                        // v as Vec<&dyn TypeChecker>;
                         for expr in v {
                             match expr {
                                 Expr::Return(re) => {
@@ -223,9 +226,10 @@ impl SemanticChecker {
                             }
                         }
                     }
+                    self.symbol_table.exit_scope();
                 }
+                
             }
-
             self.symbol_table.exit_scope();
         }
 

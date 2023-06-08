@@ -235,10 +235,15 @@ impl TypeChecker for Let {
             match i.init.deref_mut() {
                 Some(e) => match e.check_type(symbol_table, class_table) {
                     Ok(type_) => {
-                        if class_table.is_less_or_equal(&type_, &i.type_) {
-                            symbol_table.add(&i.name, &i.type_);
+                        if let Some(decl_type) = &i.type_ {
+                            if class_table.is_less_or_equal(&type_, decl_type) {
+                                symbol_table.add(&i.name, decl_type);
+                            } else {
+                                return Err(SemanticError { err_msg: format!("{}:{} ---> The type of your let expression init is inconsistent with the declared type!",i.position.0,i.position.1), });
+                            }
                         } else {
-                            return Err(SemanticError { err_msg: format!("{}:{} ---> The type of your let expression init is inconsistent with the declared type!",i.position.0,i.position.1), });
+                            i.type_ = Some(type_.clone());
+                            symbol_table.add(&i.name, &type_);
                         }
                     }
                     Err(e) => {

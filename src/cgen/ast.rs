@@ -20,27 +20,23 @@ impl Expr {
             Expr::Let(e) => {
                 let decls = e.var_decls.deref();
                 for decl_ in decls {
-                    vec.push((decl_.name.clone(), decl_.type_.clone()));
+                    vec.push((decl_.name.clone(), decl_.type_.clone().unwrap()));
                 }
                 return vec.clone();
             }
             Expr::Cond(e) => {
                 // let mut num = 0;
                 for then_ in e.then_body.deref() {
-                    // num += then_.get_var_num();
                     vec.append(&mut then_.get_var_num());
                 }
                 for else_ in e.else_body.deref() {
-                    // num += else_.get_var_num();
                     vec.append(&mut else_.get_var_num());
                 }
                 // return num;
                 return vec.clone();
             }
             Expr::While(e) => {
-                // let mut num = 0;
                 for expr_ in e.body.deref() {
-                    // num += expr_.get_var_num();
                     vec.append(&mut expr_.get_var_num());
                 }
                 // return num;
