@@ -32,7 +32,7 @@ This is a toy object-oriented language, a practice project after I finished lear
 
 ## ☀ Getting Started
 
-### :bangbang: Prerequisites
+### ❗️ Prerequisites
 
 This project requires that your PC be installed with gcc and cargo.Use following commands to check it!
 
