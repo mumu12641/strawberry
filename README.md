@@ -14,7 +14,7 @@
 
 ## 🍓Why strawberry
 
-Just because I happened to be eating strawberrier when I had this idea!
+Just because I happened to be eating strawberries when I had this idea!
 
 ## 🌟 About the Project
 
