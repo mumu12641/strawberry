@@ -52,7 +52,7 @@ fn main() {
 }
 
 fn handle_args() {
-    println!("\n{}", LOGO.red());
+    println!("\n{}", LOGO.green());
     let mut cmd = clap::Command::new("Strawberry")
         .color(ColorChoice::Auto)
         .version("0.1-beta")
@@ -73,17 +73,18 @@ fn handle_args() {
         println!("{}", matches.get_one::<String>("name").unwrap());
         create_project_folder(matches.get_one::<String>("name").unwrap());
     } else if let Some(_) = matches.subcommand_matches("build") {
+        if let Ok(paths) = fs::read_dir("./src") {
+            let mut files: Vec<_> = vec![];
 
-        let paths = fs::read_dir("./src").unwrap();
-
-        let mut files: Vec<_> = vec![];
-
-        for path in paths {
-            files.insert(0, path.unwrap().path().to_str().unwrap().to_string());
+            for path in paths {
+                files.insert(0, path.unwrap().path().to_str().unwrap().to_string());
+            }
+            compile(files);
+        } else {
+            let err = format!("❌ Failed to build because the current directory is not a strawberry project, try strawberry new example");
+            println!("{}", err.red());
         }
-        compile(files);
     } else {
-        
         let _ = cmd.print_long_help();
     }
 }
@@ -104,7 +105,13 @@ fn compile(files: Vec<String>) {
     for file_name in files {
         let mut file = File::open(&file_name).unwrap();
         let mut content = String::new();
-        file.read_to_string(&mut content).expect("error");
+        // file.read_to_string(&mut content).expect("error");
+        if let Ok(_) = file.read_to_string(&mut content) {
+            
+        }else{
+            println!("{}", "❌ Some unexpected errors occurred, maybe you can solve it by recreating the project".red());
+            return;
+        }
         let lexer: Lexer = Lexer::new(&content, &mut table, &file_name);
         let program = strawberry::ProgramParser::new().parse(lexer);
         match program {
@@ -176,6 +183,7 @@ fn create_project_folder(name: &str) {
     
     ).unwrap();
 }
+
 // for debug
 fn print_table(table: &Tables) {
     println!("***String Table***");

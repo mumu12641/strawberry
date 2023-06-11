@@ -23,7 +23,9 @@ This is a toy object-oriented language, a practice project after I finished lear
 ## 🎯Features
 - :white_check_mark: Object-oriented and Polymorphism(I guees).
 
-- :white_check_mark: Output readable x86 assembly code(If you have studied cs143).
+- :white_check_mark: Output readable x86 assembly code and run it natively.
+
+- :white_check_mark: Type inference at variable definition time.
 
 - :construction: Support for generics.
 

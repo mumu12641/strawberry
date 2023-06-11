@@ -181,7 +181,6 @@ impl SemanticChecker {
                 for curr_parent in v.iter() {
                     for feature in &curr_parent.features {
                         if let Feature::Attribute(attr) = feature {
-                            // TODO: 在 class 的类里面好像不能推断
                             self.symbol_table
                                 .add(&attr.name, &attr.type_.clone().unwrap())
                         }
@@ -228,7 +227,6 @@ impl SemanticChecker {
                     }
                     self.symbol_table.exit_scope();
                 }
-                
             }
             self.symbol_table.exit_scope();
         }
