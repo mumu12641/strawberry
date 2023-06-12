@@ -1,9 +1,10 @@
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Let, Math, MathOp, Return, While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Let, Math, MathOp, Not, Return,
+            While,
         },
         Identifier, Type,
     },
@@ -88,7 +89,6 @@ impl CodeGenerate for Expr {
                         true,
                     )
                 }
-                code_generator.write(format!(""), true);
             }
 
             Expr::New(e) => {
@@ -123,6 +123,8 @@ impl CodeGenerate for Expr {
             Expr::Cond(e) => e.code_generate(code_generator),
 
             Expr::While(e) => e.code_generate(code_generator),
+
+            Expr::Not(e) => e.code_generate(code_generator),
 
             _ => {}
         }
@@ -308,7 +310,6 @@ impl CodeGenerate for Cond {
         // if jump to then
         // eval test
         // jmp -> label_0
-
         self.test.code_generate(code_generator);
         match self.test.deref() {
             Expr::Math(_) => {}
@@ -370,5 +371,14 @@ impl CodeGenerate for While {
         code_generator.write(format!("jz label_{}", label_loop), true);
 
         code_generator.environment.label += 2;
+    }
+}
+
+impl CodeGenerate for Not {
+    fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        self.expr.deref().code_generate(code_generator);
+        code_generator.write(format!("movq 16(%rax), %rdi"), true);
+        code_generator.write(format!("xor $1, %rdi"), true);
+        code_generator.write(format!("movq %rdi, 16(%rax)"), true);
     }
 }

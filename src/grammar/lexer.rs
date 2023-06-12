@@ -21,7 +21,7 @@ lexer! {
     "while" => Token::While(EMPTY),
     "new"=>Token::New(EMPTY),
     "isvoid" => Token::Isvoid,
-    "!" => Token::Not,
+    "!" => Token::Not(EMPTY),
     "true"=>Token::BoolConst(true),
     "false" => Token::BoolConst(false),
 
@@ -227,6 +227,14 @@ impl<'a> Iterator for Lexer<'a> {
                     return Some(Ok((
                         self.current_line,
                         Token::Assign((self.current_line, self.offset)),
+                        self.offset,
+                    )))
+                }
+
+                Token::Not(_) => {
+                    return Some(Ok((
+                        self.current_line,
+                        Token::Not((self.current_line, self.offset)),
                         self.offset,
                     )))
                 }

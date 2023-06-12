@@ -136,26 +136,26 @@ expr: Expr = {
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
-        postion: pos,
+        position: pos,
     }),
 
     <pos: "IF"> <test_:cond_expr>  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
-        postion: pos,
+        position: pos,
     }),
 
     <pos:"WHILE">  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
-        postion: pos,
+        position: pos,
     }),
 
     <pos: "WHILE"> <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
-        postion: pos,
+        position: pos,
     }),
     <pos: "RETURN">  <val:math_expr> ";"=> Expr::Return(Return{
         val: Box::new(val),
@@ -253,6 +253,10 @@ cond_expr: Expr = {
         op: Box::new(op),
         right: Box::new(r),
     }),
+    <pos:"!"> <e:single_expr> => Expr::Not(Not{
+        expr:Box::new(e),
+        position: pos,
+    }),
     math_expr,
 }
 
@@ -297,7 +301,7 @@ extern {
         "NEW" => Token::New(<(usize,usize)>),
         "ISVOID" => Token::Isvoid,
         // "SELF" => Token::Self_(<String>),
-        "!" => Token::Not,
+        "!" => Token::Not(<(usize,usize)>),
         "->" => Token::Arrow,
 
         "STR" => Token::StringConst(<String>),

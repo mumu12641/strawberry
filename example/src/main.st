@@ -1,15 +1,16 @@
 class Main { 
 	a:Int = 0;
 	fun main() -> Int { 
-		let a = new A;
-		a.print("Hello world!!!! \\n"); 
-		// a.print(a.geta());
-		a_funtion();
+		let a = false;
+        if(!a) then {
+            print("a = false \\n");
+        }else{
+            print("a = true \\n");
+        }
 		return fib(10);
 	};
 
 	fun a_funtion() -> Int {
-	 // a.print(a.geta());
 		return 0;
 	};
 

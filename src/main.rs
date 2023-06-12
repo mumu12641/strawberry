@@ -4,15 +4,15 @@ extern crate lalrpop_util;
 extern crate clap;
 
 lalrpop_mod!(pub strawberry);
-use clap::{arg, Arg, ColorChoice};
+use clap::{Arg, ColorChoice};
 use grammar::lexer::Lexer;
-use owo_colors::{DynColors, OwoColorize};
+use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
+use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
-use std::{env, fs};
 use utils::table::{self, ClassTable, Tables};
 
 use crate::cgen::cgen::CodeGenerator;
@@ -96,6 +96,7 @@ fn compile(files: Vec<String>) {
     let mut table = table::Tables::new();
     table.string_table.insert("".to_string());
     table.string_table.insert("Object".to_string());
+    table.string_table.insert("%s".to_string());
     table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 
@@ -107,8 +108,7 @@ fn compile(files: Vec<String>) {
         let mut content = String::new();
         // file.read_to_string(&mut content).expect("error");
         if let Ok(_) = file.read_to_string(&mut content) {
-            
-        }else{
+        } else {
             println!("{}", "❌ Some unexpected errors occurred, maybe you can solve it by recreating the project".red());
             return;
         }
@@ -214,6 +214,7 @@ fn test() {
     let mut table = table::Tables::new();
     table.string_table.insert("".to_string());
     table.string_table.insert("Object".to_string());
+    table.string_table.insert("%s".to_string());
     table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 

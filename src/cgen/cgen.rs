@@ -19,7 +19,7 @@ pub struct Location {
 }
 
 impl Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!()
     }
 }
@@ -421,29 +421,39 @@ main:
     fn code_print(&mut self) {
         self.write(format!("Object.print:"), false);
         self.method_start();
-        // attr is str_ascii
+
+        // attr is str_const
         self.write(format!("movq 24(%rbp), %rax"), true);
+
         // %rax is str_const
 
-        self.write(format!("pushq 24(%rax)"), true);
-
         self.write(format!("movq 16(%rax), %rax"), true);
-
         self.write(format!("pushq %rax"), true);
+        self.write(
+            format!(
+                "movq $str_const_ascii_{}, %rdi",
+                self.str_const_table.get(&"%s".to_string()).unwrap()
+            ),
+            true,
+        );
+        self.write(format!("movq %rax, %rsi"), true);
+        self.write(format!("call printf"), true);
 
-        self.write(format!("movq $1, %rax"), true);
-        self.write(format!("movq $1, %rdi"), true);
-        self.write(format!("movq (%rsp), %rsi"), true);
-        self.write(format!("movq 8(%rsp), %rdx"), true);
-        self.write(format!("syscall"), true);
-
+        // self.write(format!("movq $0, %rax"), true);
+        // self.write(format!("movq $1, %rdi"), true);
+        // self.write(format!("movq (%rsp), %rsi"), true);
+        // self.write(format!("movq 8(%rsp), %rdx"), true);
+        // self.write(format!("syscall"), true);
         // movq $1, %rdi
         // movq $string, %rsi
         // movq $len, %rdx
         // syscall
         self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("addq $8, %rsp"), true);
         self.write(format!("movq %rbx, %rax"), true);
         self.method_end();
     }
+
+    fn code_abort(&mut self) {}
+
+    fn code_int_to_String(&mut self) {}
 }

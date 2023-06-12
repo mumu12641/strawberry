@@ -49,13 +49,13 @@ pub struct Cond {
     pub test: Box<Expr>,
     pub then_body: Box<Vec<Expr>>,
     pub else_body: Box<Vec<Expr>>,
-    pub postion: Position,
+    pub position: Position,
 }
 #[derive(Debug, Clone)]
 pub struct While {
     pub test: Box<Expr>,
     pub body: Box<Vec<Expr>>,
-    pub postion: Position,
+    pub position: Position,
 }
 #[derive(Debug, Clone)]
 pub struct Math {
@@ -89,6 +89,12 @@ pub struct IdentifierSrtuct {
 }
 
 #[derive(Debug, Clone)]
+pub struct Not {
+    pub expr: Box<Expr>,
+    pub position: Position,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(IdentifierSrtuct),
     Bool(Boolean),
@@ -106,6 +112,7 @@ pub enum Expr {
     Isvoid(Box<Expr>),
 
     Math(Math),
+    Not(Not),
 
     Return(Return),
 }
@@ -151,6 +158,8 @@ impl TypeChecker for Expr {
             Expr::While(e) => return e.check_type(symbol_table, class_table),
 
             Expr::Return(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::Not(e) => return e.check_type(symbol_table, class_table),
 
             _ => {}
         }
@@ -329,7 +338,7 @@ impl TypeChecker for Cond {
                     return Err(SemanticError {
                         err_msg: format!(
                             "{}:{} ---> The type in your If condition is not BOOL",
-                            self.postion.0, self.postion.1
+                            self.position.0, self.position.1
                         ),
                     });
                 }
@@ -372,7 +381,7 @@ impl TypeChecker for While {
                     return Err(SemanticError {
                         err_msg: format!(
                             "{}:{} ---> The type in your Loop condition is not BOOL",
-                            self.postion.0, self.postion.1
+                            self.position.0, self.position.1
                         ),
                     });
                 }
@@ -402,6 +411,33 @@ impl TypeChecker for Return {
                 return Ok(e);
             }
             Err(e) => return Err(e),
+        }
+    }
+}
+
+impl TypeChecker for Not {
+    fn check_type(
+        &mut self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        let e = self.expr.deref_mut();
+        let expr_type = e.check_type(symbol_table, class_table);
+        match expr_type {
+            Ok(type_) => {
+                if type_ != BOOL.to_string() {
+                    return Err(SemanticError {
+                        err_msg: format!(
+                            "{}:{} ---> The type in your Not expression is not BOOL",
+                            self.position.0, self.position.1,
+                        ),
+                    });
+                }
+                return Ok(type_);
+            }
+            Err(e) => {
+                return Err(e);
+            }
         }
     }
 }
