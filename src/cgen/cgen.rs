@@ -102,8 +102,6 @@ impl<'a> CodeGenerator<'a> {
 
         // code for main
         self.code_main();
-
-        
     }
 
     pub fn write(&mut self, s: String, tab: bool) {
@@ -197,7 +195,7 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
-            self.write(format!(".quad {}", (attr_len + 2) * 8), true);
+            self.write(format!(".quad {}", (attr_len + 3) * 8), true);
             self.write(format!(".quad {}_dispatch_table", class_.0), true);
             for curr_class in inheritance.get(class_.0).unwrap() {
                 for attr_ in &curr_class.features {
@@ -226,7 +224,6 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
-
             self.write(format!(""), true);
         }
     }
@@ -457,6 +454,5 @@ main:
 
     fn code_int_to_String(&mut self) {
         self.write(format!("Int.to_string:"), false);
-        
     }
 }
