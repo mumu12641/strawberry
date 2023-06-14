@@ -97,6 +97,7 @@ fn compile(files: Vec<String>) {
     table.string_table.insert("".to_string());
     table.string_table.insert("Object".to_string());
     table.string_table.insert("%s".to_string());
+    table.string_table.insert("%d".to_string());
     table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 

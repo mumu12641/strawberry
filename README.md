@@ -36,7 +36,7 @@ This is a toy object-oriented language, a practice project after I finished lear
 
 ### ❗️ Prerequisites
 
-This project requires that your PC be installed with gcc and cargo.Use following commands to check it!
+Your computer should be a linux system, forgive me for not being able to support windows. This project requires that your PC be installed with gcc and cargo.Use following commands to check it!
 
 ```
 gcc -version

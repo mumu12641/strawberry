@@ -313,6 +313,7 @@ impl CodeGenerate for Cond {
         self.test.code_generate(code_generator);
         match self.test.deref() {
             Expr::Math(_) => {}
+            Expr::Not(_) => {}
             _ => {
                 // else is bool type
                 code_generator.write(format!("movq 16(%rax), %rax"), true);
@@ -362,6 +363,7 @@ impl CodeGenerate for While {
         self.test.code_generate(code_generator);
         match self.test.deref() {
             Expr::Math(_) => {}
+            Expr::Not(_) => {}
             _ => {
                 // else is bool type
                 code_generator.write(format!("movq 16(%rax), %rax"), true);
@@ -379,6 +381,7 @@ impl CodeGenerate for Not {
         self.expr.deref().code_generate(code_generator);
         code_generator.write(format!("movq 16(%rax), %rdi"), true);
         code_generator.write(format!("xor $1, %rdi"), true);
-        code_generator.write(format!("movq %rdi, 16(%rax)"), true);
+        // code_generator.write(format!("movq %r11, 16(%rax)"), true);
+        code_generator.write(format!("movq %rdi, %rax"), true);
     }
 }

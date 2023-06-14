@@ -1,12 +1,14 @@
 class A{
-
     fun test() -> String {
-        let a = false;
-        if(!a) then {
-            print("a = false \\n ");
-        }else{
-            print("a = true \\n");
-        }
         return "this is A\\n";
     };
 };
+/*
+class B inherits A{
+    b:Int = 2;
+    fun a() -> Int{
+        let c = new B;
+        return 0;
+    };
+};
+*/
