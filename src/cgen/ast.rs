@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use crate::{
     grammar::ast::{
@@ -26,21 +26,18 @@ impl Expr {
                 return vec.clone();
             }
             Expr::Cond(e) => {
-                // let mut num = 0;
                 for then_ in e.then_body.deref() {
                     vec.append(&mut then_.get_var_num());
                 }
                 for else_ in e.else_body.deref() {
                     vec.append(&mut else_.get_var_num());
                 }
-                // return num;
                 return vec.clone();
             }
             Expr::While(e) => {
                 for expr_ in e.body.deref() {
                     vec.append(&mut expr_.get_var_num());
                 }
-                // return num;
                 return vec.clone();
             }
             _ => {
@@ -165,6 +162,10 @@ impl CodeGenerate for Dispatch {
                 Expr::New(e) => code_generator.environment.curr_class = e.clone(),
                 _ => {}
             }
+            code_generator.write(format!("cmpq $0, %rax"), true);
+            code_generator.write(format!("je abort"), true);
+            code_generator.write(format!("cmpq $0, (%rax)"), true);
+            code_generator.write(format!("je abort"), true);
             code_generator.write(format!("movq 8(%rax), %rdi"), true);
 
             // TODO: the class might be NULL
@@ -194,20 +195,23 @@ impl CodeGenerate for Let {
         for decl_ in self.var_decls.deref() {
             // expr_.init.
             // for expr_ in decl_.init
-
+            let location = code_generator
+                .environment
+                .env
+                .get_mut(&code_generator.environment.curr_class)
+                .unwrap()
+                .find(&decl_.name)
+                .unwrap()
+                .clone();
             if let Some(expr_) = decl_.init.deref() {
                 expr_.code_generate(code_generator);
-                // decl_.name
-                let location = code_generator
-                    .environment
-                    .env
-                    .get_mut(&code_generator.environment.curr_class)
-                    .unwrap()
-                    .find(&decl_.name)
-                    .unwrap()
-                    .clone();
                 code_generator.write(
                     format!("movq %rax, {}({})", location.offset, location.reg),
+                    true,
+                );
+            } else {
+                code_generator.write(
+                    format!("movq $0, {}({})", location.offset, location.reg),
                     true,
                 );
             }
@@ -381,7 +385,6 @@ impl CodeGenerate for Not {
         self.expr.deref().code_generate(code_generator);
         code_generator.write(format!("movq 16(%rax), %rdi"), true);
         code_generator.write(format!("xor $1, %rdi"), true);
-        // code_generator.write(format!("movq %r11, 16(%rax)"), true);
         code_generator.write(format!("movq %rdi, %rax"), true);
     }
 }

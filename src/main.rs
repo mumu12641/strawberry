@@ -28,6 +28,7 @@ const OBJECT: &str = "Object";
 const INT: &str = "Int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
+const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 
 const DEBUG: bool = false;
@@ -70,7 +71,8 @@ fn handle_args() {
     let matches = cmd.clone().get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
-        println!("{}", matches.get_one::<String>("name").unwrap());
+        let msg = format!   ("🎉 Congratulations, you successfully created the project, please use cd ./{}, and then use strawberry build to build the project!", matches.get_one::<String>("name").unwrap());
+        println!("{}", msg.green());
         create_project_folder(matches.get_one::<String>("name").unwrap());
     } else if let Some(_) = matches.subcommand_matches("build") {
         if let Ok(paths) = fs::read_dir("./src") {
@@ -98,6 +100,7 @@ fn compile(files: Vec<String>) {
     table.string_table.insert("Object".to_string());
     table.string_table.insert("%s".to_string());
     table.string_table.insert("%d".to_string());
+    table.string_table.insert(RUNTIME_ERR.to_string());
     table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 
@@ -151,6 +154,7 @@ fn compile(files: Vec<String>) {
             Command::new("gcc")
                 .arg("-no-pie")
                 .arg("-static")
+                .arg("-m64")
                 .arg("./build/a.s")
                 .arg("-o")
                 .arg("./build/a.out")

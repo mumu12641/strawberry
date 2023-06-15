@@ -161,13 +161,15 @@ impl ClassTable {
     }
 
     pub fn get_attr_num_recursive(&mut self, child: &Type) -> usize {
-        if child.clone() == OBJECT {
-            return 0;
+        let mut attr_num = 0;
+        for curr_class in self.inheritance.get(child).unwrap() {
+            for attr_ in &curr_class.features {
+                if let Feature::Attribute(_) = attr_ {
+                    attr_num += 1;
+                }
+            }
         }
-        let parent = self.get_parent(child);
-        let attr_nums = self.get_classes().get(child).unwrap().features.len();
-        let nums = self.get_attr_num_recursive(&parent) + attr_nums;
-        return nums;
+        return attr_num;
     }
 }
 

@@ -1,16 +1,21 @@
-class Main inherits A{
-	a:Int = 12;
-	b:Int = 12;
+class Main {
+	c:A;
 	fun main() -> Int { 
-		let a = new A;
+		let a:A = new A;
 		print(a.test());
-		return b; 
+		return 3 * 3; 
 	};
 
 };
 
 
 /*
+let a = false;
+        if(!a) then {
+            print("a = false\\n");
+        }else{
+            print("a = true");
+        }
 		let a = false;
         if(!a) then {
             print("a = false\\n");

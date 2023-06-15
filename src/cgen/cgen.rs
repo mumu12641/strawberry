@@ -6,7 +6,7 @@ use crate::{
         Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
-    BOOL, INT, OBJECT, STRING,
+    BOOL, INT, OBJECT, RUNTIME_ERR, STRING,
 };
 
 use super::ast::CodeGenerate;
@@ -98,7 +98,7 @@ impl<'a> CodeGenerator<'a> {
 
         self.code_abort();
 
-        self.code_int_to_String();
+        self.code_int_to_string();
 
         // code for main
         self.code_main();
@@ -141,7 +141,7 @@ impl<'a> CodeGenerator<'a> {
 
             self.write(".align 8".to_string(), true);
             self.write(format!("str_const_{}:", index), false);
-            self.write(format!(".quad {}", 5 * 8), true);
+            self.write(format!(".quad {}", 4 * 8), true);
             self.write(format!(".quad String_dispatch_table"), true);
             self.write(format!(".quad str_const_ascii_{}", index), true);
 
@@ -184,18 +184,13 @@ impl<'a> CodeGenerator<'a> {
         self.write("#   class prototype".to_string(), true);
 
         for class_ in &self.class_table.classes.clone() {
-            let mut attr_len = 0;
+            let attr_len = self.class_table.get_attr_num_recursive(class_.0);
             self.write(".align 8".to_string(), true);
             self.write(format!("{}_prototype:", class_.0), false);
+
             let inheritance = self.class_table.get_inheritance();
-            for curr_class in inheritance.get(class_.0).unwrap() {
-                for attr_ in &curr_class.features {
-                    if let Feature::Attribute(_) = attr_ {
-                        attr_len += 1;
-                    }
-                }
-            }
-            self.write(format!(".quad {}", (attr_len + 3) * 8), true);
+    
+            self.write(format!(".quad {}", (attr_len + 2) * 8), true);
             self.write(format!(".quad {}_dispatch_table", class_.0), true);
             for curr_class in inheritance.get(class_.0).unwrap() {
                 for attr_ in &curr_class.features {
@@ -253,6 +248,7 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn code_method(&mut self) {
+        let inheritance = self.class_table.get_inheritance();
         self.write("#   init method".to_string(), true);
         self.write(".text".to_string(), true);
 
@@ -277,27 +273,31 @@ impl<'a> CodeGenerator<'a> {
                 .unwrap()
                 .enter_scope();
 
-            let attr_num = self.class_table.get_attr_num_recursive(class_.0);
             let mut index = 0;
-            for feature in &class_.1.features {
-                if let Feature::Attribute(attr) = feature {
-                    let offset_ = (attr_num - class_.1.features.len() + 2 + index) * 8;
-                    self.environment.env.get_mut(class_.0).unwrap().add(
-                        &attr.name,
-                        &Location {
-                            reg: "%rbx".to_string(),
-                            offset: offset_ as i32,
-                            type_: attr.type_.clone().unwrap(),
-                        },
-                    );
-                    if let Some(expr_) = attr.init.deref() {
-                        expr_.code_generate(self);
+            let parents = inheritance.get(class_.0).unwrap();
+
+            for curr_class in parents {
+                for feature in &curr_class.features {
+                    if let Feature::Attribute(attr) = feature {
+                        let offset_ = (index + 2) * 8;
+                        self.environment.env.get_mut(class_.0).unwrap().add(
+                            &attr.name,
+                            &Location {
+                                reg: "%rbx".to_string(),
+                                offset: offset_ as i32,
+                                type_: attr.type_.clone().unwrap(),
+                            },
+                        );
+                        if let Some(expr_) = attr.init.deref() {
+                            expr_.code_generate(self);
+                            self.write(format!("movq %rax, {}(%rbx)", offset_), true);
+                        }
+                        index += 1;
                     }
-                    self.write(format!("movq %rax, {}(%rbx)", offset_), true);
-                    index += 1;
                 }
             }
             self.write(format!("movq ${}_dispatch_table, 8(%rbx)", class_.0), true);
+            self.write(format!("movq $1, (%rbx)"), true);
             self.write(format!("movq %rbx, %rax"), true);
             self.method_end();
         }
@@ -352,6 +352,7 @@ impl<'a> CodeGenerator<'a> {
                             var_vec.append(&mut expr.get_var_num());
                         }
                         self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
+
                         let mut var_index = 1;
                         for var in &var_vec {
                             self.environment.env.get_mut(&class_.name).unwrap().add(
@@ -408,7 +409,8 @@ main:
     }
 
     fn code_malloc(&mut self) {
-        self.write(format!("Object.malloc:"), false);
+
+    self.write(format!("Object.malloc:"), false);
         self.method_start();
         self.write(
             format!(
@@ -420,6 +422,8 @@ main:
         );
 
         self.method_end();
+
+        // self.method_end();
     }
     fn code_print(&mut self) {
         self.write(format!("Object.print:"), false);
@@ -450,9 +454,24 @@ main:
         self.method_end();
     }
 
-    fn code_abort(&mut self) {}
+    fn code_abort(&mut self) {
+        self.write(format!("abort:"), false);
+        self.write(format!("movq $1, %rax"), true);
+        self.write(format!("movq $2, %rdi"), true);
+        self.write(
+            format!(
+                "movq $str_const_ascii_{}, %rsi",
+                self.str_const_table.get(RUNTIME_ERR).unwrap()
+            ),
+            true,
+        );
+        self.write(format!("movq ${}, %rdx", RUNTIME_ERR.len()), true);
+        self.write(format!("syscall"), true);
 
-    fn code_int_to_String(&mut self) {
+        self.write(format!("call exit"), true);
+    }
+
+    fn code_int_to_string(&mut self) {
         self.write(format!("Int.to_string:"), false);
     }
 }

@@ -259,7 +259,11 @@ impl TypeChecker for Let {
                         return Err(e);
                     }
                 },
-                None => todo!(),
+                None => {
+                    if let Some(decl_type) = &i.type_ {
+                        symbol_table.add(&i.name, decl_type);
+                    }
+                }
             }
         }
         return Ok(OBJECT.to_string());

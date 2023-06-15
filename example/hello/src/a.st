@@ -1,7 +1,6 @@
 class A{
-    c:Int = 13;
     fun test() -> String {
-        return "this is A\\n";
+        return "this is A!! \\n";
     };
 };
 /*
