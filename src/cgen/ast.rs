@@ -3,8 +3,8 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Let, Math, MathOp, Not, Return,
-            While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Isnull, Let, Math, MathOp, Not,
+            Return, While,
         },
         Identifier, Type,
     },
@@ -123,6 +123,8 @@ impl CodeGenerate for Expr {
 
             Expr::Not(e) => e.code_generate(code_generator),
 
+            Expr::Isnull(e) => e.code_generate(code_generator),
+
             _ => {}
         }
     }
@@ -164,9 +166,9 @@ impl CodeGenerate for Dispatch {
             }
             code_generator.write(format!("cmpq $0, %rax"), true);
             code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("cmpq $0, (%rax)"), true);
+            code_generator.write(format!("cmpq $0, 8(%rax)"), true);
             code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("movq 8(%rax), %rdi"), true);
+            code_generator.write(format!("movq 16(%rax), %rdi"), true);
 
             // TODO: the class might be NULL
             code_generator.write(
@@ -211,7 +213,12 @@ impl CodeGenerate for Let {
                 );
             } else {
                 code_generator.write(
-                    format!("movq $0, {}({})", location.offset, location.reg),
+                    format!(
+                        "movq ${}_prototype, {}({})",
+                        decl_.type_.clone().unwrap(),
+                        location.offset,
+                        location.reg
+                    ),
                     true,
                 );
             }
@@ -318,13 +325,14 @@ impl CodeGenerate for Cond {
         match self.test.deref() {
             Expr::Math(_) => {}
             Expr::Not(_) => {}
+            Expr::Isnull(_) => {}
             _ => {
                 // else is bool type
                 code_generator.write(format!("movq 16(%rax), %rax"), true);
             }
         }
-        code_generator.write(format!("subq $1, %rax"), true);
-        code_generator.write(format!("jz label_{}", label_then), true);
+        code_generator.write(format!("cmpq $1, %rax"), true);
+        code_generator.write(format!("je label_{}", label_then), true);
         // else body
         for else_ in self.else_body.deref() {
             else_.code_generate(code_generator);
@@ -368,13 +376,14 @@ impl CodeGenerate for While {
         match self.test.deref() {
             Expr::Math(_) => {}
             Expr::Not(_) => {}
+            Expr::Isnull(_) => {}
             _ => {
                 // else is bool type
                 code_generator.write(format!("movq 16(%rax), %rax"), true);
             }
         }
-        code_generator.write(format!("subq $1, %rax"), true);
-        code_generator.write(format!("jz label_{}", label_loop), true);
+        code_generator.write(format!("cmpq $1, %rax"), true);
+        code_generator.write(format!("je label_{}", label_loop), true);
 
         code_generator.environment.label += 2;
     }
@@ -386,5 +395,15 @@ impl CodeGenerate for Not {
         code_generator.write(format!("movq 16(%rax), %rdi"), true);
         code_generator.write(format!("xor $1, %rdi"), true);
         code_generator.write(format!("movq %rdi, %rax"), true);
+    }
+}
+
+impl CodeGenerate for Isnull {
+    fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        self.expr.deref().code_generate(code_generator);
+        code_generator.write(format!("movq 8(%rax), %rax"), true);
+        
+        code_generator.write(format!("xor $1, %rax"), true);
+        // code_generator.write(format!("movq %rdi, %rax"), true);
     }
 }

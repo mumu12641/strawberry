@@ -257,6 +257,9 @@ cond_expr: Expr = {
         expr:Box::new(e),
         position: pos,
     }),
+    "ISNULL" "(" <e:single_expr> ")" => Expr::Isnull(Isnull{
+        expr:Box::new(e),
+    }),
     math_expr,
 }
 
@@ -299,7 +302,7 @@ extern {
         "LET" => Token::Let(<(usize,usize)>),
         "WHILE" => Token::While(<(usize,usize)>),
         "NEW" => Token::New(<(usize,usize)>),
-        "ISVOID" => Token::Isvoid,
+        "ISNULL" => Token::Isnull,
         // "SELF" => Token::Self_(<String>),
         "!" => Token::Not(<(usize,usize)>),
         "->" => Token::Arrow,

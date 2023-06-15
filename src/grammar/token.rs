@@ -14,7 +14,7 @@ pub enum Token {
     Let(Position),
     While(Position),
     New(Position),
-    Isvoid,
+    Isnull,
     Not(Position),
 
     StringConst(String),

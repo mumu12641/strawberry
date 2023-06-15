@@ -20,7 +20,7 @@ lexer! {
     "let" => Token::Let(EMPTY),
     "while" => Token::While(EMPTY),
     "new"=>Token::New(EMPTY),
-    "isvoid" => Token::Isvoid,
+    "null" => Token::Isnull,
     "!" => Token::Not(EMPTY),
     "true"=>Token::BoolConst(true),
     "false" => Token::BoolConst(false),

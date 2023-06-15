@@ -189,8 +189,11 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!("{}_prototype:", class_.0), false);
 
             let inheritance = self.class_table.get_inheritance();
-    
-            self.write(format!(".quad {}", (attr_len + 2) * 8), true);
+
+            self.write(format!(".quad {}", (attr_len + 3) * 8), true);
+            // for null
+            // modify dispatch table, all attr location, init
+            self.write(format!(".quad {}", 0), true);
             self.write(format!(".quad {}_dispatch_table", class_.0), true);
             for curr_class in inheritance.get(class_.0).unwrap() {
                 for attr_ in &curr_class.features {
@@ -279,7 +282,7 @@ impl<'a> CodeGenerator<'a> {
             for curr_class in parents {
                 for feature in &curr_class.features {
                     if let Feature::Attribute(attr) = feature {
-                        let offset_ = (index + 2) * 8;
+                        let offset_ = (index + 3) * 8;
                         self.environment.env.get_mut(class_.0).unwrap().add(
                             &attr.name,
                             &Location {
@@ -296,8 +299,8 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
-            self.write(format!("movq ${}_dispatch_table, 8(%rbx)", class_.0), true);
-            self.write(format!("movq $1, (%rbx)"), true);
+            self.write(format!("movq ${}_dispatch_table, 16(%rbx)", class_.0), true);
+            self.write(format!("movq $1, 8(%rbx)"), true);
             self.write(format!("movq %rbx, %rax"), true);
             self.method_end();
         }
@@ -409,8 +412,7 @@ main:
     }
 
     fn code_malloc(&mut self) {
-
-    self.write(format!("Object.malloc:"), false);
+        self.write(format!("Object.malloc:"), false);
         self.method_start();
         self.write(
             format!(

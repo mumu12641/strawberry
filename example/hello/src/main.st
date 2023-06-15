@@ -1,11 +1,26 @@
 class Main {
 	c:A;
 	fun main() -> Int { 
-		let a:A = new A;
-		print(a.test());
+		let a:A;
+		if(null(a)) then {
+			print("a is null");
+		}else{
+			print("a is not null \\t");
+			print(a.test());
+		}
+
+		let b = false;
+        if(null(test())) then {
+            print("b = false\\n");
+        }else{
+            print("b = true");
+        }
+
 		return 3 * 3; 
 	};
-
+	fun test() -> Bool {
+		return false;
+	};
 };
 
 

@@ -95,6 +95,12 @@ pub struct Not {
 }
 
 #[derive(Debug, Clone)]
+pub struct Isnull {
+    pub expr: Box<Expr>,
+    // pub position: Position,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(IdentifierSrtuct),
     Bool(Boolean),
@@ -113,6 +119,7 @@ pub enum Expr {
 
     Math(Math),
     Not(Not),
+    Isnull(Isnull),
 
     Return(Return),
 }
@@ -160,6 +167,8 @@ impl TypeChecker for Expr {
             Expr::Return(e) => return e.check_type(symbol_table, class_table),
 
             Expr::Not(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::Isnull(e) => return e.check_type(symbol_table, class_table),
 
             _ => {}
         }
@@ -438,6 +447,33 @@ impl TypeChecker for Not {
                     });
                 }
                 return Ok(type_);
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+}
+
+impl TypeChecker for Isnull {
+    fn check_type(
+        &mut self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        let e = self.expr.deref_mut();
+        let expr_type = e.check_type(symbol_table, class_table);
+        match expr_type {
+            Ok(_) => {
+                // if type_ != BOOL.to_string() {
+                //     return Err(SemanticError {
+                //         err_msg: format!(
+                //             "{}:{} ---> The type in your Not expression is not BOOL",
+                //             self.position.0, self.position.1,
+                //         ),
+                //     });
+                // }
+                return Ok(BOOL.to_string());
             }
             Err(e) => {
                 return Err(e);
