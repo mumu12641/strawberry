@@ -19,7 +19,6 @@ class Square inherits Shape{
 
 
     fun get_area() -> Int{
-        print("get_area");
         return a*a;
     };
 

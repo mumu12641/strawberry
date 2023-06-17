@@ -24,7 +24,6 @@ class Rectangle inherits Shape{
     };
 
     fun get_area() -> Int{
-        print("get_area");
         return a*b;
     };
 

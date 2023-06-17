@@ -12,3 +12,11 @@ class B inherits A{
     };
 };
 */
+
+
+class Main {
+    fun main() -> Int {
+        print("hello world!");
+        return 0;
+    };
+};
