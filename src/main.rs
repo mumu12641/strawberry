@@ -28,6 +28,7 @@ const OBJECT: &str = "Object";
 const INT: &str = "Int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
+const NONE:&str = "none";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 
@@ -213,7 +214,7 @@ fn test() {
     let mut file = File::open("src/helloworld.st").unwrap();
     let mut content = String::new();
     file.read_to_string(&mut content).expect("error");
-    // println!("{content}");
+    println!("{content}");
 
     // init
     let mut table = table::Tables::new();

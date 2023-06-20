@@ -145,7 +145,7 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!(".quad String_dispatch_table"), true);
             self.write(format!(".quad str_const_ascii_{}", index), true);
 
-            self.write(format!(".quad {}", str_.len() + 1), true);
+            self.write(format!(".quad {}", str_.len() ), true);
 
             self.write("".to_string(), false);
 

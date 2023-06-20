@@ -100,10 +100,18 @@ var: VarDecl = {
     },
 };
 
+let_expr:Expr = {
+    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
+};
+
+assign_expr:Expr = {
+    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(Assignment{id:id.0, compute:Box::new(expr),position:id.1}),
+};
+
 // let assign if while 
 expr: Expr = {
-    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
-    <id:"ID"> "=" <expr :math_expr>";" => Expr::Assignment(Assignment{id:id.0, compute:Box::new(expr),position:id.1}),
+    
+    
 
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch (Dispatch{
@@ -157,12 +165,24 @@ expr: Expr = {
         body: Box::new(body_),
         position: pos,
     }),
+
+    <pos: "FOR"> "(" <init_:let_expr*>  <test_:cond_expr*> ";" <iter_:comma_list<expr>> ")" "{" <body_:expr*> "}" => Expr::For(For{
+        init: Box::new(init_),
+        test: Box::new(test_),
+        iter: Box::new(iter_),
+        body: Box::new(body_),
+        position: pos,
+    }),
+
     <pos: "RETURN">  <val:math_expr> ";"=> Expr::Return(Return{
         val: Box::new(val),
         position: pos,
     }),
-    math_expr,
 
+
+    math_expr,
+    let_expr,
+    assign_expr,
 };
 
 single_expr:Expr = {
@@ -301,6 +321,7 @@ extern {
         "INHERITS" => Token::Inherits,
         "LET" => Token::Let(<(usize,usize)>),
         "WHILE" => Token::While(<(usize,usize)>),
+        "FOR" => Token::For(<(usize, usize)>),
         "NEW" => Token::New(<(usize,usize)>),
         "ISNULL" => Token::Isnull,
         // "SELF" => Token::Self_(<String>),

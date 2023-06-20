@@ -7,7 +7,7 @@ use crate::{
     grammar::lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, OBJECT, STRING,
+    BOOL, INT, NONE, OBJECT, STRING,
 };
 
 use super::{
@@ -101,6 +101,15 @@ pub struct Isnull {
 }
 
 #[derive(Debug, Clone)]
+pub struct For {
+    pub init: Box<Vec<Expr>>,
+    pub test: Box<Vec<Expr>>,
+    pub iter: Box<Vec<Expr>>,
+    pub body: Box<Vec<Expr>>,
+    pub position: Position,
+}
+
+#[derive(Debug, Clone)]
 pub enum Expr {
     Identifier(IdentifierSrtuct),
     Bool(Boolean),
@@ -111,6 +120,7 @@ pub enum Expr {
     Dispatch(Dispatch),
     Cond(Cond),
     While(While),
+    For(For),
     Block(Box<Vec<Expr>>),
     Let(Let),
     New(Type),
@@ -169,6 +179,8 @@ impl TypeChecker for Expr {
             Expr::Not(e) => return e.check_type(symbol_table, class_table),
 
             Expr::Isnull(e) => return e.check_type(symbol_table, class_table),
+
+            Expr::For(e) => return e.check_type(symbol_table, class_table),
 
             _ => {}
         }
@@ -295,7 +307,12 @@ impl TypeChecker for Assignment {
                 }
             }
         }
-        return Err(SemanticError { err_msg: format!("{}:{} ---> Some semantic errors occurred in your Assignment! It may be because you have different types on both sides of the equal sign!",self.position.0,self.position.1) });
+        return Err(SemanticError {
+            err_msg: format!(
+                "{}:{} ---> Some semantic errors occurred in your Assignment!",
+                self.position.0, self.position.1
+            ),
+        });
     }
 }
 
@@ -465,19 +482,68 @@ impl TypeChecker for Isnull {
         let expr_type = e.check_type(symbol_table, class_table);
         match expr_type {
             Ok(_) => {
-                // if type_ != BOOL.to_string() {
-                //     return Err(SemanticError {
-                //         err_msg: format!(
-                //             "{}:{} ---> The type in your Not expression is not BOOL",
-                //             self.position.0, self.position.1,
-                //         ),
-                //     });
-                // }
                 return Ok(BOOL.to_string());
             }
             Err(e) => {
                 return Err(e);
             }
         }
+    }
+}
+
+impl TypeChecker for For {
+    fn check_type(
+        &mut self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        symbol_table.enter_scope();
+
+        if self.init.deref().len() > 1 || self.test.deref().len() > 1 {
+            return Err(SemanticError {
+                err_msg: format!(
+                    "{}:{} ---> There can only be one initial expression and one judgment expression in the for loop!",self.position.0,self.position.1
+                ),
+            });
+        }
+        for init_ in self.init.deref_mut() {
+            let init_type = init_.check_type(symbol_table, class_table);
+            match init_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+        for test_ in self.test.deref_mut() {
+            let test_type: Result<String, SemanticError> =
+                test_.check_type(symbol_table, class_table);
+            match test_type {
+                Err(e) => return Err(e),
+                Ok(type_) => {
+                    if type_ != BOOL.to_string() {
+                        return Err(SemanticError {
+                            err_msg: format!(
+                                "{}:{} ---> The type of the conditional expression in the for loop is not BOOL!",self.position.0,self.position.1
+                            ),
+                        });
+                    }
+                }
+            }
+        }
+        for iter_ in self.iter.deref_mut() {
+            let iter_type = iter_.check_type(symbol_table, class_table);
+            match iter_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+        for body_ in self.body.deref_mut() {
+            let body_type = body_.check_type(symbol_table, class_table);
+            match body_type {
+                Err(e) => return Err(e),
+                _ => {}
+            }
+        }
+        symbol_table.exit_scope();
+        Ok(OBJECT.to_string())
     }
 }

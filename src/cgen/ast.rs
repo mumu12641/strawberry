@@ -1,10 +1,10 @@
-use std::ops::Deref;
+use std::ops::{Deref};
 
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, Isnull, Let, Math, MathOp, Not,
-            Return, While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, For, Isnull, Let, Math, MathOp,
+            Not, Return, While,
         },
         Identifier, Type,
     },
@@ -37,6 +37,12 @@ impl Expr {
             Expr::While(e) => {
                 for expr_ in e.body.deref() {
                     vec.append(&mut expr_.get_var_num());
+                }
+                return vec.clone();
+            }
+            Expr::For(e) => {
+                for init_ in e.init.deref() {
+                    vec.append(&mut init_.get_var_num());
                 }
                 return vec.clone();
             }
@@ -124,6 +130,8 @@ impl CodeGenerate for Expr {
             Expr::Not(e) => e.code_generate(code_generator),
 
             Expr::Isnull(e) => e.code_generate(code_generator),
+
+            Expr::For(e) => e.code_generate(code_generator),
 
             _ => {}
         }
@@ -402,8 +410,56 @@ impl CodeGenerate for Isnull {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         self.expr.deref().code_generate(code_generator);
         code_generator.write(format!("movq 8(%rax), %rax"), true);
-        
+
         code_generator.write(format!("xor $1, %rax"), true);
         // code_generator.write(format!("movq %rdi, %rax"), true);
+    }
+}
+
+impl CodeGenerate for For {
+    fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        // todo!()
+
+        // jmp test ->label_loop + 1
+        // loop:    label_loop
+        //      body
+        // test:
+        //      test.code
+        //      goto loop
+        let label_loop = code_generator.environment.label + 1;
+        let lable_done = label_loop + 1;
+
+        for init_ in self.init.deref() {
+            init_.code_generate(code_generator);
+        }
+        
+        code_generator.write(format!("jmp label_{}", lable_done), true);
+
+        code_generator.write(format!("label_{}:", label_loop), false);
+        for body_ in self.body.deref() {
+            body_.code_generate(code_generator);
+        }
+        for iter_ in self.iter.deref() {
+            iter_.code_generate(code_generator);
+        }
+
+        code_generator.write(format!("label_{}:", lable_done), false);
+        for test_ in self.test.deref() {
+            test_.code_generate(code_generator);
+            match test_ {
+                Expr::Math(_) => {}
+                Expr::Not(_) => {}
+                Expr::Isnull(_) => {}
+                _ => {
+                    // else is bool type
+                    code_generator.write(format!("movq 16(%rax), %rax"), true);
+                }
+            }
+        }
+
+        code_generator.write(format!("cmpq $1, %rax"), true);
+        code_generator.write(format!("je label_{}", label_loop), true);
+
+        code_generator.environment.label += 2;
     }
 }

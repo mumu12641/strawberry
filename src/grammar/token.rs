@@ -13,6 +13,7 @@ pub enum Token {
     Inherits,
     Let(Position),
     While(Position),
+    For(Position),
     New(Position),
     Isnull,
     Not(Position),

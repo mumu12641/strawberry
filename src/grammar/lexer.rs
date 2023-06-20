@@ -19,6 +19,7 @@ lexer! {
     "inherits" => Token::Inherits,
     "let" => Token::Let(EMPTY),
     "while" => Token::While(EMPTY),
+    "for" => Token::For(EMPTY),
     "new"=>Token::New(EMPTY),
     "null" => Token::Isnull,
     "!" => Token::Not(EMPTY),
@@ -235,6 +236,14 @@ impl<'a> Iterator for Lexer<'a> {
                     return Some(Ok((
                         self.current_line,
                         Token::Not((self.current_line, self.offset)),
+                        self.offset,
+                    )))
+                }
+
+                Token::For(_) => {
+                    return Some(Ok((
+                        self.current_line,
+                        Token::For((self.current_line, self.offset)),
                         self.offset,
                     )))
                 }
