@@ -15,7 +15,7 @@ use super::ast::CodeGenerate;
 pub struct Location {
     pub reg: String,
     pub offset: i32,
-    pub type_: Type,
+    // pub type_: Type,
 }
 
 impl Display for Location {
@@ -28,6 +28,7 @@ pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
     // pub type_env: SymbolTable<String, Type>,
     pub curr_class: String,
+    pub var_offset: i32,
     pub label: usize,
 }
 
@@ -73,6 +74,7 @@ impl<'a> CodeGenerator<'a> {
                 env: HashMap::new(),
                 // type_env: SymbolTable::new(),
                 curr_class: "none".to_string(),
+                var_offset: 1,
                 label: 0,
             },
         }
@@ -288,7 +290,7 @@ impl<'a> CodeGenerator<'a> {
                             &Location {
                                 reg: "%rbx".to_string(),
                                 offset: offset_ as i32,
-                                type_: attr.type_.clone().unwrap(),
+                                // type_: attr.type_.clone().unwrap(),
                             },
                         );
                         if let Some(expr_) = attr.init.deref() {
@@ -321,7 +323,7 @@ impl<'a> CodeGenerator<'a> {
                         &Location {
                             reg: "%rbp".to_string(),
                             offset: i32::MAX,
-                            type_: class_.name.clone(),
+                            // type_: class_.name.clone(),
                         },
                     );
 
@@ -333,13 +335,14 @@ impl<'a> CodeGenerator<'a> {
                             &Location {
                                 reg: "%rbp".to_string(),
                                 offset: 8 * (3 + len - 1 - offset),
-                                type_: param.1.clone(),
+                                // type_: param.1.clone(),
                             },
                         );
                         offset += 1;
                     }
 
                     if let Some(expr_) = method.body.deref() {
+                        self.environment.var_offset = 1;
                         self.environment
                             .env
                             .get_mut(&class_.name)
@@ -354,21 +357,9 @@ impl<'a> CodeGenerator<'a> {
                         for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
-                        dbg!(var_vec.clone());
+
                         self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
 
-                        let mut var_index = 1;
-                        for var in &var_vec {
-                            self.environment.env.get_mut(&class_.name).unwrap().add(
-                                &var.0,
-                                &Location {
-                                    reg: "%rbp".to_string(),
-                                    offset: -8 * (var_index),
-                                    type_: var.1.clone(),
-                                },
-                            );
-                            var_index += 1;
-                        }
 
                         for expr in expr_ {
                             expr.code_generate(self);

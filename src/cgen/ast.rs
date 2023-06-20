@@ -1,4 +1,4 @@
-use std::ops::{Deref};
+use std::ops::Deref;
 
 use crate::{
     grammar::ast::{
@@ -11,7 +11,7 @@ use crate::{
     BOOL, INT, STRING,
 };
 
-use super::cgen::CodeGenerator;
+use super::cgen::{CodeGenerator, Location};
 
 impl Expr {
     pub fn get_var_num(&self) -> Vec<(Identifier, Type)> {
@@ -83,6 +83,7 @@ impl CodeGenerate for Expr {
                     .env
                     .get(&code_generator.environment.curr_class)
                     .unwrap();
+
                 let location = map.find(&e.name).unwrap();
                 if location.offset == i32::MAX {
                     code_generator.write(format!("movq %rbx, %rax"), true);
@@ -205,18 +206,41 @@ impl CodeGenerate for Let {
         for decl_ in self.var_decls.deref() {
             // expr_.init.
             // for expr_ in decl_.init
-            let location = code_generator
+            // println!(
+            //     "in let {} code_generator.environment.var_offset = {}",
+            //     decl_.name, code_generator.environment.var_offset
+            // );
+            code_generator
                 .environment
                 .env
                 .get_mut(&code_generator.environment.curr_class)
                 .unwrap()
-                .find(&decl_.name)
-                .unwrap()
-                .clone();
+                .add(
+                    &decl_.name,
+                    &Location {
+                        reg: "%rbp".to_string(),
+                        offset: -8 * (code_generator.environment.var_offset),
+                        // type_: decl_.type_.clone(),
+                    },
+                );
+
+            // let location = code_generator
+            //     .environment
+            //     .env
+            //     .get_mut(&code_generator.environment.curr_class)
+            //     .unwrap()
+            //     .find(&decl_.name)
+            //     .unwrap()
+            //     .clone();
+
             if let Some(expr_) = decl_.init.deref() {
                 expr_.code_generate(code_generator);
                 code_generator.write(
-                    format!("movq %rax, {}({})", location.offset, location.reg),
+                    format!(
+                        "movq %rax, {}({})",
+                        -8 * (code_generator.environment.var_offset),
+                        "%rbp".to_string()
+                    ),
                     true,
                 );
             } else {
@@ -224,12 +248,13 @@ impl CodeGenerate for Let {
                     format!(
                         "movq ${}_prototype, {}({})",
                         decl_.type_.clone().unwrap(),
-                        location.offset,
-                        location.reg
+                        -8 * (code_generator.environment.var_offset),
+                        "%rbp".to_string()
                     ),
                     true,
                 );
             }
+            code_generator.environment.var_offset += 1;
         }
     }
 }
@@ -393,8 +418,6 @@ impl CodeGenerate for While {
         }
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_loop), true);
-
-        
     }
 }
 
@@ -427,6 +450,12 @@ impl CodeGenerate for For {
         // test:
         //      test.code
         //      goto loop
+        code_generator
+            .environment
+            .env
+            .get_mut(&code_generator.environment.curr_class)
+            .unwrap()
+            .enter_scope();
 
         let label_loop = code_generator.environment.label + 1;
         let lable_done = label_loop + 1;
@@ -435,7 +464,7 @@ impl CodeGenerate for For {
         for init_ in self.init.deref() {
             init_.code_generate(code_generator);
         }
-        
+
         code_generator.write(format!("jmp label_{}", lable_done), true);
 
         code_generator.write(format!("label_{}:", label_loop), false);
@@ -465,6 +494,11 @@ impl CodeGenerate for For {
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_loop), true);
 
-       
+        code_generator
+            .environment
+            .env
+            .get_mut(&code_generator.environment.curr_class)
+            .unwrap()
+            .exit_scope();
     }
 }
