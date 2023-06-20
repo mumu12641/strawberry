@@ -145,7 +145,7 @@ impl<'a> CodeGenerator<'a> {
             self.write(format!(".quad String_dispatch_table"), true);
             self.write(format!(".quad str_const_ascii_{}", index), true);
 
-            self.write(format!(".quad {}", str_.len() ), true);
+            self.write(format!(".quad {}", str_.len()), true);
 
             self.write("".to_string(), false);
 
@@ -354,6 +354,7 @@ impl<'a> CodeGenerator<'a> {
                         for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
+                        dbg!(var_vec.clone());
                         self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
 
                         let mut var_index = 1;

@@ -370,6 +370,7 @@ impl CodeGenerate for While {
 
         let label_loop = code_generator.environment.label + 1;
         let lable_done = label_loop + 1;
+        code_generator.environment.label += 2;
 
         code_generator.write(format!("jmp label_{}", lable_done), true);
 
@@ -393,7 +394,7 @@ impl CodeGenerate for While {
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_loop), true);
 
-        code_generator.environment.label += 2;
+        
     }
 }
 
@@ -426,8 +427,10 @@ impl CodeGenerate for For {
         // test:
         //      test.code
         //      goto loop
+
         let label_loop = code_generator.environment.label + 1;
         let lable_done = label_loop + 1;
+        code_generator.environment.label += 2;
 
         for init_ in self.init.deref() {
             init_.code_generate(code_generator);
@@ -436,9 +439,11 @@ impl CodeGenerate for For {
         code_generator.write(format!("jmp label_{}", lable_done), true);
 
         code_generator.write(format!("label_{}:", label_loop), false);
+
         for body_ in self.body.deref() {
             body_.code_generate(code_generator);
         }
+
         for iter_ in self.iter.deref() {
             iter_.code_generate(code_generator);
         }
@@ -460,6 +465,6 @@ impl CodeGenerate for For {
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_loop), true);
 
-        code_generator.environment.label += 2;
+       
     }
 }

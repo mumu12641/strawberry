@@ -140,14 +140,14 @@ expr: Expr = {
         })
     },
 
-    <pos: "IF"> "(" <test_:cond_expr> ")"  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "IF"> "(" <test_:cond_expr> ")"   "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
         position: pos,
     }),
 
-    <pos: "IF"> <test_:cond_expr>  "THEN" "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "IF"> <test_:cond_expr>   "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),

@@ -7,7 +7,7 @@ use crate::{
     grammar::lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, NONE, OBJECT, STRING,
+    BOOL, INT, OBJECT, STRING,
 };
 
 use super::{
