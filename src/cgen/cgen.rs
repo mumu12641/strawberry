@@ -362,7 +362,13 @@ impl<'a> CodeGenerator<'a> {
                         for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
-                        let align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
+                        let align_stack;
+                        if len % 2 == 0 {
+                            align_stack =
+                                crate::utils::util::align_to_16_bit(var_vec.len() * 8) ;
+                        } else {
+                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
+                        }
 
                         self.write(format!("subq ${}, %rsp", align_stack), true);
 
@@ -400,8 +406,10 @@ main:
     movq %rax, %rbx
     call Main.init
     movq %rbx, %rax
+    subq $8, %rsp
     call Main.main
     movq 24(%rax), %rax
+    addq $8, %rsp
     ret "
             ),
             true,

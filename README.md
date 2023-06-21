@@ -80,4 +80,107 @@ If you successfully display the version information, then move on.
    ./build/a.out
    ```
 
-   
+
+## :pushpin:Code Examples
+
+The syntax of strawberry is very similar to object-oriented languages such as java, I believe you can master it quickly.
+
+### hello world
+
+```
+class Main { 
+	fun main() -> Int {
+    	print("hello world!");
+    	return 0;
+	};
+};
+```
+
+### Class definitions
+
+```
+// in strawberry, every class must start with a capital letter
+class Main {
+	a:Int = 0;	// variable of the Main class
+	
+	fun main() -> Int {
+		let a:Int = 1;	// variable in main method, this 'a' will cover Main's 'a'
+		let b = 2;		// it is also ok not to declare the type, but it needs to be initialized
+		let c:String = "this is c";		
+		let d:Bool = true;
+    	return 0;
+	};
+};
+```
+
+### Class Inheritance
+
+```
+class Main{
+	fun main() -> Int {
+		let square = new Square;
+		square.set(2);
+		print(squrae.get_area().to_string());		// output:4
+		return 0;
+	};
+};
+
+class Shape {
+    name:String = "shape";
+    
+    fun get_area() -> Int{
+        return 0;
+    };
+};
+
+class Square inherits Shape{
+    a:Int = 0;
+    
+    fun set(x:Int) -> Int{
+        a = x;
+        return 0;
+    };
+    
+    fun get_area() -> Int{
+        return a*a;
+    };
+
+};
+```
+
+### if & while & for
+
+```
+class Main{
+    fun main() -> Int {
+        let a = 5;
+		print(a.to_string() + "\\n");
+		for(let b = 2; b < 5; b = b + 1;){
+			print(b.to_string() + "\\n");
+		}
+		while(a > 0){
+			if(a > 3){
+				print("a > 3\\n");
+			}else{
+				print("a <= 3\\n");
+			}
+			a = a - 1;
+		}
+        return 0;
+    };
+};
+
+/*
+    output:
+    5
+    2
+    3
+    4
+    a > 3
+    a > 3
+    a <= 3
+    a <= 3
+    a <= 3
+*/
+```
+
