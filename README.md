@@ -80,7 +80,6 @@ If you successfully display the version information, then move on.
    ./build/a.out
    ```
 
-
 ## :pushpin:Code Examples
 
 The syntax of strawberry is very similar to object-oriented languages such as java, I believe you can master it quickly.
@@ -90,8 +89,8 @@ The syntax of strawberry is very similar to object-oriented languages such as ja
 ```
 class Main { 
 	fun main() -> Int {
-    	print("hello world!");
-    	return 0;
+	    	print("hello world!");
+	    	return 0;
 	};
 };
 ```
@@ -108,7 +107,7 @@ class Main {
 		let b = 2;		// it is also ok not to declare the type, but it needs to be initialized
 		let c:String = "this is c";		
 		let d:Bool = true;
-    	return 0;
+	    	return 0;
 	};
 };
 ```
@@ -154,18 +153,18 @@ class Square inherits Shape{
 class Main{
     fun main() -> Int {
         let a = 5;
-		print(a.to_string() + "\\n");
-		for(let b = 2; b < 5; b = b + 1;){
-			print(b.to_string() + "\\n");
+	print(a.to_string() + "\\n");
+	for(let b = 2; b < 5; b = b + 1;){
+		print(b.to_string() + "\\n");
+	}
+	while(a > 0){
+		if(a > 3){
+			print("a > 3\\n");
+		}else{
+			print("a <= 3\\n");
 		}
-		while(a > 0){
-			if(a > 3){
-				print("a > 3\\n");
-			}else{
-				print("a <= 3\\n");
-			}
-			a = a - 1;
-		}
+		a = a - 1;
+	}
         return 0;
     };
 };
