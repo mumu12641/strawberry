@@ -63,8 +63,8 @@ impl ClassTable {
                     position: EMPTY,
                 }),
                 // Feature::Method(MethodDecl {
-                //     name: "print_int".to_string(),
-                //     param: Box::new(vec![("val".to_string(), INT.to_string())]),
+                //     name: "to_string".to_string(),
+                //     param: Box::new(vec![]),
                 //     return_type: OBJECT.to_string(),
                 //     body: Box::new(None),
                 //     position: EMPTY,
@@ -83,24 +83,41 @@ impl ClassTable {
         let string_ = Class {
             name: STRING.to_string(),
             parent: Some(OBJECT.to_string()),
-            features: vec![Feature::Attribute(VarDecl {
-                name: "val".to_string(),
-                type_: Some("prim_slot".to_string()),
-                init: Box::new(None),
-                position: EMPTY,
-            })],
+            features: vec![
+                Feature::Attribute(VarDecl {
+                    name: "val".to_string(),
+                    type_: Some("prim_slot".to_string()),
+                    init: Box::new(None),
+                    position: EMPTY,
+                }),
+                Feature::Attribute(VarDecl {
+                    name: "len".to_string(),
+                    type_: Some("prim_slot".to_string()),
+                    init: Box::new(None),
+                    position: EMPTY,
+                }),
+            ],
             position: (0, 0),
             file_name: STRING.to_string(),
         };
         let int_ = Class {
             name: INT.to_string(),
             parent: Some(OBJECT.to_string()),
-            features: vec![Feature::Attribute(VarDecl {
-                name: "val".to_string(),
-                type_: Some("prim_slot".to_string()),
-                init: Box::new(None),
-                position: EMPTY,
-            })],
+            features: vec![
+                Feature::Attribute(VarDecl {
+                    name: "val".to_string(),
+                    type_: Some("prim_slot".to_string()),
+                    init: Box::new(None),
+                    position: EMPTY,
+                }),
+                Feature::Method(MethodDecl {
+                    name: "to_string".to_string(),
+                    param: Box::new(vec![]),
+                    return_type: STRING.to_string(),
+                    body: Box::new(None),
+                    position: EMPTY,
+                }),
+            ],
             position: (0, 0),
             file_name: INT.to_string(),
         };

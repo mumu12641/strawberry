@@ -31,6 +31,12 @@ const SELF: &str = "self";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 
+
+
+const INT_CONST_VAL_OFFSET:usize = 24;
+const BOOL_CONST_VAL_OFFSET:usize = 24;
+const STRING_CONST_VAL_OFFSET:usize = 24;
+
 const DEBUG: bool = false;
 
 const LOGO: &str = r#"

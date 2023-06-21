@@ -8,7 +8,7 @@ use crate::{
         },
         Identifier, Type,
     },
-    BOOL, INT, STRING,
+    BOOL, BOOL_CONST_VAL_OFFSET, INT, INT_CONST_VAL_OFFSET, STRING,
 };
 
 use super::cgen::{CodeGenerator, Location};
@@ -291,9 +291,9 @@ impl CodeGenerate for Math {
         right.code_generate(code_generator);
 
         // %r10 is right, %r11 is left
-        code_generator.write(format!("movq 16(%rax), %r10"), true);
+        code_generator.write(format!("movq {}(%rax), %r10", INT_CONST_VAL_OFFSET), true);
         code_generator.write(format!("movq (%rsp), %r11"), true);
-        code_generator.write(format!("movq 16(%r11), %r11"), true);
+        code_generator.write(format!("movq {}(%r11), %r11", INT_CONST_VAL_OFFSET), true);
         code_generator.write(format!("addq $8, %rsp"), true);
 
         match self.op.deref() {
@@ -322,7 +322,7 @@ impl CodeGenerate for Math {
                 code_generator.write(format!("addq $8, %rsp"), true);
                 code_generator.write(format!("call Int.init"), true);
                 code_generator.write(format!("movq (%rsp), %r11"), true);
-                code_generator.write(format!("movq %r11, 16(%rax)"), true);
+                code_generator.write(format!("movq %r11, {}(%rax)", INT_CONST_VAL_OFFSET), true);
                 code_generator.write(format!("addq $8, %rsp"), true);
             }
             MathOp::CondOp(op_) => {
@@ -361,7 +361,7 @@ impl CodeGenerate for Cond {
             Expr::Isnull(_) => {}
             _ => {
                 // else is bool type
-                code_generator.write(format!("movq 16(%rax), %rax"), true);
+                code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
             }
         }
         code_generator.write(format!("cmpq $1, %rax"), true);
@@ -413,7 +413,7 @@ impl CodeGenerate for While {
             Expr::Isnull(_) => {}
             _ => {
                 // else is bool type
-                code_generator.write(format!("movq 16(%rax), %rax"), true);
+                code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
             }
         }
         code_generator.write(format!("cmpq $1, %rax"), true);
@@ -486,7 +486,8 @@ impl CodeGenerate for For {
                 Expr::Isnull(_) => {}
                 _ => {
                     // else is bool type
-                    code_generator.write(format!("movq 16(%rax), %rax"), true);
+                    code_generator
+                        .write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
                 }
             }
         }

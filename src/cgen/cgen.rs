@@ -1,12 +1,9 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
-    grammar::ast::{
-        class::{Class, Feature},
-        Type,
-    },
+    grammar::ast::class::{Class, Feature},
     utils::table::{ClassTable, SymbolTable, Tables},
-    BOOL, INT, OBJECT, RUNTIME_ERR, STRING,
+    BOOL, INT, INT_CONST_VAL_OFFSET, OBJECT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::ast::CodeGenerate;
@@ -143,7 +140,8 @@ impl<'a> CodeGenerator<'a> {
 
             self.write(".align 8".to_string(), true);
             self.write(format!("str_const_{}:", index), false);
-            self.write(format!(".quad {}", 4 * 8), true);
+            self.write(format!(".quad {}", 5 * 8), true);
+            self.write(format!(".quad {}", 1), true);
             self.write(format!(".quad String_dispatch_table"), true);
             self.write(format!(".quad str_const_ascii_{}", index), true);
 
@@ -159,8 +157,10 @@ impl<'a> CodeGenerator<'a> {
         for int_ in &self.tables.int_table.clone() {
             self.write(".align 8".to_string(), true);
             self.write(format!("int_const_{}:", index), false);
-            self.write(format!(".quad {}", 3 * 8), true);
+            self.write(format!(".quad {}", 4 * 8), true);
+            self.write(format!(".quad 1"), true);
             self.write(format!(".quad Int_dispatch_table"), true);
+
             self.write(format!(".quad {}", int_), true);
 
             self.write("".to_string(), false);
@@ -173,7 +173,8 @@ impl<'a> CodeGenerator<'a> {
         for i in 0..2 {
             self.write(".align 8".to_string(), true);
             self.write(format!("bool_const_{}:", index), false);
-            self.write(format!(".quad {}", 3 * 8), true);
+            self.write(format!(".quad {}", 4 * 8), true);
+            self.write(format!(".quad 1"), true);
             self.write(format!(".quad Bool_dispatch_table"), true);
             self.write(format!(".quad {}", i), true);
 
@@ -224,6 +225,7 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
+
             self.write(format!(""), true);
         }
     }
@@ -360,7 +362,6 @@ impl<'a> CodeGenerator<'a> {
 
                         self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
 
-
                         for expr in expr_ {
                             expr.code_generate(self);
                         }
@@ -396,7 +397,7 @@ main:
     call Main.init
     movq %rbx, %rax
     call Main.main
-    movq 16(%rax), %rax
+    movq 24(%rax), %rax
     ret "
             ),
             true,
@@ -422,14 +423,18 @@ main:
     fn code_print(&mut self) {
         self.write(format!("Object.print:"), false);
         self.method_start();
-        // attr is str_ascii
+        // param is str_type
+        // get param
         self.write(format!("movq 24(%rbp), %rax"), true);
         // %rax is str_const
 
-        self.write(format!("pushq 24(%rax)"), true);
+        // push len
+        self.write(format!("pushq 32(%rax)"), true);
 
-        self.write(format!("movq 16(%rax), %rax"), true);
+        // get ascii
+        self.write(format!("movq 24(%rax), %rax"), true);
 
+        // push ascii
         self.write(format!("pushq %rax"), true);
 
         self.write(format!("movq $1, %rax"), true);
@@ -467,5 +472,46 @@ main:
 
     fn code_int_to_string(&mut self) {
         self.write(format!("Int.to_string:"), false);
+        self.method_start();
+
+        // rbx is self
+
+        self.write(format!("movq $40, %rdi"), true);
+        self.write(format!("call malloc"), true);
+        // push ascii
+        self.write(format!("pushq %rax"), true);
+
+        // rax is str_type
+
+        // 1st arg
+        self.write(format!("movq %rax, %rdi"), true);
+        
+        // 2 second arg
+        self.write(
+            format!(
+                "movq $str_const_ascii_{}, %rsi",
+                self.str_const_table.get("%d").unwrap()
+            ),
+            true,
+        );
+
+        // 3rd arg
+        self.write(format!("movq {}(%rbx), %rdx", INT_CONST_VAL_OFFSET), true);
+        self.write(format!("call sprintf"), true);
+
+        self.write(format!("pushq $String_prototype"), true);
+        self.write(format!("call Object.malloc"), true);
+        self.write(format!("addq $8, %rsp"), true);
+        self.write(format!("call String.init"), true);
+
+        self.write(format!("popq %rdi"), true);
+        self.write(
+            format!("movq %rdi, {}(%rax)", STRING_CONST_VAL_OFFSET),
+            true,
+        );
+        self.write(format!("movq $3, {}(%rax)", 32), true);
+
+
+        self.method_end();
     }
 }
