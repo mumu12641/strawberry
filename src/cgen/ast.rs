@@ -1,10 +1,10 @@
-use std::ops::Deref;
+use std::{fmt::format, ops::Deref};
 
 use crate::{
     grammar::ast::{
         expr::{
             Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, For, Isnull, Let, Math, MathOp,
-            Not, Return, While,
+            Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
@@ -290,58 +290,74 @@ impl CodeGenerate for Math {
         let right = self.right.deref();
         right.code_generate(code_generator);
 
-        // %r10 is right, %r11 is left
-        code_generator.write(format!("movq {}(%rax), %r10", INT_CONST_VAL_OFFSET), true);
-        code_generator.write(format!("movq (%rsp), %r11"), true);
-        code_generator.write(format!("movq {}(%r11), %r11", INT_CONST_VAL_OFFSET), true);
-        code_generator.write(format!("addq $8, %rsp"), true);
+        if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
+            // %r10 is right, %r11 is left
+            code_generator.write(format!("movq {}(%rax), %r10", INT_CONST_VAL_OFFSET), true);
+            code_generator.write(format!("movq (%rsp), %r11"), true);
+            code_generator.write(format!("movq {}(%r11), %r11", INT_CONST_VAL_OFFSET), true);
+            code_generator.write(format!("addq $8, %rsp"), true);
 
-        match self.op.deref() {
-            MathOp::ComputeOp(op_) => {
-                match op_ {
-                    ComputeOp::Add => {
-                        code_generator.write(format!("addq %r10, %r11"), true);
+            match self.op.deref() {
+                MathOp::ComputeOp(op_) => {
+                    match op_ {
+                        ComputeOp::Add => {
+                            code_generator.write(format!("addq %r10, %r11"), true);
+                        }
+                        ComputeOp::Minus => {
+                            code_generator.write(format!("subq %r10, %r11"), true);
+                        }
+                        ComputeOp::Mul => {
+                            code_generator.write(format!("movq %r11, %rax"), true);
+                            code_generator.write(format!("mulq %r10"), true);
+                            code_generator.write(format!("movq %rax, %r11"), true);
+                        }
+                        ComputeOp::Divide => {
+                            code_generator.write(format!("movq %r11, %rax"), true);
+                            code_generator.write(format!("divq %r10"), true);
+                            code_generator.write(format!("movq %rax, %r11"), true);
+                        }
+                    };
+                    code_generator.write(format!("pushq %r11"), true);
+                    code_generator.write(format!("pushq $Int_prototype"), true);
+                    code_generator.write(format!("call Object.malloc"), true);
+                    code_generator.write(format!("addq $8, %rsp"), true);
+                    code_generator.write(format!("call Int.init"), true);
+                    code_generator.write(format!("movq (%rsp), %r11"), true);
+                    code_generator
+                        .write(format!("movq %r11, {}(%rax)", INT_CONST_VAL_OFFSET), true);
+                    code_generator.write(format!("addq $8, %rsp"), true);
+                }
+                MathOp::CondOp(op_) => {
+                    // sub
+                    // if true jmp then
+                    // else
+                    code_generator.write(format!("movq $1, %rdi"), true);
+                    code_generator.write(format!("movq $0, %rax"), true);
+                    code_generator.write(format!("subq %r10, %r11"), true);
+                    match op_ {
+                        CondOp::More => code_generator.write(format!("cmova %rdi, %rax"), true),
+                        CondOp::MoreE => code_generator.write(format!("cmovae %rdi, %rax"), true),
+                        CondOp::Less => code_generator.write(format!("cmovb %rdi, %rax"), true),
+                        CondOp::LessE => code_generator.write(format!("cmovbe %rdi, %rax"), true),
+                        CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
                     }
-                    ComputeOp::Minus => {
-                        code_generator.write(format!("subq %r10, %r11"), true);
-                    }
-                    ComputeOp::Mul => {
-                        code_generator.write(format!("movq %r11, %rax"), true);
-                        code_generator.write(format!("mulq %r10"), true);
-                        code_generator.write(format!("movq %rax, %r11"), true);
-                    }
-                    ComputeOp::Divide => {
-                        code_generator.write(format!("movq %r11, %rax"), true);
-                        code_generator.write(format!("divq %r10"), true);
-                        code_generator.write(format!("movq %rax, %r11"), true);
-                    }
-                };
-                code_generator.write(format!("pushq %r11"), true);
-                code_generator.write(format!("pushq $Int_prototype"), true);
-                code_generator.write(format!("call Object.malloc"), true);
-                code_generator.write(format!("addq $8, %rsp"), true);
-                code_generator.write(format!("call Int.init"), true);
-                code_generator.write(format!("movq (%rsp), %r11"), true);
-                code_generator.write(format!("movq %r11, {}(%rax)", INT_CONST_VAL_OFFSET), true);
-                code_generator.write(format!("addq $8, %rsp"), true);
-            }
-            MathOp::CondOp(op_) => {
-                // sub
-                // if true jmp then
-                // else
-                code_generator.write(format!("movq $1, %rdi"), true);
-                code_generator.write(format!("movq $0, %rax"), true);
-                code_generator.write(format!("subq %r10, %r11"), true);
-                match op_ {
-                    CondOp::More => code_generator.write(format!("cmova %rdi, %rax"), true),
-                    CondOp::MoreE => code_generator.write(format!("cmovae %rdi, %rax"), true),
-                    CondOp::Less => code_generator.write(format!("cmovb %rdi, %rax"), true),
-                    CondOp::LessE => code_generator.write(format!("cmovbe %rdi, %rax"), true),
-                    CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
                 }
             }
+
+            // %r11 is the result
+        } else {
+            // left is in stack
+            // %rax is right
+            code_generator.write(format!("movq (%rsp), %r10"), true);
+            code_generator.write(format!("movq %rax, %r11"), true);
+            code_generator.write(format!("pushq %r10"), true);
+            code_generator.write(format!("pushq %r11"), true);
+            code_generator.write(format!("call String.concat"), true);
+
+            code_generator.write(format!("addq $8, %rsp"), true);
+            code_generator.write(format!("addq $8, %rsp"), true);
+            code_generator.write(format!("addq $8, %rsp"), true);
         }
-        // %r11 is the result
     }
 }
 

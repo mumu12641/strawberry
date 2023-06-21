@@ -1,10 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt::{format, Display},
-    fs::File,
-    io::Write,
-    ops::Deref,
-};
+use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
     grammar::ast::class::{Class, Feature},
@@ -103,7 +97,9 @@ impl<'a> CodeGenerator<'a> {
 
         self.code_abort();
 
-        self.code_int_to_string();
+        self.code_to_string();
+
+        self.code_concat();
 
         // code for main
         self.code_main();
@@ -366,18 +362,9 @@ impl<'a> CodeGenerator<'a> {
                         for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
-                        let align_stack;
-                        if var_vec.len() * 8 % 16 == 0 {
-                            align_stack = var_vec.len() * 8;
-                        } else {
-                            align_stack = ((var_vec.len() * 8 / 16) as usize + 1) * 16;
-                        }
-                        // let align_stack = if
-
-                        // self.write(format!("andq "), tab)
+                        let align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
 
                         self.write(format!("subq ${}, %rsp", align_stack), true);
-                        // self.write(format!("andq $-16, %rsp"), true);
 
                         for expr in expr_ {
                             expr.code_generate(self);
@@ -487,7 +474,23 @@ main:
         self.write(format!("call exit"), true);
     }
 
-    fn code_int_to_string(&mut self) {
+    fn code_to_string(&mut self) {
+        self.write(format!("Object.to_string:"), false);
+        self.method_start();
+        self.write(
+            format!(
+                "movq $str_const_{}, %rax",
+                self.str_const_table.get("").unwrap()
+            ),
+            true,
+        );
+        self.method_end();
+
+        self.write(format!("String.to_string:"), false);
+        self.method_start();
+        self.write(format!("movq %rbx, %rax"), true);
+        self.method_end();
+
         self.write(format!("Int.to_string:"), false);
         self.method_start();
 
@@ -526,7 +529,51 @@ main:
             format!("movq %rdi, {}(%rax)", STRING_CONST_VAL_OFFSET),
             true,
         );
-        self.write(format!("movq $3, {}(%rax)", 32), true);
+        self.write(format!("movq $32, {}(%rax)", 32), true);
+
+        self.method_end();
+    }
+
+    fn code_concat(&mut self) {
+        self.write(format!("String.concat:"), false);
+        self.method_start();
+
+        // malloc str_ascii r10
+        self.write(format!("movq $64, %rdi"), true);
+        self.write(format!("call malloc"), true);
+        self.write(format!("movq %rax, %r10"), true);
+        // move malloc's rax to rdi
+        self.write(format!("movq %r10, %rdi"), true);
+
+        // concat(dest, src)
+        // 1st arg
+        self.write(format!("movq 32(%rbp), %rax"), true);
+        self.write(
+            format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
+            true,
+        );
+        self.write(format!("call strcpy"), true);
+
+        // r10 is malloc (contain dest's str)
+        self.write(format!("movq %r10, %rdi"), true);
+
+        // 2nd arg
+        self.write(format!("movq 24(%rbp), %rax"), true);
+        self.write(
+            format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
+            true,
+        );
+        self.write(format!("call strcat"), true);
+
+        self.write(format!("pushq $String_prototype"), true);
+        self.write(format!("call Object.malloc"), true);
+        self.write(format!("addq $8, %rsp"), true);
+        self.write(format!("call String.init"), true);
+        self.write(
+            format!("movq %r10, {}(%rax)", STRING_CONST_VAL_OFFSET),
+            true,
+        );
+        self.write(format!("movq $64, {}(%rax)", 32), true);
 
         self.method_end();
     }

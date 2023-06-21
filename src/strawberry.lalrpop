@@ -85,14 +85,14 @@ var: VarDecl = {
         init: Box::new(None),
         position: id.1,
     },
-    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> => VarDecl{
+    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:math_expr> => VarDecl{
         name:id.0,
         type_: Some(type_name),
         init: Box::new(Some(e)),
         position: id.1,
     },
 
-    <id:"ID">  "=" <e:single_expr> => VarDecl{
+    <id:"ID">  "=" <e:math_expr> => VarDecl{
         name:id.0,
         type_: None,
         init: Box::new(Some(e)),

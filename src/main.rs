@@ -251,3 +251,11 @@ fn test() {
         Err(_) => todo!(),
     };
 }
+
+
+
+#[test]
+fn bit_test() {
+    let a = 24;
+    println!("{}", (a + 15)&(!15));
+}

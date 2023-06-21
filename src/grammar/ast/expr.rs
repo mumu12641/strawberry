@@ -140,6 +140,25 @@ pub trait TypeChecker: Debug {
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError>;
 }
+
+pub trait TypeGet: Debug {
+    fn get_type(&self) -> Type;
+}
+
+impl TypeGet for Expr {
+    fn get_type(&self) -> Type {
+        match self {
+            Expr::Bool(_) => return BOOL.to_string(),
+            Expr::Str(_) => return STRING.to_string(),
+            Expr::Int(_) => return INT.to_string(),
+            Expr::New(type_) => return type_.clone(),
+            Expr::Identifier(e) => return e.type_.clone(),
+            Expr::Dispatch(e) => return e.type_.clone(),
+            _ => return OBJECT.to_string(),
+        }
+    }
+}
+
 impl TypeChecker for Expr {
     fn check_type(
         &mut self,
@@ -324,20 +343,35 @@ impl TypeChecker for Math {
     ) -> Result<Type, SemanticError> {
         let left_type = (*self.left).check_type(symbol_table, class_table);
         let right_type = (*self.right).check_type(symbol_table, class_table);
-        let is_compute: bool;
 
-        match self.op.deref() {
-            MathOp::ComputeOp(_) => is_compute = true,
-            MathOp::CondOp(_) => is_compute = false,
-        }
         match left_type {
             Ok(left) => match right_type {
                 Ok(right) => {
                     if left == INT.to_string() && right == INT.to_string() {
-                        if is_compute {
-                            return Ok(INT.to_string());
-                        } else {
-                            return Ok(BOOL.to_string());
+                        match self.op.deref() {
+                            MathOp::ComputeOp(_) => return Ok(INT.to_string()),
+                            MathOp::CondOp(_) => return Ok(BOOL.to_string()),
+                        }
+                    } else if left == STRING.to_string() && right == STRING.to_string() {
+                        match self.op.deref() {
+                            MathOp::ComputeOp(op_) => {
+                                if let ComputeOp::Add = op_ {
+                                    return Ok(STRING.to_string());
+                                } else {
+                                    return Err(SemanticError {
+                                        err_msg: format!(
+                                            "String cannot be used for mathematical operations other than addition"
+                                        ),
+                                    });
+                                }
+                            }
+                            MathOp::CondOp(_) => {
+                                return Err(SemanticError {
+                                    err_msg: format!(
+                                        "String cannot be used in conditional operations"
+                                    ),
+                                })
+                            }
                         }
                     } else {
                         return Err(SemanticError {
