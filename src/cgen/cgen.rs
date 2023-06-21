@@ -1,4 +1,10 @@
-use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
+use std::{
+    collections::HashMap,
+    fmt::{format, Display},
+    fs::File,
+    io::Write,
+    ops::Deref,
+};
 
 use crate::{
     grammar::ast::class::{Class, Feature},
@@ -119,6 +125,7 @@ impl<'a> CodeGenerator<'a> {
         self.write(format!("pushq %rbp"), true);
         self.write(format!("pushq %rbx"), true);
         self.write(format!("movq %rsp, %rbp"), true);
+        // self.write(format!("andq $-16, %rsp"), true);
         self.write(format!("movq %rax, %rbx"), true);
     }
     pub fn method_end(&mut self) {
@@ -359,14 +366,24 @@ impl<'a> CodeGenerator<'a> {
                         for expr in expr_ {
                             var_vec.append(&mut expr.get_var_num());
                         }
+                        let align_stack;
+                        if var_vec.len() * 8 % 16 == 0 {
+                            align_stack = var_vec.len() * 8;
+                        } else {
+                            align_stack = ((var_vec.len() * 8 / 16) as usize + 1) * 16;
+                        }
+                        // let align_stack = if
 
-                        self.write(format!("subq ${}, %rsp", var_vec.len() * 8), true);
+                        // self.write(format!("andq "), tab)
+
+                        self.write(format!("subq ${}, %rsp", align_stack), true);
+                        // self.write(format!("andq $-16, %rsp"), true);
 
                         for expr in expr_ {
                             expr.code_generate(self);
                         }
 
-                        self.write(format!("addq ${}, %rsp", var_vec.len() * 8), true);
+                        self.write(format!("addq ${}, %rsp", align_stack), true);
                         self.method_end();
 
                         self.environment
@@ -476,7 +493,7 @@ main:
 
         // rbx is self
 
-        self.write(format!("movq $40, %rdi"), true);
+        self.write(format!("movq $32, %rdi"), true);
         self.write(format!("call malloc"), true);
         // push ascii
         self.write(format!("pushq %rax"), true);
@@ -485,7 +502,7 @@ main:
 
         // 1st arg
         self.write(format!("movq %rax, %rdi"), true);
-        
+
         // 2 second arg
         self.write(
             format!(
@@ -510,7 +527,6 @@ main:
             true,
         );
         self.write(format!("movq $3, {}(%rax)", 32), true);
-
 
         self.method_end();
     }

@@ -231,14 +231,14 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
         }
     }
 
-    pub fn debug(&mut self) {
-        for i in self.scopes.iter().rev() {
-            for j in &i.type_map {
-                println!("key -> {}    value -> {}", j.0, j.1);
-            }
-        }
-        println!();
-    }
+    // pub fn debug(&mut self) {
+    //     for i in self.scopes.iter().rev() {
+    //         for j in &i.type_map {
+    //             println!("key -> {}    value -> {}", j.0, j.1);
+    //         }
+    //     }
+    //     println!();
+    // }
 }
 
 #[derive(Debug, Clone)]

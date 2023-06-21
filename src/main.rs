@@ -13,7 +13,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use std::process::Command;
-use utils::table::{self, ClassTable, Tables};
+use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
@@ -196,23 +196,23 @@ fn create_project_folder(name: &str) {
 }
 
 // for debug
-fn print_table(table: &Tables) {
-    println!("***String Table***");
-    for i in &table.string_table {
-        println!("{i}");
-    }
-    println!();
-    println!("***Int Table***");
-    for i in &table.int_table {
-        println!("{i}");
-    }
-    println!();
-    println!("***Id Table***");
-    for i in &table.id_table {
-        println!("{i}");
-    }
-    println!();
-}
+// fn print_table(table: &Tables) {
+//     println!("***String Table***");
+//     for i in &table.string_table {
+//         println!("{i}");
+//     }
+//     println!();
+//     println!("***Int Table***");
+//     for i in &table.int_table {
+//         println!("{i}");
+//     }
+//     println!();
+//     println!("***Id Table***");
+//     for i in &table.id_table {
+//         println!("{i}");
+//     }
+//     println!();
+// }
 
 #[test]
 fn test() {
