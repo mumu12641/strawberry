@@ -439,19 +439,29 @@ impl CodeGenerate for While {
 
 impl CodeGenerate for Not {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        code_generator.write(format!("# not"), true);
         self.expr.deref().code_generate(code_generator);
-        code_generator.write(format!("movq 16(%rax), %rdi"), true);
-        code_generator.write(format!("xor $1, %rdi"), true);
-        code_generator.write(format!("movq %rdi, %rax"), true);
+        let expr_type = self.expr.deref().get_type();
+        if expr_type == BOOL.to_string() {
+            // for bool type
+            code_generator.write(format!("movq 16(%rax), %rdi"), true);
+            code_generator.write(format!("xor $1, %rdi"), true);
+            code_generator.write(format!("movq %rdi, %rax"), true);
+        }else{
+            // this is for isnull expr
+            code_generator.write(format!("xor $1, %rax"), true);
+        }
     }
 }
 
 impl CodeGenerate for Isnull {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
+        code_generator.write(format!("# is null"), true);
         self.expr.deref().code_generate(code_generator);
         code_generator.write(format!("movq 8(%rax), %rax"), true);
 
         code_generator.write(format!("xor $1, %rax"), true);
+        code_generator.write(format!("# is null done"), true);
         // code_generator.write(format!("movq %rdi, %rax"), true);
     }
 }

@@ -76,6 +76,7 @@ impl ClassTable {
                     body: Box::new(None),
                     position: EMPTY,
                 }),
+
             ],
             position: (0, 0), // features: vec![],
             file_name: OBJECT.to_string(),

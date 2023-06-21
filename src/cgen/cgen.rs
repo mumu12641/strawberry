@@ -301,6 +301,19 @@ impl<'a> CodeGenerator<'a> {
                         if let Some(expr_) = attr.init.deref() {
                             expr_.code_generate(self);
                             self.write(format!("movq %rax, {}(%rbx)", offset_), true);
+                        } else {
+                            let type_ = attr.type_.clone().unwrap();
+                            if type_ != "prim_slot".to_string(){
+                                self.write(
+                                    format!(
+                                        "movq ${}_prototype, {}(%rbx)",
+                                        attr.type_.clone().unwrap(),
+                                        offset_
+                                    ),
+                                    true,
+                                )
+                            }
+                            
                         }
                         index += 1;
                     }
@@ -364,10 +377,10 @@ impl<'a> CodeGenerator<'a> {
                         }
                         let align_stack;
                         if len % 2 == 0 {
-                            align_stack =
-                                crate::utils::util::align_to_16_bit(var_vec.len() * 8) ;
+                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
                         } else {
-                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
+                            align_stack =
+                                crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
                         }
 
                         self.write(format!("subq ${}, %rsp", align_stack), true);
@@ -398,13 +411,14 @@ impl<'a> CodeGenerator<'a> {
     fn code_main(&mut self) {
         self.write(
             format!(
-                "   .globl main
+                ".globl main
 main:
     pushq $Main_prototype
     call Object.malloc
     addq $8, %rsp
     movq %rax, %rbx
     call Main.init
+    # 0x....d9b8
     movq %rbx, %rax
     subq $8, %rsp
     call Main.main
@@ -429,9 +443,8 @@ main:
         );
 
         self.method_end();
-
-        // self.method_end();
     }
+
     fn code_print(&mut self) {
         self.write(format!("Object.print:"), false);
         self.method_start();
@@ -493,27 +506,20 @@ main:
             true,
         );
         self.method_end();
-
         self.write(format!("String.to_string:"), false);
         self.method_start();
         self.write(format!("movq %rbx, %rax"), true);
         self.method_end();
-
         self.write(format!("Int.to_string:"), false);
         self.method_start();
-
         // rbx is self
-
         self.write(format!("movq $32, %rdi"), true);
         self.write(format!("call malloc"), true);
         // push ascii
         self.write(format!("pushq %rax"), true);
-
         // rax is str_type
-
         // 1st arg
         self.write(format!("movq %rax, %rdi"), true);
-
         // 2 second arg
         self.write(
             format!(
@@ -522,7 +528,6 @@ main:
             ),
             true,
         );
-
         // 3rd arg
         self.write(format!("movq {}(%rbx), %rdx", INT_CONST_VAL_OFFSET), true);
         self.write(format!("call sprintf"), true);
@@ -538,21 +543,18 @@ main:
             true,
         );
         self.write(format!("movq $32, {}(%rax)", 32), true);
-
         self.method_end();
     }
 
     fn code_concat(&mut self) {
         self.write(format!("String.concat:"), false);
         self.method_start();
-
         // malloc str_ascii r10
         self.write(format!("movq $64, %rdi"), true);
         self.write(format!("call malloc"), true);
         self.write(format!("movq %rax, %r10"), true);
         // move malloc's rax to rdi
         self.write(format!("movq %r10, %rdi"), true);
-
         // concat(dest, src)
         // 1st arg
         self.write(format!("movq 32(%rbp), %rax"), true);
@@ -561,10 +563,8 @@ main:
             true,
         );
         self.write(format!("call strcpy"), true);
-
         // r10 is malloc (contain dest's str)
         self.write(format!("movq %r10, %rdi"), true);
-
         // 2nd arg
         self.write(format!("movq 24(%rbp), %rax"), true);
         self.write(
@@ -572,7 +572,6 @@ main:
             true,
         );
         self.write(format!("call strcat"), true);
-
         self.write(format!("pushq $String_prototype"), true);
         self.write(format!("call Object.malloc"), true);
         self.write(format!("addq $8, %rsp"), true);
@@ -582,7 +581,6 @@ main:
             true,
         );
         self.write(format!("movq $64, {}(%rax)", 32), true);
-
         self.method_end();
     }
 }

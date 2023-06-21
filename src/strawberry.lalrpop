@@ -273,7 +273,7 @@ cond_expr: Expr = {
         op: Box::new(op),
         right: Box::new(r),
     }),
-    <pos:"!"> <e:single_expr> => Expr::Not(Not{
+    <pos:"!"> <e:cond_expr> => Expr::Not(Not{
         expr:Box::new(e),
         position: pos,
     }),
