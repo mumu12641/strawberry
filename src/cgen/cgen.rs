@@ -3,7 +3,8 @@ use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 use crate::{
     grammar::ast::class::{Class, Feature},
     utils::table::{ClassTable, SymbolTable, Tables},
-    BOOL, INT, INT_CONST_VAL_OFFSET, OBJECT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
+    BOOL, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET, OBJECT, RUNTIME_ERR,
+    STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::ast::CodeGenerate;
@@ -27,6 +28,7 @@ pub struct Environment {
     pub curr_class: String,
     pub var_offset: i32,
     pub label: usize,
+    pub align_stack: usize,
 }
 
 /// * Build constant
@@ -73,6 +75,7 @@ impl<'a> CodeGenerator<'a> {
                 curr_class: "none".to_string(),
                 var_offset: 1,
                 label: 0,
+                align_stack: 0,
             },
         }
     }
@@ -252,9 +255,13 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
+
             self.write(format!(".quad {}.init", class_.0), true);
             self.write(format!(""), true);
         }
+        // dbg!(&self
+        //     .dispatch_table
+        //     .get(&("Square".to_string(), "draw".to_string())));
     }
 
     fn code_method(&mut self) {
@@ -303,7 +310,7 @@ impl<'a> CodeGenerator<'a> {
                             self.write(format!("movq %rax, {}(%rbx)", offset_), true);
                         } else {
                             let type_ = attr.type_.clone().unwrap();
-                            if type_ != "prim_slot".to_string(){
+                            if type_ != "prim_slot".to_string() {
                                 self.write(
                                     format!(
                                         "movq ${}_prototype, {}(%rbx)",
@@ -313,14 +320,19 @@ impl<'a> CodeGenerator<'a> {
                                     true,
                                 )
                             }
-                            
                         }
                         index += 1;
                     }
                 }
             }
-            self.write(format!("movq ${}_dispatch_table, 16(%rbx)", class_.0), true);
-            self.write(format!("movq $1, 8(%rbx)"), true);
+            self.write(
+                format!(
+                    "movq ${}_dispatch_table,{}(%rbx)",
+                    class_.0, DISPATCH_TABLE_OFFSET
+                ),
+                true,
+            );
+            self.write(format!("movq $1, {}(%rbx)", NULL_TAG_OFFSET), true);
             self.write(format!("movq %rbx, %rax"), true);
             self.method_end();
         }
@@ -336,14 +348,14 @@ impl<'a> CodeGenerator<'a> {
                         .get_mut(&class_.name)
                         .unwrap()
                         .enter_scope();
-                    self.environment.env.get_mut(&class_.name).unwrap().add(
-                        &"self".to_string(),
-                        &Location {
-                            reg: "%rbp".to_string(),
-                            offset: i32::MAX,
-                            // type_: class_.name.clone(),
-                        },
-                    );
+                    // self.environment.env.get_mut(&class_.name).unwrap().add(
+                    //     &"self".to_string(),
+                    //     &Location {
+                    //         reg: "%rbp".to_string(),
+                    //         offset: i32::MAX,
+                    //         // type_: class_.name.clone(),
+                    //     },
+                    // );
 
                     let mut offset = 0;
                     let len = method.param.deref().len() as i32;
@@ -377,20 +389,17 @@ impl<'a> CodeGenerator<'a> {
                         }
                         let align_stack;
                         if len % 2 == 0 {
-                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
-                        } else {
                             align_stack =
                                 crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
+                        } else {
+                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
                         }
-
+                        self.environment.align_stack = align_stack;
                         self.write(format!("subq ${}, %rsp", align_stack), true);
 
                         for expr in expr_ {
                             expr.code_generate(self);
                         }
-
-                        self.write(format!("addq ${}, %rsp", align_stack), true);
-                        self.method_end();
 
                         self.environment
                             .env
@@ -421,6 +430,7 @@ main:
     # 0x....d9b8
     movq %rbx, %rax
     subq $8, %rsp
+    # 0x....d9b0
     call Main.main
     movq 24(%rax), %rax
     addq $8, %rsp

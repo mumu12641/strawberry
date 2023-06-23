@@ -7,7 +7,7 @@ use crate::{
     grammar::lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, OBJECT, STRING,
+    BOOL, INT, OBJECT, SELF, STRING,
 };
 
 use super::{
@@ -101,6 +101,11 @@ pub struct Isnull {
 }
 
 #[derive(Debug, Clone)]
+pub struct Self_ {
+    pub type_: Type,
+}
+
+#[derive(Debug, Clone)]
 pub struct For {
     pub init: Box<Vec<Expr>>,
     pub test: Box<Vec<Expr>>,
@@ -124,7 +129,7 @@ pub enum Expr {
     Block(Box<Vec<Expr>>),
     Let(Let),
     New(Type),
-    Self_(Identifier),
+    Self_(Self_),
     Isvoid(Box<Expr>),
 
     Math(Math),
@@ -154,6 +159,7 @@ impl TypeGet for Expr {
             Expr::New(type_) => return type_.clone(),
             Expr::Identifier(e) => return e.type_.clone(),
             Expr::Dispatch(e) => return e.type_.clone(),
+            Expr::Self_(e) => return e.type_.clone(),
             _ => return OBJECT.to_string(),
         }
     }
@@ -181,6 +187,15 @@ impl TypeChecker for Expr {
                     });
                 }
             }
+
+            Expr::Self_(e) => {
+                if let Some(s) = symbol_table.find(&SELF.to_string()) {
+                    e.type_ = s.clone();
+                    return Ok(s.clone());
+                }
+                return Ok(OBJECT.to_string());
+            }
+
             Expr::Let(e) => return e.check_type(symbol_table, class_table),
 
             Expr::Assignment(e) => return e.check_type(symbol_table, class_table),

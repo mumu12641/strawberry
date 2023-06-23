@@ -36,6 +36,8 @@ const EMPTY: (usize, usize) = (0, 0);
 const INT_CONST_VAL_OFFSET:usize = 24;
 const BOOL_CONST_VAL_OFFSET:usize = 24;
 const STRING_CONST_VAL_OFFSET:usize = 24;
+const DISPATCH_TABLE_OFFSET:usize = 16;
+const NULL_TAG_OFFSET :usize = 8;
 
 const DEBUG: bool = false;
 

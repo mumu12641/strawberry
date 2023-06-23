@@ -1,4 +1,4 @@
-use std::{ops::Deref};
+use std::ops::Deref;
 
 use crate::{
     grammar::ast::{
@@ -8,7 +8,8 @@ use crate::{
         },
         Identifier, Type,
     },
-    BOOL, BOOL_CONST_VAL_OFFSET, INT, INT_CONST_VAL_OFFSET, STRING,
+    BOOL, BOOL_CONST_VAL_OFFSET, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
+    STRING,
 };
 
 use super::cgen::{CodeGenerator, Location};
@@ -114,6 +115,10 @@ impl CodeGenerate for Expr {
                 //     ret "
             }
 
+            Expr::Self_(_) => {
+                code_generator.write(format!("movq %rbx, %rax"), true);
+            }
+
             Expr::Dispatch(e) => e.code_generate(code_generator),
 
             Expr::Return(e) => e.code_generate(code_generator),
@@ -144,8 +149,12 @@ impl CodeGenerate for Return {
         // todo!()
         let e = self.val.deref();
         e.code_generate(code_generator);
-
         // code_generator.method_end();
+        code_generator.write(
+            format!("addq ${}, %rsp", code_generator.environment.align_stack),
+            true,
+        );
+        code_generator.method_end();
     }
 }
 
@@ -173,13 +182,14 @@ impl CodeGenerate for Dispatch {
                 Expr::New(e) => code_generator.environment.curr_class = e.clone(),
                 _ => {}
             }
+
+            // check null
             // code_generator.write(format!("cmpq $0, %rax"), true);
             // code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("cmpq $0, 8(%rax)"), true);
+            code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
             code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("movq 16(%rax), %rdi"), true);
+            code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
 
-            // TODO: the class might be NULL
             code_generator.write(
                 format!(
                     "call *{}(%rdi)",
@@ -452,7 +462,7 @@ impl CodeGenerate for Isnull {
         // if null return True
         code_generator.write(format!("movq $bool_const_1, %r10"), true);
         code_generator.write(format!("movq $bool_const_0, %r11"), true);
-        code_generator.write(format!("movq 8(%rax), %rax"), true);
+        code_generator.write(format!("movq {}(%rax), %rax", NULL_TAG_OFFSET), true);
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("cmove %r11, %rax"), true);
         code_generator.write(format!("cmovne %r10, %rax"), true);
