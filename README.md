@@ -183,3 +183,76 @@ class Main{
 */
 ```
 
+### LinkedList
+
+```
+class Main { 
+	fun main() -> Int { 
+		let n1 = new Node;
+		let n2 = new Node;
+		let n3 = new Node;
+		let n4 = new Node;
+		n1.set_val(1);
+		n2.set_val(2);
+		n3.set_val(3);
+		n4.set_val(4);
+
+		let l = new List;
+		l.insert(n1);
+		l.insert(n2);
+		l.insert(n3);
+		l.insert(n4);
+		let h = l.get_head();
+
+		while(!null(h)){
+			print(h.to_string());
+			h = h.get_next();
+		}
+		
+		return 0; 
+	};
+};
+
+class Node{
+	val:Int = 0;
+	next:Node;
+
+	fn set_val(val_:Int) -> Int{
+		val = val_;
+		return 0;
+	};
+
+	fn set_next(next_:Node) -> Int{
+		next = next_;
+		return 0;
+	};
+
+	fn get_next() -> Node{
+		return next;
+	};
+
+	fn to_string() -> String{
+		return val.to_string() + "\\n";
+	};
+};
+
+class List{
+	head:Node;
+	tail:Node;
+
+	fn insert(node:Node) -> Int{
+		if(null(head)){
+			head = node;
+			tail = head;
+		}else{
+			tail.set_next(node);
+			tail = node;
+		}
+	};
+
+	fn get_head() -> Node{
+		return head;
+	};
+};
+```
+
