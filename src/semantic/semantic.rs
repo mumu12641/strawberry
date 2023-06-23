@@ -195,9 +195,11 @@ impl SemanticChecker {
                         self.symbol_table.add(&param.0, &param.1);
                     }
                     if let Some(v) = method.body.deref_mut() {
+                        let mut return_ = false;
                         for expr in v {
                             match expr {
                                 Expr::Return(re) => {
+                                    return_ = true;
                                     match re.check_type(&mut self.symbol_table, class_table) {
                                         Err(e) => return Err(e),
                                         Ok(type_) => {
@@ -223,6 +225,14 @@ impl SemanticChecker {
                                     }
                                 }
                             }
+                        }
+                        if !return_ {
+                            return Err(SemanticError {
+                                err_msg: format!(
+                                    "{}:{}:{} ---> Your method needs a return expression!",
+                                    i.file_name, method.position.0, method.position.1
+                                ),
+                            });
                         }
                     }
                     self.symbol_table.exit_scope();
