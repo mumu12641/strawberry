@@ -229,7 +229,7 @@ impl SemanticChecker {
                         if !return_ {
                             return Err(SemanticError {
                                 err_msg: format!(
-                                    "{}:{}:{} ---> Your method needs a return expression!",
+                                    "{}:{}:{} ---> Your method needs a return expression, even though you may return in an if or while.",
                                     i.file_name, method.position.0, method.position.1
                                 ),
                             });

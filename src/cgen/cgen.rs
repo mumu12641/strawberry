@@ -1,7 +1,10 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
-    grammar::ast::class::{Class, Feature},
+    grammar::ast::{
+        class::{self, Class, Feature},
+        Type,
+    },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET, OBJECT, RUNTIME_ERR,
     STRING, STRING_CONST_VAL_OFFSET,
@@ -242,26 +245,51 @@ impl<'a> CodeGenerator<'a> {
             self.write(".align 8".to_string(), true);
             self.write(format!("{}_dispatch_table:", class_.0), false);
 
-            let inheritance = self.class_table.get_inheritance();
-
+            let inheritance = self
+                .class_table
+                .get_inheritance()
+                .get(class_.0)
+                .unwrap()
+                .clone();
             let mut offset = 0;
-            for curr_class in inheritance.get(class_.0).unwrap() {
+            let mut reverse_inheritance = inheritance.clone();
+            reverse_inheritance.reverse();
+            let mut method_map: HashMap<Type, Vec<String>> = HashMap::new();
+
+            for curr_class in &inheritance {
+                let mut v: Vec<String> = vec![];
                 for feature_ in &curr_class.features {
                     if let Feature::Method(method_) = feature_ {
-                        self.write(format!(".quad {}.{}", curr_class.name, method_.name), true);
-                        self.dispatch_table
-                            .insert((class_.0.to_string(), method_.name.to_string()), offset * 8);
+                        v.insert(0, method_.name.clone());
+                    }
+                }
+                method_map.insert(curr_class.name.clone(), v);
+            }
+
+            for curr_class in &inheritance {
+                for feature_ in &curr_class.features {
+                    if let Feature::Method(method_) = feature_ {
+                        for c in &reverse_inheritance {
+                            // find first one override the method
+                            if method_map.get(&c.name).unwrap().contains(&method_.name) {
+                                // find
+                                self.write(format!(".quad {}.{}", c.name, method_.name), true);
+                                self.dispatch_table.insert(
+                                    (class_.0.to_string(), method_.name.to_string()),
+                                    offset * 8,
+                                );
+                                break;
+                            }
+                        }
                         offset += 1;
                     }
                 }
             }
 
+
             self.write(format!(".quad {}.init", class_.0), true);
             self.write(format!(""), true);
         }
-        // dbg!(&self
-        //     .dispatch_table
-        //     .get(&("Square".to_string(), "draw".to_string())));
     }
 
     fn code_method(&mut self) {

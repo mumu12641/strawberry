@@ -189,7 +189,17 @@ impl CodeGenerate for Dispatch {
             code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
             code_generator.write(format!("je abort"), true);
             code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
-
+            println!(
+                "call {}(), offset is {}",
+                self.fun_name.to_string(),
+                code_generator
+                    .dispatch_table
+                    .get(&(
+                        code_generator.environment.curr_class.to_string(),
+                        self.fun_name.to_string(),
+                    ))
+                    .unwrap()
+            );
             code_generator.write(
                 format!(
                     "call *{}(%rdi)",
