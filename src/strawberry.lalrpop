@@ -260,6 +260,7 @@ math_term:Expr ={
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
+        type_: "Object".to_string(),
     }),
     single_expr,
 };
@@ -269,6 +270,7 @@ math_expr: Expr = {
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
+        type_: "Object".to_string(),
     }),
     math_term,
 };
@@ -278,6 +280,7 @@ cond_expr: Expr = {
         left: Box::new(l),
         op: Box::new(op),
         right: Box::new(r),
+        type_: "Object".to_string(),
     }),
     <pos:"!"> <e:cond_expr> => Expr::Not(Not{
         expr:Box::new(e),

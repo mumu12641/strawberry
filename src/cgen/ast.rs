@@ -189,17 +189,7 @@ impl CodeGenerate for Dispatch {
             code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
             code_generator.write(format!("je abort"), true);
             code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
-            println!(
-                "call {}(), offset is {}",
-                self.fun_name.to_string(),
-                code_generator
-                    .dispatch_table
-                    .get(&(
-                        code_generator.environment.curr_class.to_string(),
-                        self.fun_name.to_string(),
-                    ))
-                    .unwrap()
-            );
+            
             code_generator.write(
                 format!(
                     "call *{}(%rdi)",
@@ -304,11 +294,18 @@ impl CodeGenerate for Math {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // r10-r11 for temp register
         let left = self.left.deref();
+        code_generator.write(format!("# left start"), true);
         left.code_generate(code_generator);
+        
+
         code_generator.write(format!("pushq %rax"), true);
+        code_generator.write(format!("# left end"), true);
 
         let right = self.right.deref();
+        code_generator.write(format!("# right start"), true);
+
         right.code_generate(code_generator);
+        code_generator.write(format!("# right end"), true);
 
         if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
             // %r10 is right, %r11 is left
@@ -365,7 +362,8 @@ impl CodeGenerate for Math {
             }
 
             // %r11 is the result
-        } else {
+        } 
+        if right.get_type() == STRING.to_string() && left.get_type() == STRING.to_string() {
             // left is in stack
             // %rax is right
             code_generator.write(format!("movq (%rsp), %r10"), true);

@@ -62,6 +62,7 @@ pub struct Math {
     pub left: Box<Expr>,
     pub op: Box<MathOp>,
     pub right: Box<Expr>,
+    pub type_: Type,
 }
 #[derive(Debug, Clone)]
 pub struct Return {
@@ -160,6 +161,7 @@ impl TypeGet for Expr {
             Expr::Identifier(e) => return e.type_.clone(),
             Expr::Dispatch(e) => return e.type_.clone(),
             Expr::Self_(e) => return e.type_.clone(),
+            Expr::Math(e) => return e.type_.clone(),
             _ => return OBJECT.to_string(),
         }
     }
@@ -364,13 +366,21 @@ impl TypeChecker for Math {
                 Ok(right) => {
                     if left == INT.to_string() && right == INT.to_string() {
                         match self.op.deref() {
-                            MathOp::ComputeOp(_) => return Ok(INT.to_string()),
-                            MathOp::CondOp(_) => return Ok(BOOL.to_string()),
+                            MathOp::ComputeOp(_) => {
+                                self.type_ = INT.to_string();
+                                return Ok(INT.to_string());
+                            }
+                            MathOp::CondOp(_) => {
+                                self.type_ = BOOL.to_string();
+                                return Ok(BOOL.to_string());
+                            }
                         }
                     } else if left == STRING.to_string() && right == STRING.to_string() {
                         match self.op.deref() {
                             MathOp::ComputeOp(op_) => {
                                 if let ComputeOp::Add = op_ {
+                                    // self.type_ = STRING.to_string();
+                                    self.type_ = STRING.to_string();
                                     return Ok(STRING.to_string());
                                 } else {
                                     return Err(SemanticError {

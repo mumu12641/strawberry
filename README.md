@@ -248,6 +248,7 @@ class List{
 			tail.set_next(node);
 			tail = node;
 		}
+		return 0;
 	};
 
 	fn get_head() -> Node{
