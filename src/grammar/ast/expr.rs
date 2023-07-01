@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::{
-    class::{Feature, VarDecl},
+    class::{Feature, MethodCall, VarDecl},
     Boolean, Identifier, Int, Str, Type,
 };
 
@@ -35,12 +35,18 @@ pub enum CondOp {
     Less,
     LessE,
 }
+#[derive(Debug, Clone)]
+pub enum DispatchExpr {
+    Field(Identifier),
+    Method(MethodCall),
+}
 
 #[derive(Debug, Clone)]
 pub struct Dispatch {
-    pub target: Box<Option<Expr>>,
-    pub fun_name: Identifier,
-    pub actual: Box<Vec<Expr>>,
+    pub target: Box<Expr>,
+    // pub fun_name: Identifier,
+    // pub actual: Box<Vec<Expr>>,
+    pub expr: DispatchExpr,
     pub position: Position,
     pub type_: Type,
 }
@@ -230,20 +236,23 @@ impl TypeChecker for Dispatch {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        match self.target.deref_mut() {
-            Some(e) => {
-                match e.check_type(symbol_table, class_table) {
-                    Ok(target_type) => {
-                        if let Some(class) = class_table.get_classes().get(&target_type) {
-                            if let Some(v) = class_table.get_inheritance().get(&class.name) {
-                                let mut find = false;
-                                for class in v {
+        match self
+            .target
+            .deref_mut()
+            .check_type(symbol_table, class_table)
+        {
+            Ok(target_type) => {
+                if let Some(class) = class_table.get_classes().get(&target_type) {
+                    if let Some(v) = class_table.get_inheritance().get(&class.name) {
+                        for class in v {
+                            match &mut self.expr {
+                                // check method
+                                DispatchExpr::Method(method_call) => {
                                     for f in &class.features {
                                         if let Feature::Method(method) = f {
-                                            if &method.name == &self.fun_name {
-                                                find = true;
+                                            if &method.name == &method_call.fun_name {
                                                 let method_param = method.param.deref();
-                                                let actuals = self.actual.deref_mut();
+                                                let actuals = method_call.actual.deref_mut();
                                                 if actuals.len() != method_param.len() {
                                                     return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
                                                 }
@@ -268,25 +277,32 @@ impl TypeChecker for Dispatch {
                                         }
                                     }
                                 }
-                                if !find {
-                                    return Err(SemanticError {
-                                        err_msg: format!(
-                                            "{}:{} ---> The expression no method called {}() !",
-                                            self.position.0, self.position.1, &self.fun_name
-                                        ),
-                                    });
+                                // check field
+                                DispatchExpr::Field(field) => {
+                                    for f in &class.features {
+                                        if let Feature::Attribute(attr) = f {
+                                            if &attr.name == field {
+                                                self.type_ = attr.type_.clone().unwrap();
+                                                return Ok(self.type_.clone());
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
+                        return Err(SemanticError {
+                            err_msg: format!(
+                                "{}:{} ---> Some dispatch errors appear !",
+                                self.position.0, self.position.1
+                            ),
+                        });
                     }
-                    Err(e) => {
-                        return Err(e);
-                    }
-                };
+                }
             }
-            None => todo!(),
-        }
-        // class_table.classes.get(self.target)
+            Err(e) => {
+                return Err(e);
+            }
+        };
         return Ok(OBJECT.to_string());
     }
 }

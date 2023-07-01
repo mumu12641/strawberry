@@ -3,8 +3,8 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, Expr, For, Isnull, Let, Math, MathOp,
-            Not, Return, TypeGet, While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
+            Math, MathOp, Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
@@ -160,54 +160,74 @@ impl CodeGenerate for Return {
 
 impl CodeGenerate for Dispatch {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        let temp = code_generator.environment.curr_class.clone();
-        for i in self.actual.deref() {
-            i.code_generate(code_generator);
-            code_generator.write(format!("push %rax"), true);
-        }
-        if let Some(target_) = self.target.deref() {
-            // change curr_class to target
-            target_.code_generate(code_generator);
+        let target_ = self.target.deref();
 
-            match &target_ {
-                Expr::Identifier(e) => {
-                    code_generator.environment.curr_class = e.type_.clone();
+        let temp = code_generator.environment.curr_class.clone();
+
+        match &self.expr {
+            DispatchExpr::Method(method) => {
+                for i in method.actual.deref() {
+                    i.code_generate(code_generator);
+                    code_generator.write(format!("push %rax"), true);
                 }
-                Expr::Dispatch(e) => {
-                    code_generator.environment.curr_class = e.type_.clone();
+                // change curr_class to target
+                target_.code_generate(code_generator);
+
+                match &target_ {
+                    Expr::Identifier(e) => {
+                        code_generator.environment.curr_class = e.type_.clone();
+                    }
+                    Expr::Dispatch(e) => {
+                        code_generator.environment.curr_class = e.type_.clone();
+                    }
+                    Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
+                    Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),
+                    Expr::Bool(_) => code_generator.environment.curr_class = BOOL.to_string(),
+                    Expr::New(e) => code_generator.environment.curr_class = e.clone(),
+                    _ => {}
                 }
-                Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
-                Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),
-                Expr::Bool(_) => code_generator.environment.curr_class = BOOL.to_string(),
-                Expr::New(e) => code_generator.environment.curr_class = e.clone(),
-                _ => {}
+
+                // check null
+                // code_generator.write(format!("cmpq $0, %rax"), true);
+                // code_generator.write(format!("je abort"), true);
+                code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
+                code_generator.write(format!("je abort"), true);
+                code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
+
+                code_generator.write(
+                    format!(
+                        "call *{}(%rdi)",
+                        code_generator
+                            .dispatch_table
+                            .get(&(
+                                code_generator.environment.curr_class.to_string(),
+                                method.fun_name.to_string(),
+                            ))
+                            .unwrap()
+                    ),
+                    true,
+                );
+
+                for _ in method.actual.deref() {
+                    code_generator.write(format!("addq $8, %rsp"), true);
+                }
+                code_generator.environment.curr_class = temp;
             }
 
-            // check null
-            // code_generator.write(format!("cmpq $0, %rax"), true);
-            // code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
-            code_generator.write(format!("je abort"), true);
-            code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
+            DispatchExpr::Field(field) => {
+                // self.target.
+                // if let self.self.target
 
-            code_generator.write(
-                format!(
-                    "call *{}(%rdi)",
-                    code_generator
-                        .dispatch_table
-                        .get(&(
-                            code_generator.environment.curr_class.to_string(),
-                            self.fun_name.to_string(),
-                        ))
-                        .unwrap()
-                ),
-                true,
-            );
+                target_.code_generate(code_generator);
+                let type_ = target_.get_type();
+                let offset = code_generator
+                    .environment
+                    .field_map
+                    .get(&(type_, field.to_string()))
+                    .unwrap();
+                code_generator.write(format!("movq {}(%rax), %rax", offset), true);
+            }
         }
-        for _ in self.actual.deref() {
-            code_generator.write(format!("addq $8, %rsp"), true);
-        }
-        code_generator.environment.curr_class = temp;
     }
 }
 

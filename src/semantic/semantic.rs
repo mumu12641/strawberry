@@ -187,7 +187,6 @@ impl SemanticChecker {
                     }
                 }
             }
-
             for j in &mut i.features {
                 if let Feature::Method(method) = j {
                     self.symbol_table.enter_scope();
@@ -201,7 +200,11 @@ impl SemanticChecker {
                                 Expr::Return(re) => {
                                     return_ = true;
                                     match re.check_type(&mut self.symbol_table, class_table) {
-                                        Err(e) => return Err(e),
+                                        Err(e) => {
+                                            return Err(SemanticError {
+                                                err_msg: format!("{}:{}", i.file_name, e.err_msg),
+                                            })
+                                        }
                                         Ok(type_) => {
                                             if !class_table
                                                 .is_less_or_equal(&type_, &method.return_type)
@@ -216,9 +219,11 @@ impl SemanticChecker {
                                     }
                                 }
                                 _ => {
+                                    println!("!!! {}", i.file_name);
                                     if let Err(e) =
                                         expr.check_type(&mut self.symbol_table, class_table)
                                     {
+                                        println!("!!! {}", i.file_name);
                                         return Err(SemanticError {
                                             err_msg: format!("{}:{}", i.file_name, e.err_msg),
                                         });

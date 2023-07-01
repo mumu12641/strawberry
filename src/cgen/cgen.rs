@@ -6,8 +6,8 @@ use crate::{
         Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
-    BOOL, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET, OBJECT, RUNTIME_ERR,
-    STRING, STRING_CONST_VAL_OFFSET,
+    BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
+    OBJECT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::ast::CodeGenerate;
@@ -28,6 +28,7 @@ impl Display for Location {
 pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
     // pub type_env: SymbolTable<String, Type>,
+    pub field_map: HashMap<(Type, Type), usize>,
     pub curr_class: String,
     pub var_offset: i32,
     pub label: usize,
@@ -74,6 +75,7 @@ impl<'a> CodeGenerator<'a> {
             dispatch_table: HashMap::new(),
             environment: Environment {
                 env: HashMap::new(),
+                field_map: HashMap::new(),
                 // type_env: SymbolTable::new(),
                 curr_class: "none".to_string(),
                 var_offset: 1,
@@ -207,9 +209,15 @@ impl<'a> CodeGenerator<'a> {
             // modify dispatch table, all attr location, init
             self.write(format!(".quad {}", 0), true);
             self.write(format!(".quad {}_dispatch_table", class_.0), true);
+            let mut index = 0;
             for curr_class in inheritance.get(class_.0).unwrap() {
                 for attr_ in &curr_class.features {
                     if let Feature::Attribute(attr) = attr_ {
+                        self.environment.field_map.insert(
+                            (curr_class.name.clone(), attr.name.clone()),
+                            FIELD_BASIC_OFFSET + index * 8,
+                        );
+                        index += 1;
                         if attr.type_.clone().unwrap() == STRING {
                             self.write(
                                 format!(
@@ -285,7 +293,6 @@ impl<'a> CodeGenerator<'a> {
                     }
                 }
             }
-
 
             self.write(format!(".quad {}.init", class_.0), true);
             self.write(format!(""), true);

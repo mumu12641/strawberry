@@ -114,3 +114,9 @@ impl MethodDecl {
 }
 
 pub type ParamDecl = (Identifier, Type);
+
+#[derive(Debug, Clone)]
+pub struct MethodCall {
+    pub fun_name: Identifier,
+    pub actual: Box<Vec<Expr>>,
+}

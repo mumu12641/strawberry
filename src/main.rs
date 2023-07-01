@@ -38,6 +38,7 @@ const BOOL_CONST_VAL_OFFSET:usize = 24;
 const STRING_CONST_VAL_OFFSET:usize = 24;
 const DISPATCH_TABLE_OFFSET:usize = 16;
 const NULL_TAG_OFFSET :usize = 8;
+const FIELD_BASIC_OFFSET:usize = 24;
 
 const DEBUG: bool = false;
 
@@ -170,7 +171,8 @@ fn compile(files: Vec<String>) {
                 .expect("gcc command failed to start");
             println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
         }
-        Err(e) => {
+        Err(e) => 
+        {
             println!("{}", "❌ Oops, semantic error has occurred!".red());
             println!("{}", e.err_msg.red());
         }
@@ -247,7 +249,9 @@ fn test() {
                 Ok(v) => {
                     println!("{:?}", v);
                 }
-                _ => {}
+                Err(e) => {
+                    println!("{}",e.err_msg);
+                }
             }
         }
         Err(_) => todo!(),

@@ -115,9 +115,13 @@ expr: Expr = {
 
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch (Dispatch{
-            target: Box::new(Some(e)),
-            fun_name: id.0,
-            actual: Box::new(args.unwrap_or(vec![])),
+            target: Box::new(e),
+            // fun_name: id.0,
+            // actual: Box::new(args.unwrap_or(vec![])),
+            expr: DispatchExpr::Method(MethodCall{
+                fun_name: id.0,
+                actual: Box::new(args.unwrap_or(vec![])),
+            }),
             position: id.1,
             type_: "Object".to_string()
         })
@@ -128,12 +132,16 @@ expr: Expr = {
 
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")"  ";"=> {
         Expr::Dispatch (Dispatch{
-            target: Box::new(Some(Expr::Self_(Self_{
+            target: Box::new(Expr::Self_(Self_{
                 type_:"Object".to_string()
             }
-            ))),
-            fun_name: id.0,
-            actual: Box::new(args.unwrap_or(vec![])),
+            )),
+            // fun_name: id.0,
+            // actual: Box::new(args.unwrap_or(vec![])),
+            expr: DispatchExpr::Method(MethodCall{
+                fun_name: id.0,
+                actual: Box::new(args.unwrap_or(vec![])),
+            }),
             position: id.1,
             type_: "Object".to_string()
         })
@@ -209,12 +217,16 @@ single_expr:Expr = {
             //         pos:(0,0),
             //         type_:"Object".to_string()
             //     }))),
-            target: Box::new(Some(Expr::Self_(Self_{
+            target: Box::new(Expr::Self_(Self_{
                 type_:"Object".to_string()
             }
-            ))),
-            fun_name: id.0,
-            actual: Box::new(args.unwrap_or(vec![])),
+            )),
+            // fun_name: id.0,
+            // actual: Box::new(args.unwrap_or(vec![])),
+            expr: DispatchExpr::Method(MethodCall{
+                fun_name: id.0,
+                actual: Box::new(args.unwrap_or(vec![])),
+            }),
             position: id.1,
             type_: "Object".to_string()
         })
@@ -222,13 +234,26 @@ single_expr:Expr = {
     
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" => {
         Expr::Dispatch (Dispatch{
-            target: Box::new(Some(e)),
-            fun_name: id.0,
-            actual: Box::new(args.unwrap_or(vec![])),
+            target: Box::new(e),
+            // fun_name: id.0,
+            // actual: Box::new(args.unwrap_or(vec![])),
+            expr: DispatchExpr::Method(MethodCall{
+                fun_name: id.0,
+                actual: Box::new(args.unwrap_or(vec![])),
+            }),
             position: id.1,
             type_: "Object".to_string()
         })
     },
+
+    <e:single_expr> "." <id:"ID"> =>{
+        Expr::Dispatch (Dispatch{
+            target: Box::new(e),
+            expr: DispatchExpr::Field(id.0),
+            position: id.1,
+            type_: "Object".to_string()
+        })
+    }
 
 };
 
