@@ -189,7 +189,7 @@ impl CodeGenerate for Dispatch {
             code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
             code_generator.write(format!("je abort"), true);
             code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
-            
+
             code_generator.write(
                 format!(
                     "call *{}(%rdi)",
@@ -296,7 +296,6 @@ impl CodeGenerate for Math {
         let left = self.left.deref();
         code_generator.write(format!("# left start"), true);
         left.code_generate(code_generator);
-        
 
         code_generator.write(format!("pushq %rax"), true);
         code_generator.write(format!("# left end"), true);
@@ -348,21 +347,21 @@ impl CodeGenerate for Math {
                     // sub
                     // if true jmp then
                     // else
-                    code_generator.write(format!("movq $1, %rdi"), true);
-                    code_generator.write(format!("movq $0, %rax"), true);
+                    code_generator.write(format!("movq $bool_const_1, %rdi"), true);
+                    code_generator.write(format!("movq $bool_const_0, %rax"), true);
                     code_generator.write(format!("subq %r10, %r11"), true);
                     match op_ {
-                        CondOp::More => code_generator.write(format!("cmova %rdi, %rax"), true),
-                        CondOp::MoreE => code_generator.write(format!("cmovae %rdi, %rax"), true),
-                        CondOp::Less => code_generator.write(format!("cmovb %rdi, %rax"), true),
-                        CondOp::LessE => code_generator.write(format!("cmovbe %rdi, %rax"), true),
+                        CondOp::More => code_generator.write(format!("cmovg %rdi, %rax"), true),
+                        CondOp::MoreE => code_generator.write(format!("cmovge %rdi, %rax"), true),
+                        CondOp::Less => code_generator.write(format!("cmovl %rdi, %rax"), true),
+                        CondOp::LessE => code_generator.write(format!("cmovle %rdi, %rax"), true),
                         CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
                     }
                 }
             }
 
             // %r11 is the result
-        } 
+        }
         if right.get_type() == STRING.to_string() && left.get_type() == STRING.to_string() {
             // left is in stack
             // %rax is right
@@ -389,13 +388,8 @@ impl CodeGenerate for Cond {
         // eval test
         // jmp -> label_0
         self.test.code_generate(code_generator);
-        match self.test.deref() {
-            Expr::Math(_) => {}
-            _ => {
-                // else is bool type
-                code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
-            }
-        }
+        // is bool type
+        code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_then), true);
         // else body
@@ -439,13 +433,8 @@ impl CodeGenerate for While {
         code_generator.write(format!("label_{}:", lable_done), false);
 
         self.test.code_generate(code_generator);
-        match self.test.deref() {
-            Expr::Math(_) => {}
-            _ => {
-                // else is bool type
-                code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
-            }
-        }
+        // is bool type
+        code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
         code_generator.write(format!("cmpq $1, %rax"), true);
         code_generator.write(format!("je label_{}", label_loop), true);
     }
@@ -517,14 +506,8 @@ impl CodeGenerate for For {
         code_generator.write(format!("label_{}:", lable_done), false);
         for test_ in self.test.deref() {
             test_.code_generate(code_generator);
-            match test_ {
-                Expr::Math(_) => {}
-                _ => {
-                    // else is bool type
-                    code_generator
-                        .write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
-                }
-            }
+            // is bool type
+            code_generator.write(format!("movq {}(%rax), %rax", BOOL_CONST_VAL_OFFSET), true);
         }
 
         code_generator.write(format!("cmpq $1, %rax"), true);
