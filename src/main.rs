@@ -8,7 +8,9 @@ use clap::{Arg, ColorChoice};
 use grammar::lexer::Lexer;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
+use std::collections::HashMap;
 use std::fs;
+use std::fs::metadata;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -17,6 +19,7 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
+use crate::grammar::ast::expr::Import;
 
 mod cgen;
 mod grammar;
@@ -31,14 +34,12 @@ const SELF: &str = "self";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 
-
-
-const INT_CONST_VAL_OFFSET:usize = 24;
-const BOOL_CONST_VAL_OFFSET:usize = 24;
-const STRING_CONST_VAL_OFFSET:usize = 24;
-const DISPATCH_TABLE_OFFSET:usize = 16;
-const NULL_TAG_OFFSET :usize = 8;
-const FIELD_BASIC_OFFSET:usize = 24;
+const INT_CONST_VAL_OFFSET: usize = 24;
+const BOOL_CONST_VAL_OFFSET: usize = 24;
+const STRING_CONST_VAL_OFFSET: usize = 24;
+const DISPATCH_TABLE_OFFSET: usize = 16;
+const NULL_TAG_OFFSET: usize = 8;
+const FIELD_BASIC_OFFSET: usize = 24;
 
 const DEBUG: bool = false;
 
@@ -84,17 +85,33 @@ fn handle_args() {
         println!("{}", msg.green());
         create_project_folder(matches.get_one::<String>("name").unwrap());
     } else if let Some(_) = matches.subcommand_matches("build") {
-        if let Ok(paths) = fs::read_dir("./src") {
-            let mut files: Vec<_> = vec![];
+        let mut curr_path = "./src".to_string();
+        let mut path_flag = true;
+        let mut files: Vec<_> = vec![];
 
-            for path in paths {
-                files.insert(0, path.unwrap().path().to_str().unwrap().to_string());
+        while path_flag {
+            path_flag = false;
+            if let Ok(paths) = fs::read_dir(&curr_path) {
+                // paths.
+
+                for path in paths {
+                    if let Ok(d) = &path {
+                        let path_name = d.path().to_str().unwrap().to_string();
+                        if metadata(&path_name).unwrap().is_dir() {
+                            path_flag = true;
+                            curr_path = path_name.to_string();
+                        } else {
+                            files.insert(0, path_name);
+                        }
+                    }
+                }
+            } else {
+                let err = format!("❌ Failed to build because the current directory is not a strawberry project, try strawberry new example");
+                println!("{}", err.red());
             }
-            compile(files);
-        } else {
-            let err = format!("❌ Failed to build because the current directory is not a strawberry project, try strawberry new example");
-            println!("{}", err.red());
         }
+        // dbg!(&files);
+        compile(files);
     } else {
         let _ = cmd.print_long_help();
     }
@@ -102,6 +119,9 @@ fn handle_args() {
 
 fn compile(files: Vec<String>) {
     let mut all_classes: Vec<Class> = vec![];
+    // let mut compile_class: Vec<Class> = vec![];
+    // let mut import_map: HashMap<String, Vec<Import>> = HashMap::new();
+    let main_file = "./src/main.st".to_string();
 
     // init
     let mut table = table::Tables::new();
@@ -116,6 +136,11 @@ fn compile(files: Vec<String>) {
     // install constants
     class_table.install_basic_class();
 
+    if !files.contains(&main_file) {
+        let err = format!("❌ There is no main.st in your src directory!");
+        println!("{}", err.red());
+    }
+
     for file_name in files {
         let mut file = File::open(&file_name).unwrap();
         let mut content = String::new();
@@ -129,7 +154,13 @@ fn compile(files: Vec<String>) {
         let program = strawberry::ProgramParser::new().parse(lexer);
         match program {
             Ok(mut v) => {
-                all_classes.append(&mut v);
+                all_classes.append(&mut v.1);
+
+                // if file_name == main_file {
+                //     compile_class.append(&mut v.1);
+                // }
+                // // dbg!(&file_name);
+                // import_map.insert(file_name, v.0);
             }
             Err(e) => {
                 let err = format!("❌ Oops, syntax error has occurred in {}!", &file_name);
@@ -140,12 +171,32 @@ fn compile(files: Vec<String>) {
             }
         }
     }
+    // let mut curr_import = import_map.get(&main_file).unwrap();
+    // let mut flag = true;
+
+    // while flag {
+    //     if curr_import.is_empty() {
+    //         break;
+    //     }
+    //     for i in curr_import {
+    //         let index = all_classes
+    //             .iter()
+    //             .position(|c| c.file_name == i.file_name && c.name == i.class_name)
+    //             .unwrap();
+    //         if !compile_class.contains(&all_classes[index]) {
+    //             compile_class.insert(0, all_classes[index].clone());
+    //             curr_import = import_map.get(&all_classes[index].file_name).unwrap();
+    //             flag = true;
+    //         } else {
+    //             flag = false;
+    //         }
+    //     }
+    // }
 
     println!(
         "{}",
         "🎉 Congratulations you passped the syntax analysis!".green()
     );
-
     let mut semantic_checker: SemanticChecker = SemanticChecker::new(all_classes.clone());
     if DEBUG {
         println!("Res: {:?}", &all_classes);
@@ -171,8 +222,7 @@ fn compile(files: Vec<String>) {
                 .expect("gcc command failed to start");
             println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
         }
-        Err(e) => 
-        {
+        Err(e) => {
             println!("{}", "❌ Oops, semantic error has occurred!".red());
             println!("{}", e.err_msg.red());
         }
@@ -195,7 +245,6 @@ fn create_project_folder(name: &str) {
 
     file.write(
         b"class Main { \n\tfun main() -> Int { \n\t\tprint(\"Hello world!\"); \n\t\treturn 0; \n\t};\n};",
-    
     ).unwrap();
 }
 
@@ -242,7 +291,7 @@ fn test() {
     let program = strawberry::ProgramParser::new().parse(lexer);
     match program {
         Ok(v) => {
-            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.clone());
+            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
             // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
             let result = semantic_checker.check(&mut class_table);
             match result {
@@ -250,7 +299,7 @@ fn test() {
                     println!("{:?}", v);
                 }
                 Err(e) => {
-                    println!("{}",e.err_msg);
+                    println!("{}", e.err_msg);
                 }
             }
         }
@@ -258,10 +307,8 @@ fn test() {
     };
 }
 
-
-
 #[test]
 fn bit_test() {
     let a = 24;
-    println!("{}", (a + 15)&(!15));
+    println!("{}", (a + 15) & (!15));
 }

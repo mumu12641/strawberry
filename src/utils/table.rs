@@ -76,7 +76,6 @@ impl ClassTable {
                     body: Box::new(None),
                     position: EMPTY,
                 }),
-
             ],
             position: (0, 0), // features: vec![],
             file_name: OBJECT.to_string(),
@@ -99,7 +98,10 @@ impl ClassTable {
                 }),
                 Feature::Method(MethodDecl {
                     name: "concat".to_string(),
-                    param: Box::new(vec![("dest".to_string(), STRING.to_string()),("src".to_string(), STRING.to_string())]),
+                    param: Box::new(vec![
+                        ("dest".to_string(), STRING.to_string()),
+                        ("src".to_string(), STRING.to_string()),
+                    ]),
                     return_type: STRING.to_string(),
                     body: Box::new(None),
                     position: EMPTY,

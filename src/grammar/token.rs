@@ -50,6 +50,9 @@ pub enum Token {
     Whitespace,
     Comment,
 
+    Import,
+    From,
+
     Error(String),
     // todo
     // case,

@@ -13,6 +13,9 @@ lexer! {
     "fn" => Token::Function(EMPTY),
     "return"=>Token::Return(EMPTY),
 
+    "import"=>Token::Import,
+        "from"=>Token::From,
+
     "if" => Token::If(EMPTY),
     "then" => Token::Then,
     "else" => Token::Else(EMPTY),

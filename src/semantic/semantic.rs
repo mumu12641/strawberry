@@ -219,11 +219,9 @@ impl SemanticChecker {
                                     }
                                 }
                                 _ => {
-                                    println!("!!! {}", i.file_name);
                                     if let Err(e) =
                                         expr.check_type(&mut self.symbol_table, class_table)
                                     {
-                                        println!("!!! {}", i.file_name);
                                         return Err(SemanticError {
                                             err_msg: format!("{}:{}", i.file_name, e.err_msg),
                                         });

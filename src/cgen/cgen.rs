@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
     grammar::ast::{
-        class::{self, Class, Feature},
+        class::{Class, Feature},
         Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},

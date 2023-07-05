@@ -8,7 +8,14 @@ grammar<'input>;
 // * => zero or more
 // + => once or more
 // ? => zero or once
-pub Program = <class*>;
+pub Program = <import*>  <class*>;
+
+import: Import = {
+    "FROM" <s:"STR"> "IMPORT" <class_name_:"TYPE"> ";" => Import{
+        file_name:s,
+        class_name:class_name_,
+    },
+};
 
 class: Class = {
     <l:"CLASS"> <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
@@ -387,6 +394,10 @@ extern {
         "." => Token::Period,
         "," => Token::Comma,
         ":" =>Token::Colon,
+
+        "IMPORT" => Token::Import,
+        "FROM" => Token::From,
+
         "ERROR" => Token::Error(<String>),
     }
 
