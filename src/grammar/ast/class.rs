@@ -53,6 +53,14 @@ impl Feature {
         return false;
     }
 
+
+    pub fn get_ownership(&self) -> &Ownership {
+        match self {
+            Self::Method(m) => return &m.ownership,
+            Self::Attribute(a) => return &a.ownership,
+        }
+    }
+
     pub fn get_position(&self) -> Position {
         if let Self::Method(m) = self {
             return m.position;
@@ -68,6 +76,14 @@ pub struct VarDecl {
     pub type_: Option<Type>,
     pub init: Box<Option<Expr>>,
     pub position: Position,
+    pub ownership: Ownership,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ownership {
+    Private,
+    Public,
+    Default,
 }
 
 impl PartialEq for VarDecl {
@@ -84,6 +100,7 @@ pub struct MethodDecl {
     pub return_type: Type,
     pub body: Box<Option<Vec<Expr>>>,
     pub position: Position,
+    pub ownership: Ownership,
 }
 
 impl PartialEq for MethodDecl {

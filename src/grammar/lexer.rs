@@ -7,6 +7,10 @@ lexer! {
 
     fn next_token(text:'a) -> Token;
     "class" => Token::Class_(EMPTY,"".to_string()),
+    "public" => Token::Public,
+    "private" => Token::Private,
+
+
     "self" => Token::Self_(text.to_owned()),
     "function"=>Token::Function(EMPTY),
     "fun" => Token::Function(EMPTY),
@@ -14,7 +18,7 @@ lexer! {
     "return"=>Token::Return(EMPTY),
 
     "import"=>Token::Import,
-        "from"=>Token::From,
+    "from"=>Token::From,
 
     "if" => Token::If(EMPTY),
     "then" => Token::Then,

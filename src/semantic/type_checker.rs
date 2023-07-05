@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::{
     grammar::ast::{
-        class::Feature,
+        class::{Feature, Ownership},
         expr::{
             Assignment, ComputeOp, Cond, Dispatch, DispatchExpr, Expr, For, Isnull, Let, Math,
             MathOp, Not, Return, TypeChecker, While,
@@ -104,28 +104,43 @@ impl TypeChecker for Dispatch {
                                     for f in &class.features {
                                         if let Feature::Method(method) = f {
                                             if &method.name == &method_call.fun_name {
-                                                let method_param = method.param.deref();
-                                                let actuals = method_call.actual.deref_mut();
-                                                if actuals.len() != method_param.len() {
-                                                    return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
-                                                }
-                                                for index in 0..method_param.len() {
-                                                    let actual_type = actuals[index]
-                                                        .check_type(symbol_table, class_table);
-                                                    match actual_type {
-                                                        Ok(type_) => {
-                                                            if !class_table.is_less_or_equal(
-                                                                &type_,
-                                                                &method_param[index].1,
-                                                            ) {
-                                                                return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.position.0,self.position.1), });
-                                                            }
-                                                        }
-                                                        Err(e) => return Err(e),
+                                                let flag ;
+                                                if let Ownership::Private = method.ownership {
+                                                    if !self.target.deref().is_self_expr() {
+                                                        return Err(SemanticError {
+                                                            err_msg: format!("{}:{} ---> The method {} in class {} is private!",self.position.0,self.position.1,method.name,class.name),
+                                                        });
+                                                    } else {
+                                                        flag = true;
                                                     }
+                                                } else {
+                                                    flag = true;
                                                 }
-                                                self.type_ = method.return_type.clone();
-                                                return Ok(method.return_type.clone());
+
+                                                if flag {
+                                                    let method_param = method.param.deref();
+                                                    let actuals = method_call.actual.deref_mut();
+                                                    if actuals.len() != method_param.len() {
+                                                        return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
+                                                    }
+                                                    for index in 0..method_param.len() {
+                                                        let actual_type = actuals[index]
+                                                            .check_type(symbol_table, class_table);
+                                                        match actual_type {
+                                                            Ok(type_) => {
+                                                                if !class_table.is_less_or_equal(
+                                                                    &type_,
+                                                                    &method_param[index].1,
+                                                                ) {
+                                                                    return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.position.0,self.position.1), });
+                                                                }
+                                                            }
+                                                            Err(e) => return Err(e),
+                                                        }
+                                                    }
+                                                    self.type_ = method.return_type.clone();
+                                                    return Ok(method.return_type.clone());
+                                                }
                                             }
                                         }
                                     }
@@ -135,8 +150,21 @@ impl TypeChecker for Dispatch {
                                     for f in &class.features {
                                         if let Feature::Attribute(attr) = f {
                                             if &attr.name == field {
-                                                self.type_ = attr.type_.clone().unwrap();
-                                                return Ok(self.type_.clone());
+                                                if let Ownership::Public = attr.ownership {
+                                                    self.type_ = attr.type_.clone().unwrap();
+                                                    return Ok(self.type_.clone());
+                                                } else {
+                                                    // if target is self, then nobody cares
+                                                    // if self.target.deref()
+                                                    if self.target.deref().is_self_expr() {
+                                                        self.type_ = attr.type_.clone().unwrap();
+                                                        return Ok(self.type_.clone());
+                                                    } else {
+                                                        return Err(SemanticError {
+                                                            err_msg: format!("{}:{} ---> The field {} in class {} is private!",self.position.0,self.position.1,field,class.name),
+                                                        });
+                                                    }
+                                                }
                                             }
                                         }
                                     }

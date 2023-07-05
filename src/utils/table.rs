@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     grammar::ast::{
-        class::{Class, Feature, MethodDecl, VarDecl},
+        class::{Class, Feature, MethodDecl, Ownership, VarDecl},
         Type,
     },
     BOOL, EMPTY, INT, OBJECT, STRING,
@@ -61,6 +61,7 @@ impl ClassTable {
                     return_type: OBJECT.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
                 Feature::Method(MethodDecl {
                     name: "to_string".to_string(),
@@ -68,6 +69,7 @@ impl ClassTable {
                     return_type: STRING.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
                 Feature::Method(MethodDecl {
                     name: "malloc".to_string(),
@@ -75,6 +77,7 @@ impl ClassTable {
                     return_type: OBJECT.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
             ],
             position: (0, 0), // features: vec![],
@@ -89,12 +92,14 @@ impl ClassTable {
                     type_: Some("prim_slot".to_string()),
                     init: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
                 Feature::Attribute(VarDecl {
                     name: "len".to_string(),
                     type_: Some("prim_slot".to_string()),
                     init: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
                 Feature::Method(MethodDecl {
                     name: "concat".to_string(),
@@ -105,6 +110,7 @@ impl ClassTable {
                     return_type: STRING.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
             ],
             position: (0, 0),
@@ -119,6 +125,7 @@ impl ClassTable {
                     type_: Some("prim_slot".to_string()),
                     init: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
                 Feature::Method(MethodDecl {
                     name: "to_string".to_string(),
@@ -126,6 +133,7 @@ impl ClassTable {
                     return_type: STRING.to_string(),
                     body: Box::new(None),
                     position: EMPTY,
+                    ownership: Ownership::Public,
                 }),
             ],
             position: (0, 0),
@@ -139,6 +147,7 @@ impl ClassTable {
                 type_: Some("prim_slot".to_string()),
                 init: Box::new(None),
                 position: EMPTY,
+                ownership: Ownership::Public,
             })],
             position: (0, 0),
             file_name: BOOL.to_string(),

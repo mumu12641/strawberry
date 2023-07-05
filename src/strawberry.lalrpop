@@ -36,45 +36,88 @@ class: Class = {
 
 feature: Feature = {
     // attr
-    <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
+    "private"? <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
         Feature::Attribute(VarDecl {
             name: attr_name.0,
             type_: Some(type_name),
             init: Box::new(None),
-            position: attr_name.1
+            position: attr_name.1,
+            ownership: Ownership::Private,
+        })
+    },
+    "public" <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
+        Feature::Attribute(VarDecl {
+            name: attr_name.0,
+            type_: Some(type_name),
+            init: Box::new(None),
+            position: attr_name.1,
+            ownership: Ownership::Public,
         })
     },
 
-    <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
+    "private"? <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
         Feature::Attribute(VarDecl{
             name:attr_name.0,
             type_:Some(type_name),
             init:Box::new(Some(e)),
-            position: attr_name.1
+            position: attr_name.1,
+            ownership: Ownership::Private,
+        })
+    },
+    "public" <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
+        Feature::Attribute(VarDecl{
+            name:attr_name.0,
+            type_:Some(type_name),
+            init:Box::new(Some(e)),
+            position: attr_name.1,
+            ownership: Ownership::Public,
         })
     },
 
 
     
     // function
-    <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    "private"? <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
             return_type:r_type,
             body: Box::new(Some(e)),
             position: pos,
+            ownership: Ownership::Private,
+            // body: Box::new(Box::new(e)),
+        })
+    },
+    "public" <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+        Feature::Method(MethodDecl{
+            name: method_name.0,
+            param: Box::new(param_.unwrap_or(vec![])),
+            return_type:r_type,
+            body: Box::new(Some(e)),
+            position: pos,
+            ownership: Ownership::Public,
             // body: Box::new(Box::new(e)),
         })
     },
 
-    <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    "private"? <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
             return_type:r_type,
             body: Box::new(None),
             position: pos,
+            ownership: Ownership::Private,
+        })
+    },
+    "public" <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+        Feature::Method(MethodDecl{
+            name: method_name.0,
+            param: Box::new(param_.unwrap_or(vec![])),
+            return_type:r_type,
+            body: Box::new(None),
+            position: pos,
+            ownership: Ownership::Public,
         })
     },
 
@@ -91,12 +134,14 @@ var: VarDecl = {
         type_: Some(type_name),
         init: Box::new(None),
         position: id.1,
+        ownership: Ownership::Default,
     },
     <id:"ID"> ":" <type_name:"TYPE"> "=" <e:math_expr> => VarDecl{
         name:id.0,
         type_: Some(type_name),
         init: Box::new(Some(e)),
         position: id.1,
+        ownership: Ownership::Default,
     },
 
     <id:"ID">  "=" <e:math_expr> => VarDecl{
@@ -104,6 +149,7 @@ var: VarDecl = {
         type_: None,
         init: Box::new(Some(e)),
         position: id.1,
+        ownership: Ownership::Default,
     },
 };
 
@@ -353,6 +399,9 @@ extern {
     // Map parser terms to token values:
     enum Token{
         "CLASS" => Token::Class_(<(usize,usize)>,<String>),
+        "public" => Token::Public,
+        "private" => Token::Private,
+
         // "SELF" => Token::Self_,
         "FUN" => Token::Function(<(usize,usize)>),
         "RETURN" => Token::Return(<(usize,usize)>),

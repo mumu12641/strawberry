@@ -139,14 +139,18 @@ impl SemanticChecker {
                         match feature {
                             Feature::Method(method_) => {
                                 if i.features.contains(&feature) {
-                                    // check returan_type and attr
+                                    // check returan_type and attr and ownership
                                     let index =
                                         i.features.iter().position(|r| r == feature).unwrap();
+                                    // i.features[index].
+                                    // method_.ownership; parent's own
                                     if !i.features[index].check_param(&feature)
                                         || !i.features[index].check_return_type(&feature)
+                                        || feature.get_ownership()
+                                            != i.features[index].get_ownership()
                                     {
                                         return Err(SemanticError {
-                                            err_msg:format!("{}:{}:{} ---> An error occurred in the parameter type or return type of the method <{}> overridden by Class {}!",
+                                            err_msg:format!("{}:{}:{} ---> An error occurred in the parameter type or return type of the method <{}> overridden by Class {} or ownership!",
                                                 i.file_name,i.features[index].get_position().0,i.features[index].get_position().1,method_.name,i.name),
                                         });
                                     }

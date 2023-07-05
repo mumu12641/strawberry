@@ -3,6 +3,8 @@ use super::lexer::Position;
 #[derive(Debug, Clone)]
 pub enum Token {
     Class_(Position, String),
+    Public,
+    Private,
     Self_(String),
     Function(Position),
     Return(Position),

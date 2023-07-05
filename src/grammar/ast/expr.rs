@@ -177,3 +177,13 @@ impl TypeGet for Expr {
         }
     }
 }
+
+impl Expr {
+    pub fn is_self_expr(&self) -> bool {
+        if let Expr::Self_(_) = self {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
