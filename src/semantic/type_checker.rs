@@ -29,12 +29,19 @@ impl TypeChecker for Expr {
                 if let Some(_) = class_table.classes.get(type_) {
                     return Ok(type_.clone());
                 } else {
-                    return Err(SemanticError {
-                        err_msg: format!(
+                    //                    return Err(SemanticError::new(
+                    //                          format!(
+                    //                            "There is no class called {}, maybe you should import it!",
+                    //                            type_
+                    //                        ),
+                    //                    });
+                    return Err(SemanticError::new(
+                        format!(
                             "There is no class called {}, maybe you should import it!",
                             type_
                         ),
-                    });
+                        None,
+                    ));
                 }
             }
 
@@ -43,9 +50,13 @@ impl TypeChecker for Expr {
                     e.type_ = s.clone();
                     return Ok(s.clone());
                 } else {
-                    return Err(SemanticError {
-                        err_msg: format!("{}:{} ---> The identifier {} does not exist or it has gone out of scope!",e.pos.0,e.pos.1,e.name)
-                    });
+                    return Err(SemanticError::new(
+                        format!(
+                            "The identifier {} does not exist or it has gone out of scope!",
+                            e.name
+                        ),
+                        Some(e.pos),
+                    ));
                 }
             }
 
@@ -104,12 +115,13 @@ impl TypeChecker for Dispatch {
                                     for f in &class.features {
                                         if let Feature::Method(method) = f {
                                             if &method.name == &method_call.fun_name {
-                                                let flag ;
+                                                let flag;
                                                 if let Ownership::Private = method.ownership {
                                                     if !self.target.deref().is_self_expr() {
-                                                        return Err(SemanticError {
-                                                            err_msg: format!("{}:{} ---> The method {} in class {} is private!",self.position.0,self.position.1,method.name,class.name),
-                                                        });
+                                                        return  Err(SemanticError::new(
+                                                            format!("The method {} in class {} is private!",method.name,class.name),
+                                                            Some(self.position)
+                                                            ));
                                                     } else {
                                                         flag = true;
                                                     }
@@ -121,7 +133,8 @@ impl TypeChecker for Dispatch {
                                                     let method_param = method.param.deref();
                                                     let actuals = method_call.actual.deref_mut();
                                                     if actuals.len() != method_param.len() {
-                                                        return Err(SemanticError { err_msg: format!("{}:{} ---> The actual number of parameters of your method call is not equal to the number of declared formal parameters!",self.position.0,self.position.1), });
+                                                        return Err(SemanticError::new(
+                                                            format!("The actual number of parameters of your method call is not equal to the number of declared formal parameters!"), Some(self.position)));
                                                     }
                                                     for index in 0..method_param.len() {
                                                         let actual_type = actuals[index]
@@ -132,7 +145,8 @@ impl TypeChecker for Dispatch {
                                                                     &type_,
                                                                     &method_param[index].1,
                                                                 ) {
-                                                                    return Err(SemanticError { err_msg: format!("{}:{} ---> The actual parameter type of your method call is not the same as the declared formal parameter type!",self.position.0,self.position.1), });
+                                                                    return Err(SemanticError::new(
+                                                                        format!("The actual parameter type of your method call is not the same as the declared formal parameter type!",),Some(self.position) ));
                                                                 }
                                                             }
                                                             Err(e) => return Err(e),
@@ -160,9 +174,9 @@ impl TypeChecker for Dispatch {
                                                         self.type_ = attr.type_.clone().unwrap();
                                                         return Ok(self.type_.clone());
                                                     } else {
-                                                        return Err(SemanticError {
-                                                            err_msg: format!("{}:{} ---> The field {} in class {} is private!",self.position.0,self.position.1,field,class.name),
-                                                        });
+                                                        return Err(SemanticError::new(
+                                                            format!("The field {} in class {} is private!",field,class.name),Some(self.position)
+                                                        ));
                                                     }
                                                 }
                                             }
@@ -171,12 +185,10 @@ impl TypeChecker for Dispatch {
                                 }
                             }
                         }
-                        return Err(SemanticError {
-                            err_msg: format!(
-                                "{}:{} ---> Some dispatch errors appear !",
-                                self.position.0, self.position.1
-                            ),
-                        });
+                        return Err(SemanticError::new(
+                            format!("Some dispatch errors appear !",),
+                            Some(self.position),
+                        ));
                     }
                 }
             }
@@ -201,7 +213,7 @@ impl TypeChecker for Let {
                             if class_table.is_less_or_equal(&type_, decl_type) {
                                 symbol_table.add(&i.name, decl_type);
                             } else {
-                                return Err(SemanticError { err_msg: format!("{}:{} ---> The type of your let expression init is inconsistent with the declared type!",i.position.0,i.position.1), });
+                                return Err(SemanticError::new(format!("The type of your let expression init is inconsistent with the declared type!",),Some(i.position) ));
                             }
                         } else {
                             i.type_ = Some(type_.clone());
@@ -239,12 +251,10 @@ impl TypeChecker for Assignment {
                 }
             }
         }
-        return Err(SemanticError {
-            err_msg: format!(
-                "{}:{} ---> Some semantic errors occurred in your Assignment!",
-                self.position.0, self.position.1
-            ),
-        });
+        return Err(SemanticError::new(
+            format!("Some semantic errors occurred in your Assignment!",),
+            Some(self.position),
+        ));
     }
 }
 
@@ -279,26 +289,26 @@ impl TypeChecker for Math {
                                     self.type_ = STRING.to_string();
                                     return Ok(STRING.to_string());
                                 } else {
-                                    return Err(SemanticError {
-                                        err_msg: format!(
+                                    return Err(SemanticError::new(
+                                        format!(
                                             "String cannot be used for mathematical operations other than addition"
                                         ),
-                                    });
+                                        None,
+                                    ));
                                 }
                             }
                             MathOp::CondOp(_) => {
-                                return Err(SemanticError {
-                                    err_msg: format!(
-                                        "String cannot be used in conditional operations"
-                                    ),
-                                })
+                                return Err(SemanticError::new(
+                                    format!("String cannot be used in conditional operations"),
+                                    None,
+                                ))
                             }
                         }
                     } else {
-                        return Err(SemanticError {
-                        err_msg:
+                        return Err(SemanticError::new(
                             format!("The left and right sides of your mathematical operation are not all INT types!"),
-                    });
+                            None
+                    ));
                     }
                 }
                 Err(e) => return Err(e),
@@ -320,12 +330,10 @@ impl TypeChecker for Cond {
         match test_type {
             Ok(test) => {
                 if test != BOOL.to_string() {
-                    return Err(SemanticError {
-                        err_msg: format!(
-                            "{}:{} ---> The type in your If condition is not BOOL",
-                            self.position.0, self.position.1
-                        ),
-                    });
+                    return Err(SemanticError::new(
+                        format!("The type in your If condition is not BOOL",),
+                        Some(self.position),
+                    ));
                 }
             }
             Err(e) => return Err(e),
@@ -363,12 +371,10 @@ impl TypeChecker for While {
         match test_type {
             Ok(test) => {
                 if test != BOOL.to_string() {
-                    return Err(SemanticError {
-                        err_msg: format!(
-                            "{}:{} ---> The type in your Loop condition is not BOOL",
-                            self.position.0, self.position.1
-                        ),
-                    });
+                    return Err(SemanticError::new(
+                        format!("The type in your Loop condition is not BOOL",),
+                        Some(self.position),
+                    ));
                 }
             }
             Err(e) => return Err(e),
@@ -411,12 +417,10 @@ impl TypeChecker for Not {
         match expr_type {
             Ok(type_) => {
                 if type_ != BOOL.to_string() {
-                    return Err(SemanticError {
-                        err_msg: format!(
-                            "{}:{} ---> The type in your Not expression is not BOOL",
-                            self.position.0, self.position.1,
-                        ),
-                    });
+                    return Err(SemanticError::new(
+                        format!("The type in your Not expression is not BOOL",),
+                        Some(self.position),
+                    ));
                 }
                 return Ok(type_);
             }
@@ -455,11 +459,12 @@ impl TypeChecker for For {
         symbol_table.enter_scope();
 
         if self.init.deref().len() > 1 || self.test.deref().len() > 1 {
-            return Err(SemanticError {
-                err_msg: format!(
-                    "{}:{} ---> There can only be one initial expression and one judgment expression in the for loop!",self.position.0,self.position.1
+            return Err(SemanticError::new(
+                format!(
+                    " There can only be one initial expression and one judgment expression in the for loop!"
                 ),
-            });
+                Some(self.position)
+            ));
         }
         for init_ in self.init.deref_mut() {
             let init_type = init_.check_type(symbol_table, class_table);
@@ -475,11 +480,12 @@ impl TypeChecker for For {
                 Err(e) => return Err(e),
                 Ok(type_) => {
                     if type_ != BOOL.to_string() {
-                        return Err(SemanticError {
-                            err_msg: format!(
-                                "{}:{} ---> The type of the conditional expression in the for loop is not BOOL!",self.position.0,self.position.1
+                        return Err(SemanticError::new(
+                            format!(
+                                "The type of the conditional expression in the for loop is not BOOL!"
                             ),
-                        });
+                            Some(self.position)
+                        ));
                     }
                 }
             }

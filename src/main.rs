@@ -164,6 +164,7 @@ fn compile(files: Vec<String>) {
             }
             Err(e) => {
                 let err = format!("❌ Oops, syntax error has occurred in {}!", &file_name);
+
                 println!("{}", err.red());
                 println!("{}", "Err: ".red());
                 println!("{:?}", e.red());
@@ -224,7 +225,24 @@ fn compile(files: Vec<String>) {
         }
         Err(e) => {
             println!("{}", "❌ Oops, semantic error has occurred!".red());
-            println!("{}", e.err_msg.red());
+            if let Some(pos) = e.position {
+                let (line, off) = pos;
+                let mut err_file = File::open(&e.file_name).unwrap();
+                let mut err_content = String::new();
+                let mut lines;
+                let err_msg = format!("--> {}:{}:{}", e.file_name, line, off);
+                err_file.read_to_string(&mut err_content).expect("error");
+                lines = err_content.lines();
+                println!("{}", err_msg.blue());
+                println!("{0:<4}{1:<4}", "".to_string(), format!("|").blue());
+                print!("{0:<4}{1:<4}", line.blue(), format!("|").blue());
+                println!("{}", lines.nth(line - 1).unwrap().blue());
+                print!("{0:<4}{1:<4}{:<off$}", "".to_string(), format!("|").blue());
+                println!("{}{}", format!("^ ").red(), e.err_msg.red());
+            } else {
+                println!("{}{}", format!("--> ").blue(), e.file_name.blue());
+                println!("\t{}", e.err_msg.blue());
+            }
         }
     }
 }

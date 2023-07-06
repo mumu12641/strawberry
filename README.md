@@ -127,7 +127,7 @@ class Main{
 class Shape {
     name:String = "shape";
     
-    fun get_area() -> Int{
+    public fun get_area() -> Int{
         return 0;
     };
 };
@@ -135,12 +135,12 @@ class Shape {
 class Square inherits Shape{
     a:Int = 0;
     
-    fun set(x:Int) -> Int{
+    public fun set(x:Int) -> Int{
         a = x;
         return 0;
     };
     
-    fun get_area() -> Int{
+    public fun get_area() -> Int{
         return a*a;
     };
 
@@ -217,21 +217,21 @@ class Node{
 	val:Int = 0;
 	next:Node;
 
-	fn set_val(val_:Int) -> Int{
+    public fn set_val(val_:Int) -> Int{
 		val = val_;
 		return 0;
 	};
 
-	fn set_next(next_:Node) -> Int{
+    public fn set_next(next_:Node) -> Int{
 		next = next_;
 		return 0;
 	};
 
-	fn get_next() -> Node{
+    public fn get_next() -> Node{
 		return next;
 	};
 
-	fn to_string() -> String{
+    public fn to_string() -> String{
 		return val.to_string() + "\\n";
 	};
 };
@@ -240,7 +240,7 @@ class List{
 	head:Node;
 	tail:Node;
 
-	fn insert(node:Node) -> Int{
+    public fn insert(node:Node) -> Int{
 		if(null(head)){
 			head = node;
 			tail = head;
@@ -251,7 +251,7 @@ class List{
 		return 0;
 	};
 
-	fn get_head() -> Node{
+    public fn get_head() -> Node{
 		return head;
 	};
 };

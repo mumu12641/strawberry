@@ -2,10 +2,13 @@ use std::ops::DerefMut;
 
 use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
-    grammar::ast::{
-        class::{Class, Feature},
-        expr::{Expr, TypeChecker},
-        Identifier, Type,
+    grammar::{
+        ast::{
+            class::{Class, Feature},
+            expr::{Expr, TypeChecker},
+            Identifier, Type,
+        },
+        lexer::Position,
     },
     table::ClassTable,
     utils::table::SymbolTable,
@@ -28,6 +31,18 @@ pub struct SemanticChecker {
 #[derive(Debug)]
 pub struct SemanticError {
     pub err_msg: String,
+    pub position: Option<Position>,
+    pub file_name: String,
+}
+
+impl SemanticError {
+    pub fn new(err_msg_: String, position_: Option<Position>) -> SemanticError {
+        SemanticError {
+            err_msg: err_msg_,
+            position: position_,
+            file_name: "".to_string(),
+        }
+    }
 }
 
 impl SemanticChecker {
@@ -55,10 +70,9 @@ impl SemanticChecker {
             }
             if class_table.classes.contains_key(&i.name) {
                 return Err(SemanticError {
-                    err_msg: format!(
-                        "{}:{}:{} ---> Class {} has been redefined!",
-                        i.file_name, i.position.0, i.position.1, i.name
-                    ),
+                    err_msg: format!("Class {} has been redefined!", i.name),
+                    file_name:  i.file_name.clone(),
+                    position: Some(i.position),
                 });
             } else {
                 class_table.classes.insert(i.name.clone(), i.clone());
@@ -69,11 +83,15 @@ impl SemanticChecker {
         if !main_flag {
             return Err(SemanticError {
                 err_msg: format!("Your program is missing the Main class"),
+                file_name: "".to_string(),
+                position: None,
             });
         }
         if !main_method_flag {
             return Err(SemanticError {
                 err_msg: format!("Your program is missing the Main function"),
+                file_name: "".to_string(),
+                position: None,
             });
         }
 
@@ -92,9 +110,11 @@ impl SemanticChecker {
                         } else if s == &i.name {
                             return Err(SemanticError {
                                 err_msg: format!(
-                                    "{}:{}:{} ---> There is an inheritance cycle about Class {}!",
-                                    i.file_name, i.position.0, i.position.1, s
+                                    "There is an inheritance cycle about Class {}!",
+                                    s
                                 ),
+                                file_name:  i.file_name.clone(),
+                                position: Some(i.position),
                             });
                         } else {
                             if let Some(c) = class_table.classes.get(&(s.clone())) {
@@ -103,9 +123,11 @@ impl SemanticChecker {
                             } else {
                                 return Err(SemanticError {
                                     err_msg: format!(
-                                        "{}:{}:{} ---> Your Class {} inherits an undefined Class {} !",
-                                        i.file_name, i.position.0, i.position.1,i.name,s
+                                        "Your Class {} inherits an undefined Class {} !",
+                                        i.name, s
                                     ),
+                                    file_name:  i.file_name.clone(),
+                                    position: Some(i.position),
                                 });
                             }
                         }
@@ -144,22 +166,43 @@ impl SemanticChecker {
                                         i.features.iter().position(|r| r == feature).unwrap();
                                     // i.features[index].
                                     // method_.ownership; parent's own
-                                    if !i.features[index].check_param(&feature)
-                                        || !i.features[index].check_return_type(&feature)
-                                        || feature.get_ownership()
-                                            != i.features[index].get_ownership()
+                                    if !i.features[index].check_param(&feature) {
+                                        return Err(SemanticError {
+                                            err_msg: format!(
+                                                "An error occurred in the parameter type of the method <{}> overridden by Class {}!",method_.name,i.name
+                                            ),
+                                            position: Some(i.features[index].get_position()),
+                                            file_name:  i.file_name.clone().clone(),
+                                        });
+                                    }
+                                    if !i.features[index].check_return_type(&feature) {
+                                        return Err(SemanticError {
+                                            err_msg: format!(
+                                                "An error occurred in the return type of the method <{}> overridden by Class {}!",method_.name,i.name
+                                            ),
+                                            position: Some(i.features[index].get_position()),
+                                            file_name:  i.file_name.clone(),
+                                        });
+                                    }
+                                    if feature.get_ownership() != i.features[index].get_ownership()
                                     {
                                         return Err(SemanticError {
-                                            err_msg:format!("{}:{}:{} ---> An error occurred in the parameter type or return type of the method <{}> overridden by Class {} or ownership!",
-                                                i.file_name,i.features[index].get_position().0,i.features[index].get_position().1,method_.name,i.name),
+                                            err_msg: format!(
+                                                "An error occurred in the ownership of the method <{}> overridden by Class {}!",method_.name,i.name
+                                            ),
+                                            position: Some(i.features[index].get_position()),
+                                            file_name:  i.file_name.clone(),
                                         });
                                     }
                                 }
                             }
                             Feature::Attribute(attr) => {
                                 if &curr_parent.name != &i.name && i.features.contains(&feature) {
-                                    return Err(SemanticError { err_msg: format!("{}:{}:{} ---> You cannot define the same field <{}> in the subclass {} as the superclass {}",
-                                        i.file_name,attr.position.0,attr.position.1,attr.name,i.name,curr_parent.name) });
+                                    return Err(SemanticError { err_msg: format!("You cannot define the same field <{}> in the subclass {} as the superclass {}",
+                                        attr.name,i.name,curr_parent.name),
+                                        file_name:  i.file_name.clone(),
+                                        position: Some(i.position),
+                                    });
                                 }
                             }
                         }
@@ -206,16 +249,20 @@ impl SemanticChecker {
                                     match re.check_type(&mut self.symbol_table, class_table) {
                                         Err(e) => {
                                             return Err(SemanticError {
-                                                err_msg: format!("{}:{}", i.file_name, e.err_msg),
-                                            })
+                                                err_msg: e.err_msg,
+                                                file_name:  i.file_name.clone(),
+                                                position: e.position,
+                                            });
                                         }
                                         Ok(type_) => {
                                             if !class_table
                                                 .is_less_or_equal(&type_, &method.return_type)
                                             {
                                                 return Err(SemanticError {
-                                                     err_msg: format!("{}:{}:{} ---> The return type of your {} method is different from the declared type!",
-                                                                i.file_name,re.position.0,re.position.1,method.name)
+                                                     err_msg: format!("The return type of your {} method is different from the declared type!",
+                                                               method.name),
+                                                    file_name:  i.file_name.clone(),
+                                                    position: Some(re.position),
                                                     }
                                                 );
                                             }
@@ -227,7 +274,9 @@ impl SemanticChecker {
                                         expr.check_type(&mut self.symbol_table, class_table)
                                     {
                                         return Err(SemanticError {
-                                            err_msg: format!("{}:{}", i.file_name, e.err_msg),
+                                            err_msg: e.err_msg,
+                                            file_name:  i.file_name.clone(),
+                                            position: e.position,
                                         });
                                     }
                                 }
@@ -236,9 +285,10 @@ impl SemanticChecker {
                         if !return_ {
                             return Err(SemanticError {
                                 err_msg: format!(
-                                    "{}:{}:{} ---> Your method needs a return expression, even though you may return in an if or while.",
-                                    i.file_name, method.position.0, method.position.1
+                                    "Your method needs a return expression, even though you may return in an if or while.",
                                 ),
+                                file_name:  i.file_name.clone(),
+                                position: Some(method.position),
                             });
                         }
                     }
