@@ -49,7 +49,7 @@ pub enum Token {
     Colon,
 
     Newline,
-    Whitespace,
+    Whitespace(String),
     Comment,
 
     Import,

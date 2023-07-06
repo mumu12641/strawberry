@@ -51,7 +51,7 @@ lexer! {
     "<=" => Token::LessE,
 
     r#"\n"# => Token::Newline,
-    r#"[ \t\r]+"# => Token::Whitespace,
+    r#"[ ]+"# => Token::Whitespace(text.to_owned()),
     r#"/[*](~(.*[*]/.*))[*]/"# => Token::Comment,
     r#"//[^\n]*"# => Token::Comment,
 
@@ -125,16 +125,16 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Result<(LineNum, Token, Off), LexicalError>> {
         loop {
             let tok = if let Some((tok, new_remaining)) = next_token(self.remaining) {
-                self.offset += self.remaining.len() - new_remaining.len();
+                self.offset += self.remaining.chars().count() - new_remaining.chars().count();
                 self.remaining = new_remaining;
                 tok
             } else {
                 return None;
             };
             match tok {
-                Token::Whitespace | Token::Comment => {
-                    continue;
-                }
+                Token::Comment => continue,
+                Token::Whitespace(_) => continue,
+
                 Token::Newline => {
                     self.current_line += 1;
                     self.offset = 0;

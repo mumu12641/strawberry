@@ -8,7 +8,7 @@ use clap::{Arg, ColorChoice};
 use grammar::lexer::Lexer;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
-use std::collections::HashMap;
+
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
@@ -19,7 +19,7 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
-use crate::grammar::ast::expr::Import;
+use crate::utils::util::fix_offset;
 
 mod cgen;
 mod grammar;
@@ -150,6 +150,7 @@ fn compile(files: Vec<String>) {
             println!("{}", "❌ Some unexpected errors occurred, maybe you can solve it by recreating the project".red());
             return;
         }
+        content = fix_offset(content);
         let lexer: Lexer = Lexer::new(&content, &mut table, &file_name);
         let program = strawberry::ProgramParser::new().parse(lexer);
         match program {
@@ -237,7 +238,12 @@ fn compile(files: Vec<String>) {
                 println!("{0:<4}{1:<4}", "".to_string(), format!("|").blue());
                 print!("{0:<4}{1:<4}", line.blue(), format!("|").blue());
                 println!("{}", lines.nth(line - 1).unwrap().blue());
-                print!("{0:<4}{1:<4}{:<off$}", "".to_string(), format!("|").blue());
+                print!(
+                    "{0:<4}{1:<4}{2:<off$}",
+                    "".to_string(),
+                    format!("|").blue(),
+                    "".to_string()
+                );
                 println!("{}{}", format!("^ ").red(), e.err_msg.red());
             } else {
                 println!("{}{}", format!("--> ").blue(), e.file_name.blue());
@@ -327,6 +333,10 @@ fn test() {
 
 #[test]
 fn bit_test() {
-    let a = 24;
-    println!("{}", (a + 15) & (!15));
+    let a = "\t    ";
+    println!("{}", a.len());
+    println!("{}",a.as_bytes().len());
+//    a.replace(from, to)
+    println!("{}",fix_offset(a.to_string()).len());
+//    println!("{}", a.chars().count());
 }

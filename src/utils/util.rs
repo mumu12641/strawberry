@@ -6,7 +6,16 @@ pub fn do_vecs_match<T: PartialEq>(a: &Vec<T>, b: &Vec<T>) -> bool {
 pub fn align_to_16_bit(raw: usize) -> usize {
     return (raw + 15) & (!15);
 }
-// pub fn vec2array<T, const N: usize>(v: Vec<T>) -> [T; N] {
-//     v.try_into()
-//         .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
-// }
+
+pub fn fix_offset(raw:String)->String{
+    let ref this = raw;
+    let mut result = String::new();
+    let mut last_end = 0;
+    for (start, part) in this.match_indices("\t") {
+        result.push_str(unsafe { this.get_unchecked(last_end..start) });
+        result.push_str("    ");
+        last_end = start + part.len();
+    }
+    result.push_str(unsafe { this.get_unchecked(last_end..this.len()) });
+    return result
+}
