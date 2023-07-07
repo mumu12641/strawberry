@@ -31,6 +31,7 @@ const OBJECT: &str = "Object";
 const INT: &str = "Int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
+const VOID: &str = "Void";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 

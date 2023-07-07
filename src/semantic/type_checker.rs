@@ -10,7 +10,7 @@ use crate::{
         Identifier, Type,
     },
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, OBJECT, SELF, STRING,
+    BOOL, INT, OBJECT, SELF, STRING, VOID,
 };
 
 use super::semantic::SemanticError;
@@ -106,8 +106,8 @@ impl TypeChecker for Dispatch {
             .check_type(symbol_table, class_table)
         {
             Ok(target_type) => {
-                if let Some(class) = class_table.get_classes().get(&target_type) {
-                    if let Some(v) = class_table.get_inheritance().get(&class.name) {
+                if let Some(class_) = class_table.get_classes().get(&target_type) {
+                    if let Some(v) = class_table.get_inheritance().get(&class_.name) {
                         for class in v {
                             match &mut self.expr {
                                 // check method
@@ -186,7 +186,10 @@ impl TypeChecker for Dispatch {
                             }
                         }
                         return Err(SemanticError::new(
-                            format!("Some dispatch errors appear !",),
+                            format!(
+                                "Class {} may not have the method or field you want!",
+                                class_.name
+                            ),
                             Some(self.position),
                         ));
                     }
@@ -397,11 +400,18 @@ impl TypeChecker for Return {
         symbol_table: &mut SymbolTable<Identifier, Type>,
         class_table: &mut ClassTable,
     ) -> Result<Type, SemanticError> {
-        match (*self.val).check_type(symbol_table, class_table) {
-            Ok(e) => {
-                return Ok(e);
-            }
-            Err(e) => return Err(e),
+        //        match (*self.val).check_type(symbol_table, class_table) {
+        //            Ok(e) => {
+        //                return Ok(e);
+        //            }
+        //            Err(e) => return Err(e),
+        //        }
+        match &mut self.val {
+            Some(e) => match e.deref_mut().check_type(symbol_table, class_table) {
+                Ok(e) => return Ok(e),
+                Err(e) => return Err(e),
+            },
+            None => return Ok(VOID.to_string()),
         }
     }
 }

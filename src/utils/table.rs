@@ -9,7 +9,7 @@ use crate::{
         class::{Class, Feature, MethodDecl, Ownership, VarDecl},
         Type,
     },
-    BOOL, EMPTY, INT, OBJECT, STRING,
+    BOOL, EMPTY, INT, OBJECT, STRING, VOID,
 };
 
 #[derive(Debug)]
@@ -153,10 +153,19 @@ impl ClassTable {
             file_name: BOOL.to_string(),
         };
 
+        let void_ = Class {
+            name: VOID.to_string(),
+            parent: Some(OBJECT.to_string()),
+            features: vec![],
+            position: (0, 0),
+            file_name: VOID.to_string(),
+        };
+
         self.classes.insert(OBJECT.to_string(), object_.clone());
         self.classes.insert(STRING.to_string(), string_.clone());
         self.classes.insert(INT.to_string(), int_.clone());
         self.classes.insert(BOOL.to_string(), bool_.clone());
+        self.classes.insert(VOID.to_string(), void_.clone());
 
         // Option
         match self.classes.get(&OBJECT.to_string()) {
@@ -167,6 +176,8 @@ impl ClassTable {
                     .insert(INT.to_string(), vec![c.clone(), int_.clone()]);
                 self.inheritance
                     .insert(BOOL.to_string(), vec![c.clone(), bool_.clone()]);
+                self.inheritance
+                    .insert(VOID.to_string(), vec![c.clone(), void_.clone()]);
                 self.inheritance.insert(OBJECT.to_string(), vec![c.clone()]);
             }
             None => {}

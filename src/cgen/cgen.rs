@@ -441,6 +441,11 @@ impl<'a> CodeGenerator<'a> {
                             .get_mut(&class_.name)
                             .unwrap()
                             .exit_scope();
+                    }else{
+                        self.write(format!("{}.{}:", class_.name, method.name), false);
+                        self.method_start();
+                        self.write(format!("movq $Object_prototype, %rax"), true);
+                        self.method_end();
                     }
                     self.environment
                         .env

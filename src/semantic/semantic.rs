@@ -14,6 +14,7 @@ use crate::{
     utils::table::SymbolTable,
     DEBUG,
     SELF,
+    VOID,
 };
 
 /// * install constants and basic classes.
@@ -71,7 +72,7 @@ impl SemanticChecker {
             if class_table.classes.contains_key(&i.name) {
                 return Err(SemanticError {
                     err_msg: format!("Class {} has been redefined!", i.name),
-                    file_name:  i.file_name.clone(),
+                    file_name: i.file_name.clone(),
                     position: Some(i.position),
                 });
             } else {
@@ -113,7 +114,7 @@ impl SemanticChecker {
                                     "There is an inheritance cycle about Class {}!",
                                     s
                                 ),
-                                file_name:  i.file_name.clone(),
+                                file_name: i.file_name.clone(),
                                 position: Some(i.position),
                             });
                         } else {
@@ -126,7 +127,7 @@ impl SemanticChecker {
                                         "Your Class {} inherits an undefined Class {} !",
                                         i.name, s
                                     ),
-                                    file_name:  i.file_name.clone(),
+                                    file_name: i.file_name.clone(),
                                     position: Some(i.position),
                                 });
                             }
@@ -250,7 +251,7 @@ impl SemanticChecker {
                                         Err(e) => {
                                             return Err(SemanticError {
                                                 err_msg: e.err_msg,
-                                                file_name:  i.file_name.clone(),
+                                                file_name: i.file_name.clone(),
                                                 position: e.position,
                                             });
                                         }
@@ -275,7 +276,7 @@ impl SemanticChecker {
                                     {
                                         return Err(SemanticError {
                                             err_msg: e.err_msg,
-                                            file_name:  i.file_name.clone(),
+                                            file_name: i.file_name.clone(),
                                             position: e.position,
                                         });
                                     }
@@ -291,6 +292,7 @@ impl SemanticChecker {
                                 position: Some(method.position),
                             });
                         }
+
                     }
                     self.symbol_table.exit_scope();
                 }

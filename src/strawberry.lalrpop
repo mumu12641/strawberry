@@ -235,7 +235,11 @@ expr: Expr = {
     }),
 
     <pos: "RETURN">  <val:math_expr> ";"=> Expr::Return(Return{
-        val: Box::new(val),
+        val: Some(Box::new(val)),
+        position: pos,
+    }),
+<pos: "RETURN"> ";"=> Expr::Return(Return{
+        val: None,
         position: pos,
     }),
 

@@ -69,7 +69,7 @@ pub struct Math {
 }
 #[derive(Debug, Clone)]
 pub struct Return {
-    pub val: Box<Expr>,
+    pub val: Option<Box<Expr>>,
     pub position: Position,
 }
 

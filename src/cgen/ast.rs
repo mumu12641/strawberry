@@ -147,9 +147,18 @@ impl CodeGenerate for Expr {
 impl CodeGenerate for Return {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // todo!()
-        let e = self.val.deref();
-        e.code_generate(code_generator);
-        // code_generator.method_end();
+        //        let e = self.val.deref();
+        //        e.code_generate(code_generator);
+        //        // code_generator.method_end();
+        //        code_generator.write(
+        //            format!("addq ${}, %rsp", code_generator.environment.align_stack),
+        //            true,
+        //        );
+        //        code_generator.method_end();
+        match &self.val {
+            Some(e) => e.deref().code_generate(code_generator),
+            None => code_generator.write(format!("movq $0, %rax"), true),
+        }
         code_generator.write(
             format!("addq ${}, %rsp", code_generator.environment.align_stack),
             true,
