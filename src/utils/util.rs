@@ -7,7 +7,7 @@ pub fn align_to_16_bit(raw: usize) -> usize {
     return (raw + 15) & (!15);
 }
 
-pub fn fix_offset(raw:String)->String{
+pub fn fix_offset(raw: String) -> String {
     let ref this = raw;
     let mut result = String::new();
     let mut last_end = 0;
@@ -17,5 +17,5 @@ pub fn fix_offset(raw:String)->String{
         last_end = start + part.len();
     }
     result.push_str(unsafe { this.get_unchecked(last_end..this.len()) });
-    return result
+    return result;
 }

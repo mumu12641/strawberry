@@ -9,7 +9,7 @@ use crate::{
         Identifier, Type,
     },
     BOOL, BOOL_CONST_VAL_OFFSET, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
-    STRING,
+    STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::cgen::{CodeGenerator, Location};
@@ -76,6 +76,28 @@ impl CodeGenerate for Expr {
             Expr::Bool(const_) => {
                 let index = if *const_ { 1 } else { 0 };
                 code_generator.write(format!("movq $bool_const_{}, %rax", index), true);
+            }
+
+            Expr::ASM(s) => {
+                let mut fix_asm_code: String = String::new();
+                fix_asm_code = s.replace(
+                    "%d",
+                    format!(
+                        "$str_const_ascii_{}",
+                        code_generator.str_const_table.get("%d").unwrap()
+                    )
+                    .as_str(),
+                );
+                fix_asm_code = fix_asm_code.replace(
+                    "INT_CONST_VAL_OFFSET",
+                    INT_CONST_VAL_OFFSET.to_string().as_str(),
+                );
+                fix_asm_code = fix_asm_code.replace(
+                    "STRING_CONST_VAL_OFFSET",
+                    STRING_CONST_VAL_OFFSET.to_string().as_str(),
+                );
+
+                code_generator.write(format!("{}", fix_asm_code), true);
             }
 
             Expr::Identifier(e) => {
@@ -157,7 +179,7 @@ impl CodeGenerate for Return {
         //        code_generator.method_end();
         match &self.val {
             Some(e) => e.deref().code_generate(code_generator),
-            None => code_generator.write(format!("movq $0, %rax"), true),
+            None => {}
         }
         code_generator.write(
             format!("addq ${}, %rsp", code_generator.environment.align_stack),

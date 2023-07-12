@@ -44,6 +44,9 @@ impl TypeChecker for Expr {
                     ));
                 }
             }
+            Expr::ASM(e) => {
+                return Ok(OBJECT.to_string());
+            }
 
             Expr::Identifier(e) => {
                 if let Some(s) = symbol_table.find(&e.name) {

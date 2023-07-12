@@ -132,6 +132,8 @@ pub enum Expr {
     Str(Str),
     Assignment(Assignment),
 
+    ASM(String),
+
     Dispatch(Dispatch),
     Cond(Cond),
     While(While),

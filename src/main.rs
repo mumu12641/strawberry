@@ -32,6 +32,7 @@ const INT: &str = "Int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
 const VOID: &str = "Void";
+const PRIMSLOT: &str = "PrimSlot";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 const EMPTY: (usize, usize) = (0, 0);
 
@@ -88,7 +89,13 @@ fn handle_args() {
     } else if let Some(_) = matches.subcommand_matches("build") {
         let mut curr_path = "./src".to_string();
         let mut path_flag = true;
-        let mut files: Vec<_> = vec![];
+        let mut files: Vec<String> = vec![
+            "/home/pbb/code/strawberry/std/Object.st".to_string(),
+            "/home/pbb/code/strawberry/std/Int.st".to_string(),
+            "/home/pbb/code/strawberry/std/String.st".to_string(),
+            "/home/pbb/code/strawberry/std/Bool.st".to_string(),
+            "/home/pbb/code/strawberry/std/Void.st".to_string(),
+        ];
 
         while path_flag {
             path_flag = false;
@@ -111,7 +118,6 @@ fn handle_args() {
                 println!("{}", err.red());
             }
         }
-        // dbg!(&files);
         compile(files);
     } else {
         let _ = cmd.print_long_help();
@@ -135,7 +141,7 @@ fn compile(files: Vec<String>) {
     let mut class_table = ClassTable::new();
 
     // install constants
-    class_table.install_basic_class();
+    //    class_table.install_basic_class();
 
     if !files.contains(&main_file) {
         let err = format!("❌ There is no main.st in your src directory!");
@@ -334,10 +340,7 @@ fn test() {
 
 #[test]
 fn bit_test() {
-    let a = "\t    ";
-    println!("{}", a.len());
-    println!("{}",a.as_bytes().len());
-//    a.replace(from, to)
-    println!("{}",fix_offset(a.to_string()).len());
-//    println!("{}", a.chars().count());
+    let a = "%d as";
+    let s = a.replace("%d", "1");
+    println!("{}", s);
 }

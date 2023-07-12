@@ -53,7 +53,6 @@ impl Feature {
         return false;
     }
 
-
     pub fn get_ownership(&self) -> &Ownership {
         match self {
             Self::Method(m) => return &m.ownership,

@@ -7,7 +7,7 @@ use crate::{
     },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
-    OBJECT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
+    OBJECT, PRIMSLOT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::ast::CodeGenerate;
@@ -99,15 +99,15 @@ impl<'a> CodeGenerator<'a> {
         self.code_method();
 
         // code for malloc
-        self.code_malloc();
+        //        self.code_malloc();
 
-        self.code_print();
+        //        self.code_print();
 
         self.code_abort();
 
-        self.code_to_string();
+        //        self.code_to_string();
 
-        self.code_concat();
+        //        self.code_concat();
 
         // code for main
         self.code_main();
@@ -198,6 +198,9 @@ impl<'a> CodeGenerator<'a> {
         self.write("#   class prototype".to_string(), true);
 
         for class_ in &self.class_table.classes.clone() {
+            if class_.0 == &PRIMSLOT.to_string() {
+                continue;
+            }
             let attr_len = self.class_table.get_attr_num_recursive(class_.0);
             self.write(".align 8".to_string(), true);
             self.write(format!("{}_prototype:", class_.0), false);
@@ -236,7 +239,7 @@ impl<'a> CodeGenerator<'a> {
                                 ),
                                 true,
                             );
-                        } else {
+                        } else if attr.type_.clone().unwrap() == PRIMSLOT.to_string() {
                             self.write(format!(".quad 0"), true);
                         }
                     }
@@ -345,7 +348,7 @@ impl<'a> CodeGenerator<'a> {
                             self.write(format!("movq %rax, {}(%rbx)", offset_), true);
                         } else {
                             let type_ = attr.type_.clone().unwrap();
-                            if type_ != "prim_slot".to_string() {
+                            if type_ != PRIMSLOT.to_string() {
                                 self.write(
                                     format!(
                                         "movq ${}_prototype, {}(%rbx)",
@@ -441,7 +444,7 @@ impl<'a> CodeGenerator<'a> {
                             .get_mut(&class_.name)
                             .unwrap()
                             .exit_scope();
-                    }else{
+                    } else {
                         self.write(format!("{}.{}:", class_.name, method.name), false);
                         self.method_start();
                         self.write(format!("movq $Object_prototype, %rax"), true);

@@ -56,6 +56,9 @@ pub enum Token {
     From,
 
     Error(String),
+
+    // for inline asm
+    ASM,
     // todo
     // case,
 }

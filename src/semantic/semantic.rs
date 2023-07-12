@@ -292,7 +292,6 @@ impl SemanticChecker {
                                 position: Some(method.position),
                             });
                         }
-
                     }
                     self.symbol_table.exit_scope();
                 }

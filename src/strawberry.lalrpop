@@ -164,8 +164,6 @@ assign_expr:Expr = {
 // let assign if while 
 expr: Expr = {
     
-    
-
     <e:single_expr> "." <id:"ID"> "(" <args:comma_list<math_expr>?> ")" ";" => {
         Expr::Dispatch (Dispatch{
             target: Box::new(e),
@@ -181,8 +179,6 @@ expr: Expr = {
     },
     
     
-
-
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")"  ";"=> {
         Expr::Dispatch (Dispatch{
             target: Box::new(Expr::Self_(Self_{
@@ -238,11 +234,13 @@ expr: Expr = {
         val: Some(Box::new(val)),
         position: pos,
     }),
-<pos: "RETURN"> ";"=> Expr::Return(Return{
+
+    <pos: "RETURN"> ";"=> Expr::Return(Return{
         val: None,
         position: pos,
     }),
 
+    "ASM" "(" <s:"STR"> ")" ";"=> Expr::ASM(s),
 
     math_expr,
     let_expr,
@@ -447,6 +445,8 @@ extern {
         "." => Token::Period,
         "," => Token::Comma,
         ":" =>Token::Colon,
+
+        "ASM" => Token::ASM,
 
         "IMPORT" => Token::Import,
         "FROM" => Token::From,

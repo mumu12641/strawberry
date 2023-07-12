@@ -64,6 +64,8 @@ lexer! {
     r"," => Token::Comma,
     ":" => Token::Colon,
 
+    "__asm__" => Token::ASM,
+
     "." => Token::Error(format!("Unexpected character: {}", text.to_owned())),
 
 }
