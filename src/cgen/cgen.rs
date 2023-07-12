@@ -426,6 +426,8 @@ impl<'a> CodeGenerator<'a> {
                             var_vec.append(&mut expr.get_var_num());
                         }
                         let align_stack;
+
+                        // if attr's len is odd
                         if len % 2 == 0 {
                             align_stack =
                                 crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;

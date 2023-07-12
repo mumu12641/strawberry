@@ -29,12 +29,6 @@ impl TypeChecker for Expr {
                 if let Some(_) = class_table.classes.get(type_) {
                     return Ok(type_.clone());
                 } else {
-                    //                    return Err(SemanticError::new(
-                    //                          format!(
-                    //                            "There is no class called {}, maybe you should import it!",
-                    //                            type_
-                    //                        ),
-                    //                    });
                     return Err(SemanticError::new(
                         format!(
                             "There is no class called {}, maybe you should import it!",

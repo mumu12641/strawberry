@@ -9,6 +9,7 @@ use grammar::lexer::Lexer;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
 
+use simple_home_dir::*;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
@@ -89,12 +90,13 @@ fn handle_args() {
     } else if let Some(_) = matches.subcommand_matches("build") {
         let mut curr_path = "./src".to_string();
         let mut path_flag = true;
+        let home_dir = home_dir().unwrap().into_os_string().into_string().unwrap();
         let mut files: Vec<String> = vec![
-            "/home/pbb/code/strawberry/std/Object.st".to_string(),
-            "/home/pbb/code/strawberry/std/Int.st".to_string(),
-            "/home/pbb/code/strawberry/std/String.st".to_string(),
-            "/home/pbb/code/strawberry/std/Bool.st".to_string(),
-            "/home/pbb/code/strawberry/std/Void.st".to_string(),
+            format!("{}/.strawberry/std/Object.st", home_dir),
+            format!("{}/.strawberry/std/Int.st", home_dir),
+            format!("{}/.strawberry/std/String.st", home_dir),
+            format!("{}/.strawberry/std/Bool.st", home_dir),
+            format!("{}/.strawberry/std/Void.st", home_dir),
         ];
 
         while path_flag {

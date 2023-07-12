@@ -827,6 +827,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-home-dir"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23d30dfeab3bcb5e341b053a3c7c54eaa68fe861e7817a3391e5298fe724ed25"
+dependencies = [
+ "windows-sys",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -843,6 +852,7 @@ dependencies = [
  "owo-colors",
  "plex",
  "regex",
+ "simple-home-dir",
 ]
 
 [[package]]

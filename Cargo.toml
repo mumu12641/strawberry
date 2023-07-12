@@ -13,6 +13,7 @@ regex = "1.7.3"
 clap = "4.3.2"
 owo-colors = "3"
 emoji-printer = "0.4.3"
+simple-home-dir = "0.1.4"
 
 [build-dependencies]
 lalrpop = "0.17.2"

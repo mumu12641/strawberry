@@ -8,4 +8,4 @@
 *.txt
 NOTE.md
 /example
-/std
+*.sh

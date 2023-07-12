@@ -422,9 +422,7 @@ impl CodeGenerate for Math {
             code_generator.write(format!("pushq %r11"), true);
             code_generator.write(format!("call String.concat"), true);
 
-            code_generator.write(format!("addq $8, %rsp"), true);
-            code_generator.write(format!("addq $8, %rsp"), true);
-            code_generator.write(format!("addq $8, %rsp"), true);
+            code_generator.write(format!("addq $24, %rsp"), true);
         }
     }
 }

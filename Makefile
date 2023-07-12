@@ -5,6 +5,9 @@ CARGO_EXIST := $(shell cargo --version 2>/dev/null)
 install:
 ifdef GCC_EXIST
 ifdef CARGO_EXIST
+	$(shell rm -rf ~/.strawberry)
+	$(shell mkdir ~/.strawberry)
+	$(shell cp -rf ./std ~/.strawberry)
 	$(shell cargo install --path .) 
 else
 	@echo "No cargo in your PC"
