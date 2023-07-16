@@ -318,26 +318,27 @@ fn test() {
     // install constants
     class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
-    // for i in lexer {
-    //     println!("{:?}", i);
-    // }
-    let program = strawberry::ProgramParser::new().parse(lexer);
-    match program {
-        Ok(v) => {
-            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
-            // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
-            let result = semantic_checker.check(&mut class_table);
-            match result {
-                Ok(v) => {
-                    println!("{:?}", v);
-                }
-                Err(e) => {
-                    println!("{}", e.err_msg);
-                }
-            }
-        }
-        Err(_) => todo!(),
-    };
+    for i in lexer {
+        println!("{:?}", i);
+    }
+    dbg!(table.string_table);
+    // let program = strawberry::ProgramParser::new().parse(lexer);
+    // match program {
+    //     Ok(v) => {
+    //         let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
+    //         // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
+    //         let result = semantic_checker.check(&mut class_table);
+    //         match result {
+    //             Ok(v) => {
+    //                 println!("{:?}", v);
+    //             }
+    //             Err(e) => {
+    //                 println!("{}", e.err_msg);
+    //             }
+    //         }
+    //     }
+    //     Err(_) => todo!(),
+    // };
 }
 
 #[test]

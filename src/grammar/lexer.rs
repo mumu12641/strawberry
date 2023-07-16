@@ -100,6 +100,8 @@ pub struct Lexer<'a> {
     remaining: &'a str,
     tables: &'a mut Tables,
     file_name: &'a str,
+
+    asm_flag: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -111,6 +113,7 @@ impl<'a> Lexer<'a> {
             remaining: text,
             tables,
             file_name: filename,
+            asm_flag: false,
         }
     }
 }
@@ -142,8 +145,18 @@ impl<'a> Iterator for Lexer<'a> {
                     self.offset = 0;
                     continue;
                 }
+
+                Token::ASM => {
+                    self.asm_flag = true;
+                    return Some(Ok((self.current_line, Token::ASM, self.offset)));
+                }
+
                 Token::StringConst(text) => {
-                    self.tables.string_table.insert(text.clone());
+                    if self.asm_flag == false {
+                        self.tables.string_table.insert(text.clone());
+                    } else {
+                        self.asm_flag = false;
+                    }
                     return Some(Ok((
                         self.current_line,
                         Token::StringConst(text),
