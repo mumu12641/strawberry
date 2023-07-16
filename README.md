@@ -58,6 +58,8 @@ If you successfully display the version information, then move on.
    ```
    make install
    ```
+   
+   This command will install strawberry to \$HOME/.cargo/bin, and create  $HOME/.strawberry folder and install std library to this folder, please do not modify the contents of this folder.
 
 ### 👀Usage
 
@@ -79,6 +81,10 @@ If you successfully display the version information, then move on.
    ```
    ./build/a.out
    ```
+
+## :bulb:VSC Support
+
+Please search for [strawberry-support](https://marketplace.visualstudio.com/items?itemName=muuuuu.strawberry-support) in VSCode and install it.Currently it only supports some simple syntax highlighting.
 
 ## :pushpin:Code Examples
 
@@ -104,7 +110,7 @@ class Main {
 	
 	fun main() -> Int {
 		let a:Int = 1;	// variable in main method, this 'a' will cover Main's 'a'
-		let b = 2;		// it is also ok not to declare the type, but it needs to be initialized
+		let b = 2;	// it is also ok not to declare the type, but it needs to be initialized
 		let c:String = "this is c";		
 		let d:Bool = true;
 	    	return 0;
@@ -121,6 +127,10 @@ class Main{
 		square.set(2);
 		print(squrae.get_area().to_string());		// output:4
 		return 0;
+	};
+	fun draw(shape:Shape) -> Shape {
+		shape.draw();
+		return shape;
 	};
 };
 
