@@ -305,7 +305,7 @@ fn test() {
     let mut file = File::open("src/helloworld.st").unwrap();
     let mut content = String::new();
     file.read_to_string(&mut content).expect("error");
-    println!("{content}");
+    println!("{:?}",content.as_bytes());
 
     // init
     let mut table = table::Tables::new();

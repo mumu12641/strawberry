@@ -52,7 +52,7 @@ lexer! {
 
     r#"\n"# => Token::Newline,
     r#"[ ]+"# => Token::Whitespace(text.to_owned()),
-    r#"/[*](~(.*[*]/.*))[*]/"# => Token::Comment,
+    r#"/[*](~(.*[*]/.*))[*]/"# => Token::BlockComment(text.to_owned()),
     r#"//[^\n]*"# => Token::Comment,
 
     "{" => Token::Lbrace,
@@ -138,7 +138,10 @@ impl<'a> Iterator for Lexer<'a> {
             };
             match tok {
                 Token::Comment => continue,
+
                 Token::Whitespace(_) => continue,
+
+                Token::BlockComment(s) => self.current_line += s.lines().count() - 1,
 
                 Token::Newline => {
                     self.current_line += 1;

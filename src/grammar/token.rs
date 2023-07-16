@@ -51,6 +51,7 @@ pub enum Token {
     Newline,
     Whitespace(String),
     Comment,
+    BlockComment(String),
 
     Import,
     From,
