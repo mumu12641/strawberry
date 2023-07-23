@@ -38,7 +38,7 @@ impl TypeChecker for Expr {
                     ));
                 }
             }
-            Expr::ASM(e) => {
+            Expr::ASM(_) => {
                 return Ok(OBJECT.to_string());
             }
 

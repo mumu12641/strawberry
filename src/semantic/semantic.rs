@@ -14,7 +14,6 @@ use crate::{
     utils::table::SymbolTable,
     DEBUG,
     SELF,
-    VOID,
 };
 
 /// * install constants and basic classes.
@@ -161,12 +160,13 @@ impl SemanticChecker {
                     for feature in &curr_parent.features {
                         match feature {
                             Feature::Method(method_) => {
+                                // just check name, find it if the class override curr_parent's method
                                 if i.features.contains(&feature) {
                                     // check returan_type and attr and ownership
                                     let index =
                                         i.features.iter().position(|r| r == feature).unwrap();
-                                    // i.features[index].
-                                    // method_.ownership; parent's own
+
+                                    // check param
                                     if !i.features[index].check_param(&feature) {
                                         return Err(SemanticError {
                                             err_msg: format!(
@@ -176,6 +176,7 @@ impl SemanticChecker {
                                             file_name:  i.file_name.clone().clone(),
                                         });
                                     }
+                                    // check return type
                                     if !i.features[index].check_return_type(&feature) {
                                         return Err(SemanticError {
                                             err_msg: format!(
@@ -185,6 +186,7 @@ impl SemanticChecker {
                                             file_name:  i.file_name.clone(),
                                         });
                                     }
+                                    // check ownership
                                     if feature.get_ownership() != i.features[index].get_ownership()
                                     {
                                         return Err(SemanticError {
@@ -197,6 +199,7 @@ impl SemanticChecker {
                                     }
                                 }
                             }
+
                             Feature::Attribute(attr) => {
                                 if &curr_parent.name != &i.name && i.features.contains(&feature) {
                                     return Err(SemanticError { err_msg: format!("You cannot define the same field <{}> in the subclass {} as the superclass {}",
@@ -206,6 +209,8 @@ impl SemanticChecker {
                                     });
                                 }
                             }
+
+                            Feature::Constructor(_) => {}
                         }
                     }
                 }
@@ -236,64 +241,86 @@ impl SemanticChecker {
                 }
             }
             for j in &mut i.features {
-                if let Feature::Method(method) = j {
-                    self.symbol_table.enter_scope();
-                    for param in &*method.param {
-                        self.symbol_table.add(&param.0, &param.1);
-                    }
-                    if let Some(v) = method.body.deref_mut() {
-                        let mut return_ = false;
-                        for expr in v {
-                            match expr {
-                                Expr::Return(re) => {
-                                    return_ = true;
-                                    match re.check_type(&mut self.symbol_table, class_table) {
-                                        Err(e) => {
-                                            return Err(SemanticError {
-                                                err_msg: e.err_msg,
-                                                file_name: i.file_name.clone(),
-                                                position: e.position,
-                                            });
-                                        }
-                                        Ok(type_) => {
-                                            if !class_table
-                                                .is_less_or_equal(&type_, &method.return_type)
-                                            {
+                match j {
+                    Feature::Method(method) => {
+                        self.symbol_table.enter_scope();
+                        for param in &*method.param {
+                            self.symbol_table.add(&param.0, &param.1);
+                        }
+                        if let Some(v) = method.body.deref_mut() {
+                            let mut return_ = false;
+                            for expr in v {
+                                match expr {
+                                    Expr::Return(re) => {
+                                        return_ = true;
+                                        match re.check_type(&mut self.symbol_table, class_table) {
+                                            Err(e) => {
                                                 return Err(SemanticError {
+                                                    err_msg: e.err_msg,
+                                                    file_name: i.file_name.clone(),
+                                                    position: e.position,
+                                                });
+                                            }
+                                            Ok(type_) => {
+                                                if !class_table
+                                                    .is_less_or_equal(&type_, &method.return_type)
+                                                {
+                                                    return Err(SemanticError {
                                                      err_msg: format!("The return type of your {} method is different from the declared type!",
                                                                method.name),
                                                     file_name:  i.file_name.clone(),
                                                     position: Some(re.position),
                                                     }
                                                 );
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                _ => {
-                                    if let Err(e) =
-                                        expr.check_type(&mut self.symbol_table, class_table)
-                                    {
-                                        return Err(SemanticError {
-                                            err_msg: e.err_msg,
-                                            file_name: i.file_name.clone(),
-                                            position: e.position,
-                                        });
+                                    _ => {
+                                        if let Err(e) =
+                                            expr.check_type(&mut self.symbol_table, class_table)
+                                        {
+                                            return Err(SemanticError {
+                                                err_msg: e.err_msg,
+                                                file_name: i.file_name.clone(),
+                                                position: e.position,
+                                            });
+                                        }
                                     }
                                 }
                             }
-                        }
-                        if !return_ {
-                            return Err(SemanticError {
+                            if !return_ {
+                                return Err(SemanticError {
                                 err_msg: format!(
                                     "Your method needs a return expression, even though you may return in an if or while.",
                                 ),
                                 file_name:  i.file_name.clone(),
                                 position: Some(method.position),
                             });
+                            }
                         }
+                        self.symbol_table.exit_scope();
                     }
-                    self.symbol_table.exit_scope();
+                    Feature::Constructor(constructor) => {
+                        self.symbol_table.enter_scope();
+                        for param in &*constructor.param {
+                            self.symbol_table.add(&param.0, &param.1);
+                        }
+                        if let Some(v) = constructor.body.deref_mut() {
+                            for expr in v {
+                                if let Err(e) = expr.check_type(&mut self.symbol_table, class_table)
+                                {
+                                    return Err(SemanticError {
+                                        err_msg: e.err_msg,
+                                        file_name: i.file_name.clone(),
+                                        position: e.position,
+                                    });
+                                }
+                            }
+                        }
+                        self.symbol_table.exit_scope();
+                    }
+                    _ => {}
                 }
             }
             self.symbol_table.exit_scope();

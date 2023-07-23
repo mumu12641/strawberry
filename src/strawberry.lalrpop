@@ -18,14 +18,14 @@ import: Import = {
 };
 
 class: Class = {
-    <l:"CLASS"> <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+    <l:"class"> <class_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
         name: class_name,
         parent: None,
         features: f,
         position: l.0,
         file_name: l.1,
     },
-    <l:"CLASS"> <class_name:"TYPE"> "INHERITS" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
+    <l:"class"> <class_name:"TYPE"> "inherits" <parent_name:"TYPE"> "{" <f:feature*> "}" ";" => Class {
         name: class_name,
         parent: Some(parent_name),
         features: f,
@@ -76,8 +76,8 @@ feature: Feature = {
 
 
     
-    // function
-    "private"? <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    // method
+    "private"? <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -88,7 +88,7 @@ feature: Feature = {
             // body: Box::new(Box::new(e)),
         })
     },
-    "public" <pos:"FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -100,7 +100,7 @@ feature: Feature = {
         })
     },
 
-    "private"? <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    "private"? <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -110,7 +110,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <pos: "FUN"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    "public" <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -118,6 +118,20 @@ feature: Feature = {
             body: Box::new(None),
             position: pos,
             ownership: Ownership::Public,
+        })
+    },
+
+    // constructor
+    "constructor" "(" <param_:comma_list<param>?> ")" "{" <e:semi_list<expr>> "}" ";" =>{
+        Feature::Constructor(ConstructorDecl{
+           param: Box::new(param_.unwrap_or(vec![])),
+            body: Box::new(Some(e)),
+        })
+    },
+    "constructor" "(" <param_:comma_list<param>?> ")" "{"  "}" ";" =>{
+        Feature::Constructor(ConstructorDecl{
+           param: Box::new(param_.unwrap_or(vec![])),
+           body: Box::new(None),
         })
     },
 
@@ -154,7 +168,7 @@ var: VarDecl = {
 };
 
 let_expr:Expr = {
-    "LET" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
+    "let" <var_:comma_list<var>> ";"=> Expr::Let(Let{var_decls:Box::new(var_)}),
 };
 
 assign_expr:Expr = {
@@ -196,33 +210,33 @@ expr: Expr = {
         })
     },
 
-    <pos: "IF"> "(" <test_:cond_expr> ")"   "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "if"> "(" <test_:cond_expr> ")"   "{" <then_:expr*> "}" "else" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
         position: pos,
     }),
 
-    <pos: "IF"> <test_:cond_expr>   "{" <then_:expr*> "}" "ELSE" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
+    <pos: "if"> <test_:cond_expr>   "{" <then_:expr*> "}" "else" "{" <else_:expr*> "}"  => Expr::Cond(Cond{
         test:Box::new(test_),
         then_body: Box::new(then_),
         else_body: Box::new(else_),
         position: pos,
     }),
 
-    <pos:"WHILE">  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
+    <pos:"while">  "(" <test_:cond_expr> ")" "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
         position: pos,
     }),
 
-    <pos: "WHILE"> <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
+    <pos: "while"> <test_:cond_expr> "{" <body_:expr*> "}" => Expr::While(While{
         test:Box::new(test_),
         body: Box::new(body_),
         position: pos,
     }),
 
-    <pos: "FOR"> "(" <init_:let_expr*>  <test_:cond_expr*> ";" <iter_:comma_list<expr>> ")" "{" <body_:expr*> "}" => Expr::For(For{
+    <pos: "for"> "(" <init_:let_expr*>  <test_:cond_expr*> ";" <iter_:comma_list<expr>> ")" "{" <body_:expr*> "}" => Expr::For(For{
         init: Box::new(init_),
         test: Box::new(test_),
         iter: Box::new(iter_),
@@ -230,17 +244,17 @@ expr: Expr = {
         position: pos,
     }),
 
-    <pos: "RETURN">  <val:math_expr> ";"=> Expr::Return(Return{
+    <pos: "return">  <val:math_expr> ";"=> Expr::Return(Return{
         val: Some(Box::new(val)),
         position: pos,
     }),
 
-    <pos: "RETURN"> ";"=> Expr::Return(Return{
+    <pos: "return"> ";"=> Expr::Return(Return{
         val: None,
         position: pos,
     }),
 
-    "ASM" "(" <s:"STR"> ")" ";"=> Expr::ASM(s),
+    "asm" "(" <s:"STR"> ")" ";"=> Expr::ASM(s),
 
     math_expr,
     let_expr,
@@ -254,14 +268,14 @@ single_expr:Expr = {
         type_: "Object".to_string()
     }),
     <s:"STR"> => Expr::Str(s),
-    <e:"SELF"> => Expr::Self_(Self_{
+    <e:"self"> => Expr::Self_(Self_{
         type_:"Object".to_string()
     }),
     <b:"BOOL"> => Expr::Bool(b),
     <i:"INT"> => Expr::Int(i.parse::<i32>().unwrap()), 
-    // <s:"SELF"> => Expr::Self_(s),
+    // <s:"self"> => Expr::Self_(s),
     
-    "NEW" <class_name:"TYPE"> => Expr::New(<>), 
+    "new" <class_name:"TYPE"> => Expr::New(<>), 
 
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" => {
         Expr::Dispatch (Dispatch{
@@ -366,7 +380,7 @@ cond_expr: Expr = {
         expr:Box::new(e),
         position: pos,
     }),
-    "ISNULL" "(" <e:single_expr> ")" => Expr::Isnull(Isnull{
+    "isnull" "(" <e:single_expr> ")" => Expr::Isnull(Isnull{
         expr:Box::new(e),
     }),
     math_expr,
@@ -400,32 +414,38 @@ extern {
 
     // Map parser terms to token values:
     enum Token{
-        "CLASS" => Token::Class_(<(usize,usize)>,<String>),
+
+        // keywords
+        "class" => Token::Class_(<(usize,usize)>,<String>),
         "public" => Token::Public,
         "private" => Token::Private,
-
-        // "SELF" => Token::Self_,
-        "FUN" => Token::Function(<(usize,usize)>),
-        "RETURN" => Token::Return(<(usize,usize)>),
-        "IF" => Token::If(<(usize,usize)>),
-        "THEN" => Token::Then,
-        "ELSE" => Token::Else(<(usize,usize)>),
-        "INHERITS" => Token::Inherits,
-        "LET" => Token::Let(<(usize,usize)>),
-        "WHILE" => Token::While(<(usize,usize)>),
-        "FOR" => Token::For(<(usize, usize)>),
-        "NEW" => Token::New(<(usize,usize)>),
-        "ISNULL" => Token::Isnull,
-        "SELF" => Token::Self_(<String>),
+        "fun" => Token::Function(<(usize,usize)>),
+        "return" => Token::Return(<(usize,usize)>),
+        "if" => Token::If(<(usize,usize)>),
+        "then" => Token::Then,
+        "else" => Token::Else(<(usize,usize)>),
+        "inherits" => Token::Inherits,
+        "let" => Token::Let(<(usize,usize)>),
+        "while" => Token::While(<(usize,usize)>),
+        "for" => Token::For(<(usize, usize)>),
+        "new" => Token::New(<(usize,usize)>),
+        "isnull" => Token::Isnull,
+        "self" => Token::Self_(<String>),
         "!" => Token::Not(<(usize,usize)>),
         "->" => Token::Arrow,
+        "asm" => Token::ASM,
+        "IMPORT" => Token::Import,
+        "FROM" => Token::From,
+        "constructor" => Token::Constructor,
 
+        // const and id and typeid
         "STR" => Token::StringConst(<String>),
         "INT" => Token::IntConst(<String>),
         "BOOL" => Token::BoolConst(<bool>),
         "TYPE" => Token::TypeId(<String>),
         "ID" => Token::Identifier(<String>,<(usize,usize)>),
-
+            
+        // op
         "=" => Token::Assign(<(usize,usize)>),
         "+" => Token::Plus,
         "-" => Token::Minus,
@@ -437,6 +457,7 @@ extern {
         "<" => Token::Less,
         "<=" => Token::LessE,
         
+        // othens
         "{" => Token::Lbrace,
         "}" => Token::Rbrace,
         "(" => Token::Lparen,
@@ -446,10 +467,7 @@ extern {
         "," => Token::Comma,
         ":" =>Token::Colon,
 
-        "ASM" => Token::ASM,
-
-        "IMPORT" => Token::Import,
-        "FROM" => Token::From,
+        
 
         "ERROR" => Token::Error(<String>),
     }

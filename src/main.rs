@@ -20,7 +20,9 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
+// use crate::llvm::ir::IrGenerator;
 use crate::utils::util::fix_offset;
+// use inkwell::context::Context;
 
 mod cgen;
 mod grammar;
@@ -174,10 +176,25 @@ fn compile(files: Vec<String>) {
             }
             Err(e) => {
                 let err = format!("❌ Oops, syntax error has occurred in {}!", &file_name);
-
                 println!("{}", err.red());
-                println!("{}", "Err: ".red());
-                println!("{:?}", e.red());
+                print!("{}", "Err: ".red());
+                match e {
+                    lalrpop_util::ParseError::UnrecognizedToken { token, expected } => {
+                        let err = format!(
+                            "There is an unrecognized token <{:?}> at {}:{}:{}, maybe you can try {:?}",
+                            token.1,&file_name, token.0, token.2, expected,
+                        );
+                        println!("{}", err.red());
+                    }
+                    lalrpop_util::ParseError::ExtraToken { token } => {
+                        let err = format!(
+                            "There is an extra token <{:?}> at {}:{}:{}",
+                            token.1, &file_name, token.0, token.2,
+                        );
+                        println!("{}", err.red());
+                    }
+                    _ => {}
+                }
                 return;
             }
         }
@@ -305,7 +322,7 @@ fn test() {
     let mut file = File::open("src/helloworld.st").unwrap();
     let mut content = String::new();
     file.read_to_string(&mut content).expect("error");
-    println!("{:?}",content.as_bytes());
+    // println!("{:?}", content.as_bytes());
 
     // init
     let mut table = table::Tables::new();
@@ -318,27 +335,28 @@ fn test() {
     // install constants
     class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
-    for i in lexer {
-        println!("{:?}", i);
-    }
-    dbg!(table.string_table);
-    // let program = strawberry::ProgramParser::new().parse(lexer);
-    // match program {
-    //     Ok(v) => {
-    //         let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
-    //         // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
-    //         let result = semantic_checker.check(&mut class_table);
-    //         match result {
-    //             Ok(v) => {
-    //                 println!("{:?}", v);
-    //             }
-    //             Err(e) => {
-    //                 println!("{}", e.err_msg);
-    //             }
-    //         }
-    //     }
-    //     Err(_) => todo!(),
-    // };
+    // for i in lexer {
+    //     println!("{:?}", i);
+    // }
+    let program = strawberry::ProgramParser::new().parse(lexer);
+    match program {
+        Ok(v) => {
+            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
+            // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
+            let result = semantic_checker.check(&mut class_table);
+            match result {
+                Ok(v) => {
+                    println!("{:?}", v);
+                }
+                Err(e) => {
+                    println!("{}", e.err_msg);
+                }
+            }
+        }
+        Err(e) => {
+            println!("{:?}", e);
+        }
+    };
 }
 
 #[test]
@@ -346,4 +364,41 @@ fn bit_test() {
     let a = "%d as";
     let s = a.replace("%d", "1");
     println!("{}", s);
+}
+#[test]
+fn ir_test() {
+    // let mut file = File::open("./src/helloworld.st").unwrap();
+    // let mut content = String::new();
+    // file.read_to_string(&mut content).expect("error");
+    // println!("{}", content);
+    // // init
+    // let mut table = table::Tables::new();
+    // table.string_table.insert("".to_string());
+    // table.string_table.insert("Object".to_string());
+    // table.string_table.insert("%s".to_string());
+    // table.int_table.insert("0".to_string());
+    // let mut class_table = ClassTable::new();
+
+    // class_table.install_basic_class();
+    // content = fix_offset(content);
+    // let lexer: Lexer = Lexer::new(&content, &mut table, "./src/helloworld.st");
+
+    // let program = strawberry::ProgramParser::new().parse(lexer);
+
+    // match program {
+    //     Ok(v) => {
+    //         println!("{:?}", &v);
+    //         let context = Context::create();
+    //         let module = context.create_module("test ir");
+    //         let codegen = IrGenerator {
+    //             classes: v.1,
+    //             context: &context,
+    //             module,
+    //             builder: context.create_builder(),
+    //         };
+
+    //         unsafe { codegen.ir_generate(&table) };
+    //     },
+    //     Err(_) => todo!(),
+    // };
 }

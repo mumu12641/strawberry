@@ -144,28 +144,30 @@
 //                 // BasicTypeEnum
 //                 if let Feature::Attribute(attr) = feature_ {
 //                     // attr.type_
-//                     if &attr.type_ == "String" {
-//                         type_field_vec.push(BasicTypeEnum::StructType(str_const_struct_type));
-//                         type_field_val_vec.push(inkwell::values::BasicValueEnum::StructValue(
-//                             str_const_struct_type.const_named_struct(&[
-//                                 empty_string.as_pointer_value().into(),
-//                                 self.context.i32_type().const_int(0, false).into(),
-//                                 self.context.i32_type().const_int(2, false).into(),
-//                                 self.context.i32_type().const_int(0, false).into(),
-//                             ]),
-//                         ))
-//                     } else if &attr.type_ == "Int" {
-//                         type_field_vec
-//                             .push(BasicTypeEnum::StructType(int_const_struct_type.clone()));
+//                     if let Some(attr) = &attr.type_ {
+//                         if attr == &"String".to_string() {
+//                             type_field_vec.push(BasicTypeEnum::StructType(str_const_struct_type));
+//                             type_field_val_vec.push(inkwell::values::BasicValueEnum::StructValue(
+//                                 str_const_struct_type.const_named_struct(&[
+//                                     empty_string.as_pointer_value().into(),
+//                                     self.context.i32_type().const_int(0, false).into(),
+//                                     self.context.i32_type().const_int(2, false).into(),
+//                                     self.context.i32_type().const_int(0, false).into(),
+//                                 ]),
+//                             ))
+//                         } else if attr == &"Int".to_string() {
+//                             type_field_vec
+//                                 .push(BasicTypeEnum::StructType(int_const_struct_type.clone()));
 
-//                         // push a zero intager
-//                         type_field_val_vec.push(inkwell::values::BasicValueEnum::StructValue(
-//                             int_const_struct_type.const_named_struct(&[
-//                                 self.context.i32_type().const_int(0, false).into(),
-//                                 self.context.i32_type().const_int(1, false).into(),
-//                                 self.context.i32_type().const_int(1, false).into(),
-//                             ]),
-//                         ))
+//                             // push a zero intager
+//                             type_field_val_vec.push(inkwell::values::BasicValueEnum::StructValue(
+//                                 int_const_struct_type.const_named_struct(&[
+//                                     self.context.i32_type().const_int(0, false).into(),
+//                                     self.context.i32_type().const_int(1, false).into(),
+//                                     self.context.i32_type().const_int(1, false).into(),
+//                                 ]),
+//                             ))
+//                         }
 //                     }
 //                 }
 //             }

@@ -6,20 +6,18 @@ use plex::lexer;
 lexer! {
 
     fn next_token(text:'a) -> Token;
+
+    // keywords
     "class" => Token::Class_(EMPTY,"".to_string()),
     "public" => Token::Public,
     "private" => Token::Private,
-
-
     "self" => Token::Self_(text.to_owned()),
     "function"=>Token::Function(EMPTY),
     "fun" => Token::Function(EMPTY),
     "fn" => Token::Function(EMPTY),
     "return"=>Token::Return(EMPTY),
-
     "import"=>Token::Import,
     "from"=>Token::From,
-
     "if" => Token::If(EMPTY),
     "then" => Token::Then,
     "else" => Token::Else(EMPTY),
@@ -32,12 +30,17 @@ lexer! {
     "!" => Token::Not(EMPTY),
     "true"=>Token::BoolConst(true),
     "false" => Token::BoolConst(false),
+    "__asm__" => Token::ASM,
+    "constructor" => Token::Constructor,
 
+
+    // const and id and typeid
     "[A-Z][a-zA-Z0-9_]*"=>Token::TypeId(text.to_owned()),
     "[a-z][a-zA-Z0-9_]*"=>Token::Identifier(text.to_owned(),EMPTY),
     "[-]*[0-9]+" => Token::IntConst(text.to_owned()),
     r#""[^"]*""# => parse_string(text),
 
+    // op
     "="=>Token::Assign(EMPTY),
     "->" => Token::Arrow,
     r"\+" => Token::Plus,
@@ -50,11 +53,11 @@ lexer! {
     "<" => Token::Less,
     "<=" => Token::LessE,
 
+    // others
     r#"\n"# => Token::Newline,
     r#"[ ]+"# => Token::Whitespace(text.to_owned()),
     r#"/[*](~(.*[*]/.*))[*]/"# => Token::BlockComment(text.to_owned()),
     r#"//[^\n]*"# => Token::Comment,
-
     "{" => Token::Lbrace,
     "}" => Token::Rbrace,
     r"\(" => Token::Lparen,
@@ -64,7 +67,7 @@ lexer! {
     r"," => Token::Comma,
     ":" => Token::Colon,
 
-    "__asm__" => Token::ASM,
+
 
     "." => Token::Error(format!("Unexpected character: {}", text.to_owned())),
 

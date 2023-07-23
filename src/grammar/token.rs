@@ -2,33 +2,38 @@ use super::lexer::Position;
 
 #[derive(Debug, Clone)]
 pub enum Token {
+    // keywords
     Class_(Position, String),
-    Public,
-    Private,
     Self_(String),
     Function(Position),
     Return(Position),
     If(Position),
-    Then,
     Else(Position),
-
-    Inherits,
     Let(Position),
     While(Position),
     For(Position),
     New(Position),
-    Isnull,
     Not(Position),
+    Inherits,
+    Isnull,
+    Public,
+    Private,
+    Then,
+    Import,
+    From,
+    ASM,
+    Constructor,
 
+    // const and id and typeid
     StringConst(String),
     IntConst(String),
     BoolConst(bool),
     TypeId(String),
     Identifier(String, Position),
 
+    // op
     Assign(Position),
     Arrow,
-
     Plus,
     Minus,
     Divide,
@@ -39,6 +44,7 @@ pub enum Token {
     Less,
     LessE,
 
+    // others
     Lbrace,
     Rbrace,
     Lparen,
@@ -47,19 +53,10 @@ pub enum Token {
     Period,
     Comma,
     Colon,
-
     Newline,
     Whitespace(String),
     Comment,
     BlockComment(String),
 
-    Import,
-    From,
-
     Error(String),
-
-    // for inline asm
-    ASM,
-    // todo
-    // case,
 }

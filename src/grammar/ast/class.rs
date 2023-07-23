@@ -1,4 +1,7 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    ops::Deref,
+};
 
 use crate::{grammar::lexer::Position, EMPTY};
 
@@ -30,6 +33,7 @@ impl Eq for Class {}
 pub enum Feature {
     Attribute(VarDecl),
     Method(MethodDecl),
+    Constructor(ConstructorDecl),
 }
 
 impl Feature {
@@ -57,6 +61,7 @@ impl Feature {
         match self {
             Self::Method(m) => return &m.ownership,
             Self::Attribute(a) => return &a.ownership,
+            Self::Constructor(_) => return &Ownership::Public,
         }
     }
 
@@ -65,6 +70,30 @@ impl Feature {
             return m.position;
         } else {
             return EMPTY;
+        }
+    }
+
+    pub fn get_param(&self) -> &Box<Vec<ParamDecl>> {
+        match self {
+            Feature::Method(method) => return &method.param,
+            Feature::Constructor(constructor) => return &constructor.param,
+            _ => todo!(),
+        }
+    }
+
+    pub fn get_body(&self) -> &Box<Option<Vec<Expr>>> {
+        match self {
+            Feature::Method(method) => return &method.body,
+            Feature::Constructor(constructor) => return &constructor.body,
+            _ => todo!(),
+        }
+    }
+
+    pub fn get_param_len(&self) -> i32 {
+        match self {
+            Feature::Method(method) => return method.param.deref().len() as i32,
+            Feature::Constructor(constructor) => return constructor.param.deref().len() as i32,
+            _ => return 0,
         }
     }
 }
@@ -87,7 +116,6 @@ pub enum Ownership {
 
 impl PartialEq for VarDecl {
     fn eq(&self, other: &Self) -> bool {
-        // TODO: type_
         return self.name == other.name;
     }
 }
@@ -120,7 +148,6 @@ impl MethodDecl {
     }
 
     pub fn check_return_type(&self, other: &Feature) -> bool {
-        // TODO: return type
         if let Feature::Method(m) = other {
             return self.return_type == m.return_type;
         } else {
@@ -135,4 +162,15 @@ pub type ParamDecl = (Identifier, Type);
 pub struct MethodCall {
     pub fun_name: Identifier,
     pub actual: Box<Vec<Expr>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ConstructorDecl {
+    pub param: Box<Vec<ParamDecl>>,
+    pub body: Box<Option<Vec<Expr>>>,
+}
+impl PartialEq for ConstructorDecl {
+    fn eq(&self, other: &Self) -> bool {
+        return true;
+    }
 }

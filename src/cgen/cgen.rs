@@ -6,8 +6,8 @@ use crate::{
         Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
-    BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
-    OBJECT, PRIMSLOT, RUNTIME_ERR, STRING, STRING_CONST_VAL_OFFSET,
+    BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, NULL_TAG_OFFSET, OBJECT, PRIMSLOT,
+    RUNTIME_ERR, STRING,
 };
 
 use super::ast::CodeGenerate;
@@ -380,86 +380,116 @@ impl<'a> CodeGenerator<'a> {
             self.environment.curr_class = class_.name.clone();
 
             for feature in &class_.features {
-                if let Feature::Method(method) = feature {
-                    self.environment
-                        .env
-                        .get_mut(&class_.name)
-                        .unwrap()
-                        .enter_scope();
-                    // self.environment.env.get_mut(&class_.name).unwrap().add(
-                    //     &"self".to_string(),
-                    //     &Location {
-                    //         reg: "%rbp".to_string(),
-                    //         offset: i32::MAX,
-                    //         // type_: class_.name.clone(),
-                    //     },
-                    // );
-
-                    let mut offset = 0;
-                    let len = method.param.deref().len() as i32;
-                    for param in method.param.deref() {
-                        self.environment.env.get_mut(&class_.name).unwrap().add(
-                            &param.0,
-                            &Location {
-                                reg: "%rbp".to_string(),
-                                offset: 8 * (3 + len - 1 - offset),
-                                // type_: param.1.clone(),
-                            },
-                        );
-                        offset += 1;
+                match feature {
+                    Feature::Attribute(_) => {}
+                    _ => {
+                        self.code_method_constructor(&class_.name, feature);
                     }
-
-                    if let Some(expr_) = method.body.deref() {
-                        self.environment.var_offset = 1;
-                        self.environment
-                            .env
-                            .get_mut(&class_.name)
-                            .unwrap()
-                            .enter_scope();
-
-                        self.write(format!("{}.{}:", class_.name, method.name), false);
-                        self.method_start();
-
-                        // sub rsp to store local var
-                        let mut var_vec = Vec::new();
-                        for expr in expr_ {
-                            var_vec.append(&mut expr.get_var_num());
-                        }
-                        let align_stack;
-
-                        // if attr's len is odd
-                        if len % 2 == 0 {
-                            align_stack =
-                                crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
-                        } else {
-                            align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
-                        }
-                        self.environment.align_stack = align_stack;
-                        self.write(format!("subq ${}, %rsp", align_stack), true);
-
-                        for expr in expr_ {
-                            expr.code_generate(self);
-                        }
-
-                        self.environment
-                            .env
-                            .get_mut(&class_.name)
-                            .unwrap()
-                            .exit_scope();
-                    } else {
-                        self.write(format!("{}.{}:", class_.name, method.name), false);
-                        self.method_start();
-                        self.write(format!("movq $Object_prototype, %rax"), true);
-                        self.method_end();
-                    }
-                    self.environment
-                        .env
-                        .get_mut(&class_.name)
-                        .unwrap()
-                        .exit_scope();
                 }
             }
         }
+    }
+
+    fn code_method_constructor(&mut self, curr_class: &String, feature: &Feature) {
+        self.environment
+            .env
+            .get_mut(curr_class)
+            .unwrap()
+            .enter_scope();
+        // self.environment.env.get_mut(&class_.name).unwrap().add(
+        //     &"self".to_string(),
+        //     &Location {
+        //         reg: "%rbp".to_string(),
+        //         offset: i32::MAX,
+        //         // type_: class_.name.clone(),
+        //     },
+        // );
+
+        let mut offset = 0;
+        let len = feature.get_param_len();
+        for param in feature.clone().get_param().deref() {
+            self.environment.env.get_mut(curr_class).unwrap().add(
+                &param.0,
+                &Location {
+                    reg: "%rbp".to_string(),
+                    offset: 8 * (3 + len - 1 - offset),
+                    // type_: param.1.clone(),
+                },
+            );
+            offset += 1;
+        }
+
+        if let Some(expr_) = feature.get_body().deref() {
+            self.environment.var_offset = 1;
+            self.environment
+                .env
+                .get_mut(curr_class)
+                .unwrap()
+                .enter_scope();
+
+            // self.write(format!("{}.{}:", curr_class, method.name), false);
+            match feature {
+                Feature::Method(method) => {
+                    self.write(format!("{}.{}:", curr_class, method.name), false)
+                }
+                Feature::Constructor(_) => {
+                    self.write(format!("{}.constructor:", curr_class,), false)
+                }
+                _ => {}
+            }
+            self.method_start();
+
+            // sub rsp to store local var
+            let mut var_vec = Vec::new();
+            for expr in expr_ {
+                var_vec.append(&mut expr.get_var_num());
+            }
+            let align_stack;
+
+            // if attr's len is odd
+            if len % 2 == 0 {
+                align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8) + 8;
+            } else {
+                align_stack = crate::utils::util::align_to_16_bit(var_vec.len() * 8);
+            }
+            self.environment.align_stack = align_stack;
+            self.write(format!("subq ${}, %rsp", align_stack), true);
+
+            for expr in expr_ {
+                expr.code_generate(self);
+            }
+
+            self.environment
+                .env
+                .get_mut(curr_class)
+                .unwrap()
+                .exit_scope();
+            match feature {
+                Feature::Constructor(_) => {
+                    self.write(format!("addq ${}, %rsp", align_stack), true);
+                    self.method_end();
+                }
+                _ => {}
+            }
+        } else {
+            match feature {
+                Feature::Method(method) => {
+                    self.write(format!("{}.{}:", curr_class, method.name), false)
+                }
+                Feature::Constructor(_) => {
+                    self.write(format!("{}.constructor:", curr_class,), false)
+                }
+                _ => {}
+            }
+            self.method_start();
+            self.write(format!("movq $Object_prototype, %rax"), true);
+            self.method_end();
+        }
+        self.environment
+            .env
+            .get_mut(curr_class)
+            .unwrap()
+            .exit_scope();
     }
 
     fn code_main(&mut self) {
@@ -485,53 +515,53 @@ main:
         );
     }
 
-    fn code_malloc(&mut self) {
-        self.write(format!("Object.malloc:"), false);
-        self.method_start();
-        self.write(
-            format!(
-                "movq 24(%rbp), %rax
-    movq (%rax), %rdi
-    call malloc"
-            ),
-            true,
-        );
+    // fn code_malloc(&mut self) {
+    //     self.write(format!("Object.malloc:"), false);
+    //     self.method_start();
+    //     self.write(
+    //         format!(
+    //             "movq 24(%rbp), %rax
+    // movq (%rax), %rdi
+    // call malloc"
+    //         ),
+    //         true,
+    //     );
 
-        self.method_end();
-    }
+    //     self.method_end();
+    // }
 
-    fn code_print(&mut self) {
-        self.write(format!("Object.print:"), false);
-        self.method_start();
-        // param is str_type
-        // get param
-        self.write(format!("movq 24(%rbp), %rax"), true);
-        // %rax is str_const
+    // fn code_print(&mut self) {
+    //     self.write(format!("Object.print:"), false);
+    //     self.method_start();
+    //     // param is str_type
+    //     // get param
+    //     self.write(format!("movq 24(%rbp), %rax"), true);
+    //     // %rax is str_const
 
-        // push len
-        self.write(format!("pushq 32(%rax)"), true);
+    //     // push len
+    //     self.write(format!("pushq 32(%rax)"), true);
 
-        // get ascii
-        self.write(format!("movq 24(%rax), %rax"), true);
+    //     // get ascii
+    //     self.write(format!("movq 24(%rax), %rax"), true);
 
-        // push ascii
-        self.write(format!("pushq %rax"), true);
+    //     // push ascii
+    //     self.write(format!("pushq %rax"), true);
 
-        self.write(format!("movq $1, %rax"), true);
-        self.write(format!("movq $1, %rdi"), true);
-        self.write(format!("movq (%rsp), %rsi"), true);
-        self.write(format!("movq 8(%rsp), %rdx"), true);
-        self.write(format!("syscall"), true);
+    //     self.write(format!("movq $1, %rax"), true);
+    //     self.write(format!("movq $1, %rdi"), true);
+    //     self.write(format!("movq (%rsp), %rsi"), true);
+    //     self.write(format!("movq 8(%rsp), %rdx"), true);
+    //     self.write(format!("syscall"), true);
 
-        // movq $1, %rdi
-        // movq $string, %rsi
-        // movq $len, %rdx
-        // syscall
-        self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("movq %rbx, %rax"), true);
-        self.method_end();
-    }
+    //     // movq $1, %rdi
+    //     // movq $string, %rsi
+    //     // movq $len, %rdx
+    //     // syscall
+    //     self.write(format!("addq $8, %rsp"), true);
+    //     self.write(format!("addq $8, %rsp"), true);
+    //     self.write(format!("movq %rbx, %rax"), true);
+    //     self.method_end();
+    // }
 
     fn code_abort(&mut self) {
         self.write(format!("abort:"), false);
@@ -550,92 +580,92 @@ main:
         self.write(format!("call exit"), true);
     }
 
-    fn code_to_string(&mut self) {
-        self.write(format!("Object.to_string:"), false);
-        self.method_start();
-        self.write(
-            format!(
-                "movq $str_const_{}, %rax",
-                self.str_const_table.get("").unwrap()
-            ),
-            true,
-        );
-        self.method_end();
-        self.write(format!("String.to_string:"), false);
-        self.method_start();
-        self.write(format!("movq %rbx, %rax"), true);
-        self.method_end();
-        self.write(format!("Int.to_string:"), false);
-        self.method_start();
-        // rbx is self
-        self.write(format!("movq $32, %rdi"), true);
-        self.write(format!("call malloc"), true);
-        // push ascii
-        self.write(format!("pushq %rax"), true);
-        // rax is str_type
-        // 1st arg
-        self.write(format!("movq %rax, %rdi"), true);
-        // 2 second arg
-        self.write(
-            format!(
-                "movq $str_const_ascii_{}, %rsi",
-                self.str_const_table.get("%d").unwrap()
-            ),
-            true,
-        );
-        // 3rd arg
-        self.write(format!("movq {}(%rbx), %rdx", INT_CONST_VAL_OFFSET), true);
-        self.write(format!("call sprintf"), true);
+    // fn code_to_string(&mut self) {
+    //     self.write(format!("Object.to_string:"), false);
+    //     self.method_start();
+    //     self.write(
+    //         format!(
+    //             "movq $str_const_{}, %rax",
+    //             self.str_const_table.get("").unwrap()
+    //         ),
+    //         true,
+    //     );
+    //     self.method_end();
+    //     self.write(format!("String.to_string:"), false);
+    //     self.method_start();
+    //     self.write(format!("movq %rbx, %rax"), true);
+    //     self.method_end();
+    //     self.write(format!("Int.to_string:"), false);
+    //     self.method_start();
+    //     // rbx is self
+    //     self.write(format!("movq $32, %rdi"), true);
+    //     self.write(format!("call malloc"), true);
+    //     // push ascii
+    //     self.write(format!("pushq %rax"), true);
+    //     // rax is str_type
+    //     // 1st arg
+    //     self.write(format!("movq %rax, %rdi"), true);
+    //     // 2 second arg
+    //     self.write(
+    //         format!(
+    //             "movq $str_const_ascii_{}, %rsi",
+    //             self.str_const_table.get("%d").unwrap()
+    //         ),
+    //         true,
+    //     );
+    //     // 3rd arg
+    //     self.write(format!("movq {}(%rbx), %rdx", INT_CONST_VAL_OFFSET), true);
+    //     self.write(format!("call sprintf"), true);
 
-        self.write(format!("pushq $String_prototype"), true);
-        self.write(format!("call Object.malloc"), true);
-        self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("call String.init"), true);
+    //     self.write(format!("pushq $String_prototype"), true);
+    //     self.write(format!("call Object.malloc"), true);
+    //     self.write(format!("addq $8, %rsp"), true);
+    //     self.write(format!("call String.init"), true);
 
-        self.write(format!("popq %rdi"), true);
-        self.write(
-            format!("movq %rdi, {}(%rax)", STRING_CONST_VAL_OFFSET),
-            true,
-        );
-        self.write(format!("movq $32, {}(%rax)", 32), true);
-        self.method_end();
-    }
+    //     self.write(format!("popq %rdi"), true);
+    //     self.write(
+    //         format!("movq %rdi, {}(%rax)", STRING_CONST_VAL_OFFSET),
+    //         true,
+    //     );
+    //     self.write(format!("movq $32, {}(%rax)", 32), true);
+    //     self.method_end();
+    // }
 
-    fn code_concat(&mut self) {
-        self.write(format!("String.concat:"), false);
-        self.method_start();
-        // malloc str_ascii r10
-        self.write(format!("movq $64, %rdi"), true);
-        self.write(format!("call malloc"), true);
-        self.write(format!("movq %rax, %r10"), true);
-        // move malloc's rax to rdi
-        self.write(format!("movq %r10, %rdi"), true);
-        // concat(dest, src)
-        // 1st arg
-        self.write(format!("movq 32(%rbp), %rax"), true);
-        self.write(
-            format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
-            true,
-        );
-        self.write(format!("call strcpy"), true);
-        // r10 is malloc (contain dest's str)
-        self.write(format!("movq %r10, %rdi"), true);
-        // 2nd arg
-        self.write(format!("movq 24(%rbp), %rax"), true);
-        self.write(
-            format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
-            true,
-        );
-        self.write(format!("call strcat"), true);
-        self.write(format!("pushq $String_prototype"), true);
-        self.write(format!("call Object.malloc"), true);
-        self.write(format!("addq $8, %rsp"), true);
-        self.write(format!("call String.init"), true);
-        self.write(
-            format!("movq %r10, {}(%rax)", STRING_CONST_VAL_OFFSET),
-            true,
-        );
-        self.write(format!("movq $64, {}(%rax)", 32), true);
-        self.method_end();
-    }
+    // fn code_concat(&mut self) {
+    //     self.write(format!("String.concat:"), false);
+    //     self.method_start();
+    //     // malloc str_ascii r10
+    //     self.write(format!("movq $64, %rdi"), true);
+    //     self.write(format!("call malloc"), true);
+    //     self.write(format!("movq %rax, %r10"), true);
+    //     // move malloc's rax to rdi
+    //     self.write(format!("movq %r10, %rdi"), true);
+    //     // concat(dest, src)
+    //     // 1st arg
+    //     self.write(format!("movq 32(%rbp), %rax"), true);
+    //     self.write(
+    //         format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
+    //         true,
+    //     );
+    //     self.write(format!("call strcpy"), true);
+    //     // r10 is malloc (contain dest's str)
+    //     self.write(format!("movq %r10, %rdi"), true);
+    //     // 2nd arg
+    //     self.write(format!("movq 24(%rbp), %rax"), true);
+    //     self.write(
+    //         format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
+    //         true,
+    //     );
+    //     self.write(format!("call strcat"), true);
+    //     self.write(format!("pushq $String_prototype"), true);
+    //     self.write(format!("call Object.malloc"), true);
+    //     self.write(format!("addq $8, %rsp"), true);
+    //     self.write(format!("call String.init"), true);
+    //     self.write(
+    //         format!("movq %r10, {}(%rax)", STRING_CONST_VAL_OFFSET),
+    //         true,
+    //     );
+    //     self.write(format!("movq $64, {}(%rax)", 32), true);
+    //     self.method_end();
+    // }
 }
