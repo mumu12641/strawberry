@@ -3,8 +3,8 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
-            Math, MathOp, Not, Return, TypeGet, While,
+            Assignment, ComputeOp, Cond, CondOp, ConstructorCall, Dispatch, DispatchExpr, Expr,
+            For, Isnull, Let, Math, MathOp, Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
@@ -79,7 +79,7 @@ impl CodeGenerate for Expr {
             }
 
             Expr::ASM(s) => {
-                let mut fix_asm_code: String = String::new();
+                let mut fix_asm_code: String;
                 fix_asm_code = s.replace(
                     "%d",
                     format!(
@@ -118,11 +118,47 @@ impl CodeGenerate for Expr {
                 }
             }
 
-            Expr::New(e) => {
-                code_generator.write(format!("push ${}_prototype", e), true);
-                code_generator.write(format!("call Object.malloc"), true);
-                code_generator.write(format!("addq $8, %rsp"), true);
-                code_generator.write(format!("call {}.init", e), true);
+            Expr::New(constructor_call) => {
+                // code_generator.write(
+                //     format!("push ${}_prototype", constructor_call.class_name),
+                //     true,
+                // );
+                // code_generator.write(format!("call Object.malloc"), true);
+                // code_generator.write(format!("addq $8, %rsp"), true);
+                // code_generator.write(format!("call {}.init", constructor_call.class_name), true);
+                // // %rax is the prototype
+
+                match constructor_call.param.as_deref() {
+                    Some(exprs) => {
+                        for expr in exprs {
+                            expr.code_generate(code_generator);
+                            code_generator.write(format!("push %rax"), true);
+                        }
+                        code_generator.write(
+                            format!("push ${}_prototype", constructor_call.class_name),
+                            true,
+                        );
+                        code_generator.write(format!("call Object.malloc"), true);
+                        code_generator.write(format!("addq $8, %rsp"), true);
+                        code_generator
+                            .write(format!("call {}.init", constructor_call.class_name), true);
+                        code_generator.write(
+                            format!("call {}.Constructor", constructor_call.class_name),
+                            true,
+                        );
+                        code_generator.write(format!("addq ${}, %rsp", exprs.len() * 8), true);
+                    }
+                    None => {
+                        code_generator.write(
+                            format!("push ${}_prototype", constructor_call.class_name),
+                            true,
+                        );
+                        code_generator.write(format!("call Object.malloc"), true);
+                        code_generator.write(format!("addq $8, %rsp"), true);
+                        code_generator
+                            .write(format!("call {}.init", constructor_call.class_name), true);
+                    }
+                }
 
                 // "   .globl main
                 // main:
@@ -214,7 +250,7 @@ impl CodeGenerate for Dispatch {
                     Expr::Str(_) => code_generator.environment.curr_class = STRING.to_string(),
                     Expr::Int(_) => code_generator.environment.curr_class = INT.to_string(),
                     Expr::Bool(_) => code_generator.environment.curr_class = BOOL.to_string(),
-                    Expr::New(e) => code_generator.environment.curr_class = e.clone(),
+                    Expr::New(e) => code_generator.environment.curr_class = e.class_name.clone(),
                     _ => {}
                 }
 
@@ -239,9 +275,7 @@ impl CodeGenerate for Dispatch {
                     true,
                 );
 
-                for _ in method.actual.deref() {
-                    code_generator.write(format!("addq $8, %rsp"), true);
-                }
+                code_generator.write(format!("addq ${}, %rsp", method.actual.len() * 8), true);
                 code_generator.environment.curr_class = temp;
             }
 

@@ -123,6 +123,12 @@ pub struct Import {
     pub file_name: String,
     pub class_name: Type,
 }
+#[derive(Debug, Clone)]
+pub struct ConstructorCall {
+    pub class_name: String,
+    pub param: Option<Box<Vec<Expr>>>,
+    pub position: Position,
+}
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -140,7 +146,7 @@ pub enum Expr {
     For(For),
     Block(Box<Vec<Expr>>),
     Let(Let),
-    New(Type),
+    New(ConstructorCall),
     Self_(Self_),
     Isvoid(Box<Expr>),
 
@@ -170,7 +176,7 @@ impl TypeGet for Expr {
             Expr::Bool(_) => return BOOL.to_string(),
             Expr::Str(_) => return STRING.to_string(),
             Expr::Int(_) => return INT.to_string(),
-            Expr::New(type_) => return type_.clone(),
+            Expr::New(constructor_call) => return constructor_call.class_name.clone(),
             Expr::Identifier(e) => return e.type_.clone(),
             Expr::Dispatch(e) => return e.type_.clone(),
             Expr::Self_(e) => return e.type_.clone(),

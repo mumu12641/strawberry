@@ -275,7 +275,17 @@ single_expr:Expr = {
     <i:"INT"> => Expr::Int(i.parse::<i32>().unwrap()), 
     // <s:"self"> => Expr::Self_(s),
     
-    "new" <class_name:"TYPE"> => Expr::New(<>), 
+    <pos:"new"> <class_name_:"TYPE"> => Expr::New(ConstructorCall{
+        class_name: class_name_,
+        param: None,
+        position: pos,
+    }), 
+    <pos:"new"> <class_name_:"TYPE"> "(" <args:comma_list<math_expr>?> ")" => Expr::New(ConstructorCall{
+        class_name: class_name_,
+        param: Some(Box::new(args.unwrap_or(vec![]))),
+        position: pos,
+    }), 
+
 
     <id:"ID"> "(" <args:comma_list<math_expr>?>  ")" => {
         Expr::Dispatch (Dispatch{

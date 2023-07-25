@@ -307,7 +307,17 @@ impl SemanticChecker {
                             self.symbol_table.add(&param.0, &param.1);
                         }
                         if let Some(v) = constructor.body.deref_mut() {
+
                             for expr in v {
+                                if let Expr::Return(re) = expr{
+                                    return Err(SemanticError {
+                                        err_msg: format!(
+                                            "You cannot add a Return expression in constructor.",
+                                        ),
+                                        file_name:  i.file_name.clone(),
+                                        position: Some(re.position),
+                                    });
+                                }
                                 if let Err(e) = expr.check_type(&mut self.symbol_table, class_table)
                                 {
                                     return Err(SemanticError {

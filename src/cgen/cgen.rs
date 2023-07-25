@@ -433,7 +433,7 @@ impl<'a> CodeGenerator<'a> {
                     self.write(format!("{}.{}:", curr_class, method.name), false)
                 }
                 Feature::Constructor(_) => {
-                    self.write(format!("{}.constructor:", curr_class,), false)
+                    self.write(format!("{}.Constructor:", curr_class,), false)
                 }
                 _ => {}
             }
@@ -466,6 +466,7 @@ impl<'a> CodeGenerator<'a> {
                 .exit_scope();
             match feature {
                 Feature::Constructor(_) => {
+                    self.write(format!("movq %rbx, %rax"), true);
                     self.write(format!("addq ${}, %rsp", align_stack), true);
                     self.method_end();
                 }
@@ -477,7 +478,7 @@ impl<'a> CodeGenerator<'a> {
                     self.write(format!("{}.{}:", curr_class, method.name), false)
                 }
                 Feature::Constructor(_) => {
-                    self.write(format!("{}.constructor:", curr_class,), false)
+                    self.write(format!("{}.Constructor:", curr_class,), false)
                 }
                 _ => {}
             }

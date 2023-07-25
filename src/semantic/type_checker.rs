@@ -25,14 +25,14 @@ impl TypeChecker for Expr {
             Expr::Bool(_) => return Ok(BOOL.to_string()),
             Expr::Str(_) => return Ok(STRING.to_string()),
             Expr::Int(_) => return Ok(INT.to_string()),
-            Expr::New(type_) => {
-                if let Some(_) = class_table.classes.get(type_) {
-                    return Ok(type_.clone());
+            Expr::New(constructor_call) => {
+                if let Some(_) = class_table.classes.get(&constructor_call.class_name) {
+                    return Ok(constructor_call.class_name.clone());
                 } else {
                     return Err(SemanticError::new(
                         format!(
                             "There is no class called {}, maybe you should import it!",
-                            type_
+                            &constructor_call.class_name
                         ),
                         None,
                     ));
