@@ -333,7 +333,8 @@ fn test() {
     let mut class_table = ClassTable::new();
 
     // install constants
-    class_table.install_basic_class();
+
+    //*   class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
     // for i in lexer {
     //     println!("{:?}", i);

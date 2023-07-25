@@ -3,7 +3,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::{grammar::lexer::Position, EMPTY};
+use crate::{grammar::lexer::Position, utils::util::do_vecs_match, EMPTY};
 
 use super::{expr::Expr, Identifier, Type};
 
@@ -168,9 +168,12 @@ pub struct MethodCall {
 pub struct ConstructorDecl {
     pub param: Box<Vec<ParamDecl>>,
     pub body: Box<Option<Vec<Expr>>>,
+    pub position: Position,
 }
 impl PartialEq for ConstructorDecl {
     fn eq(&self, other: &Self) -> bool {
-        return true;
+        let other_param = other.param.deref();
+        let self_param = self.param.deref();
+        return do_vecs_match(other_param, self_param);
     }
 }

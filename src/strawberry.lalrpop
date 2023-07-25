@@ -122,16 +122,18 @@ feature: Feature = {
     },
 
     // constructor
-    "constructor" "(" <param_:comma_list<param>?> ")" "{" <e:semi_list<expr>> "}" ";" =>{
+    <pos:"constructor"> "(" <param_:comma_list<param>?> ")" "{" <e:semi_list<expr>> "}" ";" =>{
         Feature::Constructor(ConstructorDecl{
            param: Box::new(param_.unwrap_or(vec![])),
             body: Box::new(Some(e)),
+            position:pos,
         })
     },
-    "constructor" "(" <param_:comma_list<param>?> ")" "{"  "}" ";" =>{
+    <pos:"constructor"> "(" <param_:comma_list<param>?> ")" "{"  "}" ";" =>{
         Feature::Constructor(ConstructorDecl{
            param: Box::new(param_.unwrap_or(vec![])),
            body: Box::new(None),
+            position:pos,
         })
     },
 
@@ -442,11 +444,12 @@ extern {
         "isnull" => Token::Isnull,
         "self" => Token::Self_(<String>),
         "!" => Token::Not(<(usize,usize)>),
+        "constructor" => Token::Constructor(<(usize,usize)>),
         "->" => Token::Arrow,
         "asm" => Token::ASM,
         "IMPORT" => Token::Import,
         "FROM" => Token::From,
-        "constructor" => Token::Constructor,
+       
 
         // const and id and typeid
         "STR" => Token::StringConst(<String>),

@@ -14,6 +14,7 @@ pub enum Token {
     For(Position),
     New(Position),
     Not(Position),
+    Constructor(Position),
     Inherits,
     Isnull,
     Public,
@@ -22,7 +23,6 @@ pub enum Token {
     Import,
     From,
     ASM,
-    Constructor,
 
     // const and id and typeid
     StringConst(String),

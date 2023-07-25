@@ -31,7 +31,7 @@ lexer! {
     "true"=>Token::BoolConst(true),
     "false" => Token::BoolConst(false),
     "__asm__" => Token::ASM,
-    "constructor" => Token::Constructor,
+    "constructor" => Token::Constructor(EMPTY),
 
 
     // const and id and typeid
@@ -272,6 +272,14 @@ impl<'a> Iterator for Lexer<'a> {
                     return Some(Ok((
                         self.current_line,
                         Token::For((self.current_line, self.offset)),
+                        self.offset,
+                    )))
+                }
+
+                Token::Constructor(_) => {
+                    return Some(Ok((
+                        self.current_line,
+                        Token::Constructor((self.current_line, self.offset)),
                         self.offset,
                     )))
                 }

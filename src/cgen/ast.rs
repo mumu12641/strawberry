@@ -3,8 +3,8 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, ConstructorCall, Dispatch, DispatchExpr, Expr,
-            For, Isnull, Let, Math, MathOp, Not, Return, TypeGet, While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
+            Math, MathOp, Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
@@ -118,60 +118,37 @@ impl CodeGenerate for Expr {
                 }
             }
 
-            Expr::New(constructor_call) => {
-                // code_generator.write(
-                //     format!("push ${}_prototype", constructor_call.class_name),
-                //     true,
-                // );
-                // code_generator.write(format!("call Object.malloc"), true);
-                // code_generator.write(format!("addq $8, %rsp"), true);
-                // code_generator.write(format!("call {}.init", constructor_call.class_name), true);
-                // // %rax is the prototype
-
-                match constructor_call.param.as_deref() {
-                    Some(exprs) => {
-                        for expr in exprs {
-                            expr.code_generate(code_generator);
-                            code_generator.write(format!("push %rax"), true);
-                        }
-                        code_generator.write(
-                            format!("push ${}_prototype", constructor_call.class_name),
-                            true,
-                        );
-                        code_generator.write(format!("call Object.malloc"), true);
-                        code_generator.write(format!("addq $8, %rsp"), true);
-                        code_generator
-                            .write(format!("call {}.init", constructor_call.class_name), true);
-                        code_generator.write(
-                            format!("call {}.Constructor", constructor_call.class_name),
-                            true,
-                        );
-                        code_generator.write(format!("addq ${}, %rsp", exprs.len() * 8), true);
+            Expr::New(constructor_call) => match constructor_call.param.as_deref() {
+                Some(exprs) => {
+                    for expr in exprs {
+                        expr.code_generate(code_generator);
+                        code_generator.write(format!("push %rax"), true);
                     }
-                    None => {
-                        code_generator.write(
-                            format!("push ${}_prototype", constructor_call.class_name),
-                            true,
-                        );
-                        code_generator.write(format!("call Object.malloc"), true);
-                        code_generator.write(format!("addq $8, %rsp"), true);
-                        code_generator
-                            .write(format!("call {}.init", constructor_call.class_name), true);
-                    }
+                    code_generator.write(
+                        format!("push ${}_prototype", constructor_call.class_name),
+                        true,
+                    );
+                    code_generator.write(format!("call Object.malloc"), true);
+                    code_generator.write(format!("addq $8, %rsp"), true);
+                    code_generator
+                        .write(format!("call {}.init", constructor_call.class_name), true);
+                    code_generator.write(
+                        format!("call {}.Constructor", constructor_call.class_name),
+                        true,
+                    );
+                    code_generator.write(format!("addq ${}, %rsp", exprs.len() * 8), true);
                 }
-
-                // "   .globl main
-                // main:
-                //     pushq $Main_prototype
-                //     call Object.malloc
-                //     addq $8, %rsp
-                //     movq %rax, %rbx
-                //     call Main.init
-                //     movq %rbx, %rax
-                //     call Main.main
-                //     movq 16(%rax), %rax
-                //     ret "
-            }
+                None => {
+                    code_generator.write(
+                        format!("push ${}_prototype", constructor_call.class_name),
+                        true,
+                    );
+                    code_generator.write(format!("call Object.malloc"), true);
+                    code_generator.write(format!("addq $8, %rsp"), true);
+                    code_generator
+                        .write(format!("call {}.init", constructor_call.class_name), true);
+                }
+            },
 
             Expr::Self_(_) => {
                 code_generator.write(format!("movq %rbx, %rax"), true);
@@ -379,17 +356,13 @@ impl CodeGenerate for Math {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // r10-r11 for temp register
         let left = self.left.deref();
-        code_generator.write(format!("# left start"), true);
         left.code_generate(code_generator);
 
         code_generator.write(format!("pushq %rax"), true);
-        code_generator.write(format!("# left end"), true);
 
         let right = self.right.deref();
-        code_generator.write(format!("# right start"), true);
 
         right.code_generate(code_generator);
-        code_generator.write(format!("# right end"), true);
 
         if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
             // %r10 is right, %r11 is left

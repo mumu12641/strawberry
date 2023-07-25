@@ -4,8 +4,8 @@ use crate::{
     // grammar::ast::{Class, Feature, MethodDecl},
     grammar::{
         ast::{
-            class::{Class, Feature},
-            expr::{Expr, TypeChecker},
+            class::{Class, ConstructorDecl, Feature},
+            expr::{ConstructorCall, Expr, TypeChecker},
             Identifier, Type,
         },
         lexer::Position,
@@ -56,7 +56,7 @@ impl SemanticChecker {
         let mut main_flag = false;
         let mut main_method_flag = false;
 
-        // check repeat class
+        //* check repeat class */
         for i in &self.classes {
             if i.name == "Main".to_string() {
                 main_flag = true;
@@ -79,7 +79,7 @@ impl SemanticChecker {
             }
         }
 
-        // chech main
+        //* chech main */
         if !main_flag {
             return Err(SemanticError {
                 err_msg: format!("Your program is missing the Main class"),
@@ -95,7 +95,7 @@ impl SemanticChecker {
             });
         }
 
-        // check inheritance
+        //* check inheritance */
         for i in &self.classes {
             let mut inherit_vec: Vec<Class> = Vec::new();
             let mut curr_parent: Option<String>;
@@ -142,12 +142,40 @@ impl SemanticChecker {
             }
             class_table
                 .inheritance
-                .insert(i.name.clone(), inherit_vec.clone());
+                .insert(i.name.clone(), inherit_vec);
         }
 
-        // check attribute (optional)
+        //* check construtor */
+        for i in &self.classes {
+            // match  i. features {
 
-        // check  method
+            // }
+            // ! do not clone
+            let mut construtor_vec: Vec<ConstructorDecl> = vec![];
+            for feature in &i.features {
+                match feature {
+                    Feature::Constructor(constructor_decl) => {
+                        // class_table.class_constructors
+                        // class_table.class_constructors.get()
+                        if !construtor_vec.contains(constructor_decl) {
+                            construtor_vec.insert(0, constructor_decl.clone());
+                        } else {
+                            return Err(SemanticError {
+                                 err_msg:format!("The parameter declaration for this constructor method duplicates"),
+                                  position: Some(constructor_decl.position),
+                                  file_name:i.file_name.clone(),
+                                 });
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            class_table
+                .class_constructors
+                .insert(i.name.clone(), construtor_vec);
+        }
+
+        //* check  method */
         for i in &self.classes {
             // Main:  Main -> Object -> A
 
@@ -307,14 +335,13 @@ impl SemanticChecker {
                             self.symbol_table.add(&param.0, &param.1);
                         }
                         if let Some(v) = constructor.body.deref_mut() {
-
                             for expr in v {
-                                if let Expr::Return(re) = expr{
+                                if let Expr::Return(re) = expr {
                                     return Err(SemanticError {
                                         err_msg: format!(
                                             "You cannot add a Return expression in constructor.",
                                         ),
-                                        file_name:  i.file_name.clone(),
+                                        file_name: i.file_name.clone(),
                                         position: Some(re.position),
                                     });
                                 }
