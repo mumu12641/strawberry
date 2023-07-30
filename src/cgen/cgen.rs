@@ -1,9 +1,8 @@
-use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
+use std::{collections::HashMap, fmt::Display, fs::File, io::Write, iter, ops::Deref};
 
 use crate::{
     grammar::ast::{
-        class::{Class, Feature},
-        Type,
+        class::{Class, Feature}, Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, NULL_TAG_OFFSET, OBJECT, PRIMSLOT,
@@ -382,28 +381,30 @@ impl<'a> CodeGenerator<'a> {
             for feature in &class_.features {
                 match feature {
                     Feature::Attribute(_) => {}
-                    _ => {
-                        self.code_method_constructor(&class_.name, feature);
+                    Feature::Constructor(decl) => {
+                        let decl_type = decl.param.deref();
+                        let iter: Vec<String> = decl_type.iter().map(|x| x.1.to_string()).collect();
+                        self.code_method_constructor(&class_.name, feature, Some(iter));
+                    }
+                    Feature::Method(_) => {
+                        self.code_method_constructor(&class_.name, feature, None);
                     }
                 }
             }
         }
     }
 
-    fn code_method_constructor(&mut self, curr_class: &String, feature: &Feature) {
+    fn code_method_constructor(
+        &mut self,
+        curr_class: &String,
+        feature: &Feature,
+        specific_construtor: Option<Vec<String>>,
+    ) {
         self.environment
             .env
             .get_mut(curr_class)
             .unwrap()
             .enter_scope();
-        // self.environment.env.get_mut(&class_.name).unwrap().add(
-        //     &"self".to_string(),
-        //     &Location {
-        //         reg: "%rbp".to_string(),
-        //         offset: i32::MAX,
-        //         // type_: class_.name.clone(),
-        //     },
-        // );
 
         let mut offset = 0;
         let len = feature.get_param_len();
@@ -432,9 +433,14 @@ impl<'a> CodeGenerator<'a> {
                 Feature::Method(method) => {
                     self.write(format!("{}.{}:", curr_class, method.name), false)
                 }
-                Feature::Constructor(_) => {
-                    self.write(format!("{}.Constructor:", curr_class,), false)
-                }
+                Feature::Constructor(_) => self.write(
+                    format!(
+                        "{}.Constructor_{}:",
+                        curr_class,
+                        specific_construtor.unwrap().join("_")
+                    ),
+                    false,
+                ),
                 _ => {}
             }
             self.method_start();
@@ -475,16 +481,27 @@ impl<'a> CodeGenerator<'a> {
         } else {
             match feature {
                 Feature::Method(method) => {
-                    self.write(format!("{}.{}:", curr_class, method.name), false)
+                    self.write(format!("{}.{}:", curr_class, method.name), false);
+                    self.method_start();
+                    self.write(format!("movq $Object_prototype, %rax"), true);
+                    self.method_end();
                 }
                 Feature::Constructor(_) => {
-                    self.write(format!("{}.Constructor:", curr_class,), false)
+                    
+                    self.write(
+                        format!(
+                            "{}.Constructor_{}:",
+                            curr_class,
+                            specific_construtor.unwrap().join("_")
+                        ),
+                        false,
+                    );
+                    self.method_start();
+                    self.write(format!("movq %rbx, %rax"), true);
+                    self.method_end();
                 }
                 _ => {}
             }
-            self.method_start();
-            self.write(format!("movq $Object_prototype, %rax"), true);
-            self.method_end();
         }
         self.environment
             .env

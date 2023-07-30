@@ -198,14 +198,10 @@ class Main{
 ```
 class Main { 
 	fun main() -> Int { 
-		let n1 = new Node;
-		let n2 = new Node;
-		let n3 = new Node;
-		let n4 = new Node;
-		n1.set_val(1);
-		n2.set_val(2);
-		n3.set_val(3);
-		n4.set_val(4);
+		let n1 = new Node(1);
+		let n2 = new Node(2);
+		let n3 = new Node(3);
+		let n4 = new Node(4);
 
 		let l = new List;
 		l.insert(n1);
@@ -215,7 +211,7 @@ class Main {
 		let h = l.get_head();
 
 		while(!null(h)){
-			print(h.to_string());
+			print(h.get_val().to_string() + "\\n");
 			h = h.get_next();
 		}
 		
@@ -227,30 +223,35 @@ class Node{
 	val:Int = 0;
 	next:Node;
 
-    public fn set_val(val_:Int) -> Int{
+	constructor(val_:Int){
 		val = val_;
-		return 0;
 	};
 
-    public fn set_next(next_:Node) -> Int{
+    public fn set_val(val_:Int) -> Void{
+		val = val_;
+		return;
+	};
+
+	public fn get_val() -> Int{
+		return val;
+	};
+
+    public fn set_next(next_:Node) -> Void{
 		next = next_;
-		return 0;
+		return;
 	};
 
     public fn get_next() -> Node{
 		return next;
 	};
 
-    public fn to_string() -> String{
-		return val.to_string() + "\\n";
-	};
 };
 
 class List{
 	head:Node;
 	tail:Node;
 
-    public fn insert(node:Node) -> Int{
+    public fn insert(node:Node) -> Void{
 		if(null(head)){
 			head = node;
 			tail = head;
@@ -258,7 +259,7 @@ class List{
 			tail.set_next(node);
 			tail = node;
 		}
-		return 0;
+		return;
 	};
 
     public fn get_head() -> Node{

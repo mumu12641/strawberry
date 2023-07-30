@@ -9,7 +9,10 @@ use crate::{
         },
         Identifier, Type,
     },
-    utils::table::{ClassTable, SymbolTable},
+    utils::{
+        table::{ClassTable, SymbolTable},
+        util::do_vecs_match,
+    },
     BOOL, INT, OBJECT, SELF, STRING, VOID,
 };
 
@@ -27,13 +30,44 @@ impl TypeChecker for Expr {
             Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(constructor_call) => {
                 if let Some(_) = class_table.classes.get(&constructor_call.class_name) {
-                    return Ok(constructor_call.class_name.clone());
+                    // find the class
+                    match &mut constructor_call.param {
+                        // check params
+                        Some(params) => {
+                            let mut type_vec: Vec<Type> = vec![];
+                            for i in params.deref_mut() {
+                                match i.check_type(symbol_table, class_table) {
+                                    Ok(type_) => {
+                                        type_vec.push(type_.to_string());
+                                    }
+                                    Err(e) => return Err(e),
+                                }
+                            }
+                            let constructor_decls = class_table
+                                .class_constructors
+                                .get(&constructor_call.class_name)
+                                .unwrap();
+                            for decl in constructor_decls {
+                                //  is there a constructor match?
+                                let decl_type = decl.param.deref();
+                                let iter = decl_type.iter().map(|x| x.1.clone());
+                                if do_vecs_match(&type_vec, &(iter.collect())) {
+                                    return Ok(constructor_call.class_name.clone());
+                                }
+                            }
+                            return Err(SemanticError::new(
+                                format!(
+                                    "class {} has no constructor that takes ({:?}) as parameters!",
+                                    &constructor_call.class_name, type_vec
+                                ),
+                                Some(constructor_call.position),
+                            ));
+                        }
+                        None => return Ok(constructor_call.class_name.clone()),
+                    }
                 } else {
                     return Err(SemanticError::new(
-                        format!(
-                            "There is no class called {}, maybe you should import it!",
-                            &constructor_call.class_name
-                        ),
+                        format!("There is no class called {}!", &constructor_call.class_name),
                         None,
                     ));
                 }

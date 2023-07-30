@@ -361,10 +361,18 @@ fn test() {
 }
 
 #[test]
-fn bit_test() {
+fn some_test() {
     let a = "%d as";
     let s = a.replace("%d", "1");
     println!("{}", s);
+
+    let binding = "Foo".to_string();
+    let binding12 = "Bar".to_string();
+    let string_list: Vec<&String> = vec![&binding, &binding12];
+    let v: Vec<String> = string_list.iter().map(|x| x.to_string()).collect();
+    let joined = v.join("-");
+    assert_eq!("Foo-Bar", joined);
+    println!("{}", joined)
 }
 #[test]
 fn ir_test() {

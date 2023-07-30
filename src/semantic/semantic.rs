@@ -140,25 +140,18 @@ impl SemanticChecker {
                     }
                 }
             }
-            class_table
-                .inheritance
-                .insert(i.name.clone(), inherit_vec);
+            class_table.inheritance.insert(i.name.clone(), inherit_vec);
         }
 
         //* check construtor */
         for i in &self.classes {
-            // match  i. features {
-
-            // }
             // ! do not clone
             let mut construtor_vec: Vec<ConstructorDecl> = vec![];
             for feature in &i.features {
                 match feature {
                     Feature::Constructor(constructor_decl) => {
-                        // class_table.class_constructors
-                        // class_table.class_constructors.get()
                         if !construtor_vec.contains(constructor_decl) {
-                            construtor_vec.insert(0, constructor_decl.clone());
+                            construtor_vec.push(constructor_decl.clone());
                         } else {
                             return Err(SemanticError {
                                  err_msg:format!("The parameter declaration for this constructor method duplicates"),

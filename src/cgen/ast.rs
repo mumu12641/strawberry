@@ -3,8 +3,8 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
-            Math, MathOp, Not, Return, TypeGet, While,
+            self, Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull,
+            Let, Math, MathOp, Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
@@ -132,10 +132,30 @@ impl CodeGenerate for Expr {
                     code_generator.write(format!("addq $8, %rsp"), true);
                     code_generator
                         .write(format!("call {}.init", constructor_call.class_name), true);
-                    code_generator.write(
-                        format!("call {}.Constructor", constructor_call.class_name),
-                        true,
-                    );
+
+                    match &constructor_call.param {
+                        Some(params) => {
+                            let mut types: Vec<String> = vec![];
+                            for expr in params.deref() {
+                                types.push(expr.get_type());
+                            }
+                            code_generator.write(
+                                format!(
+                                    "call {}.Constructor_{}",
+                                    constructor_call.class_name,
+                                    types.join("_")
+                                ),
+                                true,
+                            );
+                        }
+                        None => {
+                            code_generator.write(
+                                format!("call {}.Constructor", constructor_call.class_name),
+                                true,
+                            );
+                        }
+                    }
+
                     code_generator.write(format!("addq ${}, %rsp", exprs.len() * 8), true);
                 }
                 None => {
