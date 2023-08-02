@@ -5,7 +5,7 @@ use crate::{
     grammar::{
         ast::{
             class::{Class, ConstructorDecl, Feature},
-            expr::{ConstructorCall, Expr, TypeChecker},
+            expr::{Expr, TypeChecker},
             Identifier, Type,
         },
         lexer::Position,
@@ -55,7 +55,6 @@ impl SemanticChecker {
     pub fn check(&mut self, class_table: &mut ClassTable) -> Result<Vec<Class>, SemanticError> {
         let mut main_flag = false;
         let mut main_method_flag = false;
-
         //* check repeat class */
         for i in &self.classes {
             if i.name == "Main".to_string() {

@@ -2,7 +2,8 @@ use std::{collections::HashMap, fmt::Display, fs::File, io::Write, iter, ops::De
 
 use crate::{
     grammar::ast::{
-        class::{Class, Feature}, Type,
+        class::{Class, Feature},
+        Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, NULL_TAG_OFFSET, OBJECT, PRIMSLOT,
@@ -487,7 +488,6 @@ impl<'a> CodeGenerator<'a> {
                     self.method_end();
                 }
                 Feature::Constructor(_) => {
-                    
                     self.write(
                         format!(
                             "{}.Constructor_{}:",

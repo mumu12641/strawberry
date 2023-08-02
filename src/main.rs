@@ -6,6 +6,7 @@ extern crate clap;
 lalrpop_mod!(pub strawberry);
 use clap::{Arg, ColorChoice};
 use grammar::lexer::Lexer;
+use grammar::lexer::Position;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
 
@@ -171,7 +172,7 @@ fn compile(files: Vec<String>) {
                 // if file_name == main_file {
                 //     compile_class.append(&mut v.1);
                 // }
-                // // dbg!(&file_name);
+                //  dbg!(&file_name);
                 // import_map.insert(file_name, v.0);
             }
             Err(e) => {
@@ -180,11 +181,13 @@ fn compile(files: Vec<String>) {
                 print!("{}", "Err: ".red());
                 match e {
                     lalrpop_util::ParseError::UnrecognizedToken { token, expected } => {
-                        let err = format!(
-                            "There is an unrecognized token <{:?}> at {}:{}:{}, maybe you can try {:?}",
-                            token.1,&file_name, token.0, token.2, expected,
-                        );
+                        let err = format!("There is an unrecognized token <{:?}> !", token.1,);
                         println!("{}", err.red());
+                        print_err_msg(
+                            (token.0, token.2),
+                            &file_name,
+                            &format!("Maybe you can try {} here!",expected.join(" or ")),
+                        );
                     }
                     lalrpop_util::ParseError::ExtraToken { token } => {
                         let err = format!(
@@ -253,30 +256,34 @@ fn compile(files: Vec<String>) {
         Err(e) => {
             println!("{}", "❌ Oops, semantic error has occurred!".red());
             if let Some(pos) = e.position {
-                let (line, off) = pos;
-                let mut err_file = File::open(&e.file_name).unwrap();
-                let mut err_content = String::new();
-                let mut lines;
-                let err_msg = format!("--> {}:{}:{}", e.file_name, line, off);
-                err_file.read_to_string(&mut err_content).expect("error");
-                lines = err_content.lines();
-                println!("{}", err_msg.blue());
-                println!("{0:<4}{1:<4}", "".to_string(), format!("|").blue());
-                print!("{0:<4}{1:<4}", line.blue(), format!("|").blue());
-                println!("{}", lines.nth(line - 1).unwrap().blue());
-                print!(
-                    "{0:<4}{1:<4}{2:<off$}",
-                    "".to_string(),
-                    format!("|").blue(),
-                    "".to_string()
-                );
-                println!("{}{}", format!("^ ").red(), e.err_msg.red());
+                print_err_msg(pos, &e.file_name, &e.err_msg);
             } else {
                 println!("{}{}", format!("--> ").blue(), e.file_name.blue());
                 println!("\t{}", e.err_msg.blue());
             }
         }
     }
+}
+
+fn print_err_msg(pos: Position, file_name: &String, err_msg_: &String) {
+    let (line, off) = pos;
+    let mut err_file = File::open(file_name).unwrap();
+    let mut err_content = String::new();
+    let mut lines;
+    let err_msg = format!("--> {}:{}:{}", file_name, line, off);
+    err_file.read_to_string(&mut err_content).expect("error");
+    lines = err_content.lines();
+    println!("{}", err_msg.blue());
+    println!("{0:<4}{1:<4}", "".to_string(), format!("|").blue());
+    print!("{0:<4}{1:<4}", line.blue(), format!("|").blue());
+    println!("{}", lines.nth(line - 1).unwrap().blue());
+    print!(
+        "{0:<4}{1:<4}{2:<off$}",
+        "".to_string(),
+        format!("|").blue(),
+        "".to_string()
+    );
+    println!("{}{}", format!("^ ").red(), err_msg_.red());
 }
 
 fn create_project_folder(name: &str) {
