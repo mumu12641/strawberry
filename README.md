@@ -106,10 +106,10 @@ class Main {
 ```
 // in strawberry, every class must start with a capital letter
 class Main {
-	a:Int = 0;	// variable of the Main class
+	a:int = 0;	// variable of the Main class
 	
-	fun main() -> Int {
-		let a:Int = 1;	// variable in main method, this 'a' will cover Main's 'a'
+	fun main() -> int {
+		let a:int = 1;	// variable in main method, this 'a' will cover Main's 'a'
 		let b = 2;	// it is also ok not to declare the type, but it needs to be initialized
 		let c:String = "this is c";		
 		let d:Bool = true;
@@ -122,10 +122,10 @@ class Main {
 
 ```
 class Main{
-	fun main() -> Int {
+	fun main() -> int {
 		let square = new Square;
 		square.set(2);
-		print(squrae.get_area().to_string());		// output:4
+		print(new Int(squrae.get_area()).to_string());		// output:4
 		return 0;
 	};
 	fun draw(shape:Shape) -> Shape {
@@ -137,20 +137,20 @@ class Main{
 class Shape {
     name:String = "shape";
     
-    public fun get_area() -> Int{
+    public fun get_area() -> int{
         return 0;
     };
 };
 
 class Square inherits Shape{
-    a:Int = 0;
+    a:int = 0;
     
-    public fun set(x:Int) -> Int{
+    public fun set(x:int) -> int{
         a = x;
         return 0;
     };
     
-    public fun get_area() -> Int{
+    public fun get_area() -> int{
         return a*a;
     };
 
@@ -161,11 +161,11 @@ class Square inherits Shape{
 
 ```
 class Main{
-    fun main() -> Int {
+    fun main() -> int {
         let a = 5;
-	print(a.to_string() + "\\n");
+	print(new Int(a).to_string() + "\\n");
 	for(let b = 2; b < 5; b = b + 1;){
-		print(b.to_string() + "\\n");
+		print(new Int(b).to_string() + "\\n");
 	}
 	while(a > 0){
 		if(a > 3){

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, fs::File, io::Write, iter, ops::Deref};
+use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
     grammar::ast::{
@@ -98,16 +98,7 @@ impl<'a> CodeGenerator<'a> {
         // code for method
         self.code_method();
 
-        // code for malloc
-        //        self.code_malloc();
-
-        //        self.code_print();
-
         self.code_abort();
-
-        //        self.code_to_string();
-
-        //        self.code_concat();
 
         // code for main
         self.code_main();
@@ -129,7 +120,6 @@ impl<'a> CodeGenerator<'a> {
         self.write(format!("pushq %rbp"), true);
         self.write(format!("pushq %rbx"), true);
         self.write(format!("movq %rsp, %rbp"), true);
-        // self.write(format!("andq $-16, %rsp"), true);
         self.write(format!("movq %rax, %rbx"), true);
     }
     pub fn method_end(&mut self) {
@@ -518,54 +508,6 @@ main:
         );
     }
 
-    // fn code_malloc(&mut self) {
-    //     self.write(format!("Object.malloc:"), false);
-    //     self.method_start();
-    //     self.write(
-    //         format!(
-    //             "movq 24(%rbp), %rax
-    // movq (%rax), %rdi
-    // call malloc"
-    //         ),
-    //         true,
-    //     );
-
-    //     self.method_end();
-    // }
-
-    // fn code_print(&mut self) {
-    //     self.write(format!("Object.print:"), false);
-    //     self.method_start();
-    //     // param is str_type
-    //     // get param
-    //     self.write(format!("movq 24(%rbp), %rax"), true);
-    //     // %rax is str_const
-
-    //     // push len
-    //     self.write(format!("pushq 32(%rax)"), true);
-
-    //     // get ascii
-    //     self.write(format!("movq 24(%rax), %rax"), true);
-
-    //     // push ascii
-    //     self.write(format!("pushq %rax"), true);
-
-    //     self.write(format!("movq $1, %rax"), true);
-    //     self.write(format!("movq $1, %rdi"), true);
-    //     self.write(format!("movq (%rsp), %rsi"), true);
-    //     self.write(format!("movq 8(%rsp), %rdx"), true);
-    //     self.write(format!("syscall"), true);
-
-    //     // movq $1, %rdi
-    //     // movq $string, %rsi
-    //     // movq $len, %rdx
-    //     // syscall
-    //     self.write(format!("addq $8, %rsp"), true);
-    //     self.write(format!("addq $8, %rsp"), true);
-    //     self.write(format!("movq %rbx, %rax"), true);
-    //     self.method_end();
-    // }
-
     fn code_abort(&mut self) {
         self.write(format!("abort:"), false);
         self.write(format!("movq $1, %rax"), true);
@@ -582,93 +524,4 @@ main:
 
         self.write(format!("call exit"), true);
     }
-
-    // fn code_to_string(&mut self) {
-    //     self.write(format!("Object.to_string:"), false);
-    //     self.method_start();
-    //     self.write(
-    //         format!(
-    //             "movq $str_const_{}, %rax",
-    //             self.str_const_table.get("").unwrap()
-    //         ),
-    //         true,
-    //     );
-    //     self.method_end();
-    //     self.write(format!("String.to_string:"), false);
-    //     self.method_start();
-    //     self.write(format!("movq %rbx, %rax"), true);
-    //     self.method_end();
-    //     self.write(format!("Int.to_string:"), false);
-    //     self.method_start();
-    //     // rbx is self
-    //     self.write(format!("movq $32, %rdi"), true);
-    //     self.write(format!("call malloc"), true);
-    //     // push ascii
-    //     self.write(format!("pushq %rax"), true);
-    //     // rax is str_type
-    //     // 1st arg
-    //     self.write(format!("movq %rax, %rdi"), true);
-    //     // 2 second arg
-    //     self.write(
-    //         format!(
-    //             "movq $str_const_ascii_{}, %rsi",
-    //             self.str_const_table.get("%d").unwrap()
-    //         ),
-    //         true,
-    //     );
-    //     // 3rd arg
-    //     self.write(format!("movq {}(%rbx), %rdx", INT_CONST_VAL_OFFSET), true);
-    //     self.write(format!("call sprintf"), true);
-
-    //     self.write(format!("pushq $String_prototype"), true);
-    //     self.write(format!("call Object.malloc"), true);
-    //     self.write(format!("addq $8, %rsp"), true);
-    //     self.write(format!("call String.init"), true);
-
-    //     self.write(format!("popq %rdi"), true);
-    //     self.write(
-    //         format!("movq %rdi, {}(%rax)", STRING_CONST_VAL_OFFSET),
-    //         true,
-    //     );
-    //     self.write(format!("movq $32, {}(%rax)", 32), true);
-    //     self.method_end();
-    // }
-
-    // fn code_concat(&mut self) {
-    //     self.write(format!("String.concat:"), false);
-    //     self.method_start();
-    //     // malloc str_ascii r10
-    //     self.write(format!("movq $64, %rdi"), true);
-    //     self.write(format!("call malloc"), true);
-    //     self.write(format!("movq %rax, %r10"), true);
-    //     // move malloc's rax to rdi
-    //     self.write(format!("movq %r10, %rdi"), true);
-    //     // concat(dest, src)
-    //     // 1st arg
-    //     self.write(format!("movq 32(%rbp), %rax"), true);
-    //     self.write(
-    //         format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
-    //         true,
-    //     );
-    //     self.write(format!("call strcpy"), true);
-    //     // r10 is malloc (contain dest's str)
-    //     self.write(format!("movq %r10, %rdi"), true);
-    //     // 2nd arg
-    //     self.write(format!("movq 24(%rbp), %rax"), true);
-    //     self.write(
-    //         format!("movq {}(%rax), %rsi", STRING_CONST_VAL_OFFSET),
-    //         true,
-    //     );
-    //     self.write(format!("call strcat"), true);
-    //     self.write(format!("pushq $String_prototype"), true);
-    //     self.write(format!("call Object.malloc"), true);
-    //     self.write(format!("addq $8, %rsp"), true);
-    //     self.write(format!("call String.init"), true);
-    //     self.write(
-    //         format!("movq %r10, {}(%rax)", STRING_CONST_VAL_OFFSET),
-    //         true,
-    //     );
-    //     self.write(format!("movq $64, {}(%rax)", 32), true);
-    //     self.method_end();
-    // }
 }
