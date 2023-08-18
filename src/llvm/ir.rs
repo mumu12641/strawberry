@@ -159,7 +159,7 @@
 //                             type_field_vec
 //                                 .push(BasicTypeEnum::StructType(int_const_struct_type.clone()));
 
-//                             // push a zero intager
+//                             // push a zero intagerst
 //                             type_field_val_vec.push(inkwell::values::BasicValueEnum::StructValue(
 //                                 int_const_struct_type.const_named_struct(&[
 //                                     self.context.i32_type().const_int(0, false).into(),

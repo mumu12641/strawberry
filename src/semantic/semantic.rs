@@ -13,6 +13,7 @@ use crate::{
     table::ClassTable,
     utils::table::SymbolTable,
     DEBUG,
+    RAW_INT,
     SELF,
 };
 
@@ -349,7 +350,35 @@ impl SemanticChecker {
                         }
                         self.symbol_table.exit_scope();
                     }
-                    _ => {}
+                    //*  check attribute type
+                    Feature::Attribute(attr) => {
+                        self.symbol_table.enter_scope();
+                        if let Some(init_expr) = attr.init.deref_mut() {
+                            match init_expr.check_type(&mut self.symbol_table, class_table) {
+                                Ok(init_type) => {
+                                    if let Some(attr_type) = &attr.type_ {
+                                        if !class_table.is_less_or_equal(attr_type, &init_type) {
+                                            return Err(SemanticError {
+                                                err_msg: format!(
+                                                "Some semantic errors occurred in your Assignment!"
+                                            ),
+                                                position: Some(attr.position),
+                                                file_name: i.file_name.clone(),
+                                            });
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    return Err(SemanticError {
+                                        err_msg: e.err_msg,
+                                        file_name: i.file_name.clone(),
+                                        position: e.position,
+                                    })
+                                }
+                            }
+                        }
+                        self.symbol_table.exit_scope();
+                    }
                 }
             }
             self.symbol_table.exit_scope();

@@ -2,6 +2,7 @@ use crate::grammar::ast::class::*;
 use crate::grammar::ast::expr::*;
 use crate::grammar::token::Token;
 use crate::grammar::lexer::{LineNum, LexicalError};
+use crate::grammar::ast::Type;
 
 grammar<'input>;
 
@@ -11,7 +12,7 @@ grammar<'input>;
 pub Program = <import*>  <class*>;
 
 import: Import = {
-    "FROM" <s:"STR"> "IMPORT" <class_name_:"TYPE"> ";" => Import{
+    "FROM" <s:"STR"> "IMPORT" <class_name_:all_type> ";" => Import{
         file_name:s,
         class_name:class_name_,
     },
@@ -36,7 +37,7 @@ class: Class = {
 
 feature: Feature = {
     // attr
-    "private"? <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
+    "private"? <attr_name:"ID"> ":" <type_name:all_type> ";" => {
         Feature::Attribute(VarDecl {
             name: attr_name.0,
             type_: Some(type_name),
@@ -45,7 +46,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <attr_name:"ID"> ":" <type_name:"TYPE"> ";" => {
+    "public" <attr_name:"ID"> ":" <type_name:all_type> ";" => {
         Feature::Attribute(VarDecl {
             name: attr_name.0,
             type_: Some(type_name),
@@ -55,7 +56,7 @@ feature: Feature = {
         })
     },
 
-    "private"? <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
+    "private"? <attr_name:"ID"> ":" <type_name:all_type> "=" <e:single_expr> ";" => {
         Feature::Attribute(VarDecl{
             name:attr_name.0,
             type_:Some(type_name),
@@ -64,7 +65,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <attr_name:"ID"> ":" <type_name:"TYPE"> "=" <e:single_expr> ";" => {
+    "public" <attr_name:"ID"> ":" <type_name:all_type> "=" <e:single_expr> ";" => {
         Feature::Attribute(VarDecl{
             name:attr_name.0,
             type_:Some(type_name),
@@ -77,7 +78,7 @@ feature: Feature = {
 
     
     // method
-    "private"? <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    "private"? <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:all_type> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -88,7 +89,7 @@ feature: Feature = {
             // body: Box::new(Box::new(e)),
         })
     },
-    "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:"TYPE"> "{" <e:semi_list<expr>>  "}" ";" => {
+    "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:all_type> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -100,7 +101,7 @@ feature: Feature = {
         })
     },
 
-    "private"? <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    "private"? <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:all_type> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -110,7 +111,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:"TYPE"> "{"   "}"  ";"=> {
+    "public" <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:all_type> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -140,19 +141,19 @@ feature: Feature = {
 };
 
 param: ParamDecl = {
-    <id:"ID"> ":" <t:"TYPE"> => (id.0,t),
+    <id:"ID"> ":" <t:all_type> => (id.0,t),
 };
 
 // let var
 var: VarDecl = {
-    <id:"ID"> ":" <type_name:"TYPE"> => VarDecl{
+    <id:"ID"> ":" <type_name:all_type> => VarDecl{
         name:id.0,
         type_: Some(type_name),
         init: Box::new(None),
         position: id.1,
         ownership: Ownership::Default,
     },
-    <id:"ID"> ":" <type_name:"TYPE"> "=" <e:math_expr> => VarDecl{
+    <id:"ID"> ":" <type_name:all_type> "=" <e:math_expr> => VarDecl{
         name:id.0,
         type_: Some(type_name),
         init: Box::new(Some(e)),
@@ -277,12 +278,12 @@ single_expr:Expr = {
     <i:"INT"> => Expr::Int(i.parse::<i32>().unwrap()), 
     // <s:"self"> => Expr::Self_(s),
     
-    <pos:"new"> <class_name_:"TYPE"> => Expr::New(ConstructorCall{
+    <pos:"new"> <class_name_:all_type> => Expr::New(ConstructorCall{
         class_name: class_name_,
         param: None,
         position: pos,
     }), 
-    <pos:"new"> <class_name_:"TYPE"> "(" <args:comma_list<math_expr>?> ")" => Expr::New(ConstructorCall{
+    <pos:"new"> <class_name_:all_type> "(" <args:comma_list<math_expr>?> ")" => Expr::New(ConstructorCall{
         class_name: class_name_,
         param: Some(Box::new(args.unwrap_or(vec![]))),
         position: pos,
@@ -338,6 +339,10 @@ single_expr:Expr = {
 
 };
 
+all_type: Type = {
+    <class_type: "TYPE">  => class_type,
+    <raw_type: "rawtype"> => raw_type,
+};
 
 add_minus: MathOp = {
     "+" => MathOp::ComputeOp(ComputeOp::Add),
@@ -428,6 +433,7 @@ extern {
     enum Token{
 
         // keywords
+        "rawtype" => Token::RawType(<String>),
         "class" => Token::Class_(<(usize,usize)>,<String>),
         "public" => Token::Public,
         "private" => Token::Private,

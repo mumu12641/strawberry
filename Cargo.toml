@@ -9,7 +9,7 @@ edition = "2021"
 plex = "0.2.5"
 lalrpop-util = "0.17.2"
 regex = "1.7.3"
-inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm14-0"] }
+# inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm14-0"] }
 clap = "4.3.2"
 owo-colors = "3"
 emoji-printer = "0.4.3"

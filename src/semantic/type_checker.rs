@@ -13,7 +13,7 @@ use crate::{
         table::{ClassTable, SymbolTable},
         util::do_vecs_match,
     },
-    BOOL, INT, OBJECT, SELF, STRING, VOID,
+    BOOL, INT, OBJECT, RAW_INT, SELF, STRING, VOID,
 };
 
 use super::semantic::SemanticError;
@@ -27,7 +27,7 @@ impl TypeChecker for Expr {
         match self {
             Expr::Bool(_) => return Ok(BOOL.to_string()),
             Expr::Str(_) => return Ok(STRING.to_string()),
-            Expr::Int(_) => return Ok(INT.to_string()),
+            Expr::Int(_) => return Ok(RAW_INT.to_string()),
             Expr::New(constructor_call) => {
                 if let Some(_) = class_table.classes.get(&constructor_call.class_name) {
                     // find the class
@@ -137,6 +137,12 @@ impl TypeChecker for Dispatch {
             .check_type(symbol_table, class_table)
         {
             Ok(target_type) => {
+                if target_type == RAW_INT {
+                    return Err(SemanticError::new(
+                        format!("Raw type int can't use <.> operator!",),
+                        Some(self.position),
+                    ));
+                }
                 if let Some(class_) = class_table.get_classes().get(&target_type) {
                     if let Some(v) = class_table.get_inheritance().get(&class_.name) {
                         for class in v {
@@ -278,7 +284,8 @@ impl TypeChecker for Assignment {
         let compute_type = (*self.compute).check_type(symbol_table, class_table);
         // type_ <= id.type
         if let Some(id_type) = symbol_table.find(&self.id) {
-            // s< compute_type
+            // s < compute_type
+            // println!("id _type is {} ", id_type);
             if let Ok(t) = compute_type {
                 if class_table.is_less_or_equal(id_type, &t) {
                     return Ok(id_type.clone());
@@ -336,6 +343,17 @@ impl TypeChecker for Math {
                                     format!("String cannot be used in conditional operations"),
                                     None,
                                 ))
+                            }
+                        }
+                    } else if left == RAW_INT.to_string() && right == RAW_INT.to_string() {
+                        match self.op.deref() {
+                            MathOp::ComputeOp(_) => {
+                                self.type_ = RAW_INT.to_string();
+                                return Ok(RAW_INT.to_string());
+                            }
+                            MathOp::CondOp(_) => {
+                                self.type_ = BOOL.to_string();
+                                return Ok(BOOL.to_string());
                             }
                         }
                     } else {

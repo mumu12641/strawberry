@@ -33,6 +33,7 @@ mod utils;
 const STRING: &str = "String";
 const OBJECT: &str = "Object";
 const INT: &str = "Int";
+const RAW_INT: &str = "int";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
 const VOID: &str = "Void";
@@ -186,7 +187,7 @@ fn compile(files: Vec<String>) {
                         print_err_msg(
                             (token.0, token.2),
                             &file_name,
-                            &format!("Maybe you can try {} here!",expected.join(" or ")),
+                            &format!("Maybe you can try {} here!", expected.join(" or ")),
                         );
                     }
                     lalrpop_util::ParseError::ExtraToken { token } => {

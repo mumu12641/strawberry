@@ -2,6 +2,9 @@ use super::lexer::Position;
 
 #[derive(Debug, Clone)]
 pub enum Token {
+    // raw type
+    RawType(String),
+
     // keywords
     Class_(Position, String),
     Self_(String),

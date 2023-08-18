@@ -8,6 +8,7 @@ lexer! {
     fn next_token(text:'a) -> Token;
 
     // keywords
+    "int" => Token::RawType(text.to_owned()),
     "class" => Token::Class_(EMPTY,"".to_string()),
     "public" => Token::Public,
     "private" => Token::Private,
