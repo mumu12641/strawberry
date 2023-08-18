@@ -3,13 +3,13 @@ use std::ops::Deref;
 use crate::{
     grammar::ast::{
         expr::{
-            self, Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull,
-            Let, Math, MathOp, Not, Return, TypeGet, While,
+            Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
+            Math, MathOp, Not, Return, TypeGet, While,
         },
         Identifier, Type,
     },
     BOOL, BOOL_CONST_VAL_OFFSET, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
-    STRING, STRING_CONST_VAL_OFFSET,
+    RAW_INT, STRING, STRING_CONST_VAL_OFFSET,
 };
 
 use super::cgen::{CodeGenerator, Location};
@@ -62,11 +62,12 @@ impl CodeGenerate for Expr {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         match self {
             Expr::Int(const_) => {
-                let index = code_generator
-                    .int_const_table
-                    .get(const_.to_string().as_str())
-                    .unwrap();
-                code_generator.write(format!("movq $int_const_{}, %rax", index), true);
+                // let index = code_generator
+                //     .int_const_table
+                //     .get(const_.to_string().as_str())
+                //     .unwrap();
+                // code_generator.write(format!("movq $int_const_{}, %rax", index), true);
+                code_generator.write(format!("movq ${}, %rax", const_), true);
             }
             Expr::Str(const_) => {
                 let index = code_generator.str_const_table.get(const_.as_str()).unwrap();
@@ -375,7 +376,7 @@ impl CodeGenerate for Assignment {
 impl CodeGenerate for Math {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // r10-r11 for temp register
-        let left = self.left.deref();
+        let left: &Expr = self.left.deref();
         left.code_generate(code_generator);
 
         code_generator.write(format!("pushq %rax"), true);
@@ -383,6 +384,47 @@ impl CodeGenerate for Math {
         let right = self.right.deref();
 
         right.code_generate(code_generator);
+
+        if right.get_type() == RAW_INT && left.get_type() == RAW_INT {
+            code_generator.write(format!("movq %rax, %r10"), true);
+            code_generator.write(format!("movq (%rsp), %r11"), true);
+            code_generator.write(format!("addq $8, %rsp"), true);
+            match self.op.deref() {
+                MathOp::ComputeOp(op_) => {
+                    match op_ {
+                        ComputeOp::Add => {
+                            code_generator.write(format!("addq %r10, %r11"), true);
+                        }
+                        ComputeOp::Minus => {
+                            code_generator.write(format!("subq %r10, %r11"), true);
+                        }
+                        ComputeOp::Mul => {
+                            code_generator.write(format!("movq %r11, %rax"), true);
+                            code_generator.write(format!("mulq %r10"), true);
+                            code_generator.write(format!("movq %rax, %r11"), true);
+                        }
+                        ComputeOp::Divide => {
+                            code_generator.write(format!("movq %r11, %rax"), true);
+                            code_generator.write(format!("divq %r10"), true);
+                            code_generator.write(format!("movq %rax, %r11"), true);
+                        }
+                    };
+                    code_generator.write(format!("movq %r11, %rax"), true);
+                }
+                MathOp::CondOp(op_) => {
+                    code_generator.write(format!("movq $bool_const_1, %rdi"), true);
+                    code_generator.write(format!("movq $bool_const_0, %rax"), true);
+                    code_generator.write(format!("subq %r10, %r11"), true);
+                    match op_ {
+                        CondOp::More => code_generator.write(format!("cmovg %rdi, %rax"), true),
+                        CondOp::MoreE => code_generator.write(format!("cmovge %rdi, %rax"), true),
+                        CondOp::Less => code_generator.write(format!("cmovl %rdi, %rax"), true),
+                        CondOp::LessE => code_generator.write(format!("cmovle %rdi, %rax"), true),
+                        CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
+                    }
+                }
+            }
+        }
 
         if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
             // %r10 is right, %r11 is left

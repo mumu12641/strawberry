@@ -5,8 +5,8 @@
 */
 
 class String inherits Object {
-    val : PrimSlot;
-    len : PrimSlot;
+    val : int;
+    len : int;
     public fn concat(dest:String, src:String) -> Void {
         // stack will be aligned to 16 bit
         __asm__("addq $8, %rsp");

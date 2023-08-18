@@ -7,7 +7,7 @@ use crate::{
     },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, NULL_TAG_OFFSET, OBJECT, PRIMSLOT,
-    RUNTIME_ERR, STRING,
+    RAW_INT, RUNTIME_ERR, STRING,
 };
 
 use super::ast::CodeGenerate;
@@ -52,7 +52,7 @@ pub struct CodeGenerator<'a> {
     pub asm_file: &'a mut File,
 
     pub str_const_table: HashMap<String, usize>,
-    pub int_const_table: HashMap<String, usize>,
+    // pub int_const_table: HashMap<String, usize>,
     pub dispatch_table: HashMap<(String, String), usize>,
     pub environment: Environment,
 }
@@ -71,7 +71,7 @@ impl<'a> CodeGenerator<'a> {
             asm_file: asm_file_,
 
             str_const_table: HashMap::new(),
-            int_const_table: HashMap::new(),
+            // int_const_table: HashMap::new(),
             dispatch_table: HashMap::new(),
             environment: Environment {
                 env: HashMap::new(),
@@ -165,20 +165,20 @@ impl<'a> CodeGenerator<'a> {
         }
 
         index = 0;
-        for int_ in &self.tables.int_table.clone() {
-            self.write(".align 8".to_string(), true);
-            self.write(format!("int_const_{}:", index), false);
-            self.write(format!(".quad {}", 4 * 8), true);
-            self.write(format!(".quad 1"), true);
-            self.write(format!(".quad Int_dispatch_table"), true);
+        // for int_ in &self.tables.int_table.clone() {
+        //     self.write(".align 8".to_string(), true);
+        //     self.write(format!("int_const_{}:", index), false);
+        //     // self.write(format!(".quad {}", 4 * 8), true);
+        //     // self.write(format!(".quad 1"), true);
+        //     // self.write(format!(".quad Int_dispatch_table"), true);
 
-            self.write(format!(".quad {}", int_), true);
+        //     self.write(format!(".quad {}", int_), true);
 
-            self.write("".to_string(), false);
+        //     self.write("".to_string(), false);
 
-            self.int_const_table.insert(int_.clone(), index);
-            index += 1;
-        }
+        //     self.int_const_table.insert(int_.clone(), index);
+        //     index += 1;
+        // }
 
         index = 0;
         for i in 0..2 {
@@ -234,12 +234,13 @@ impl<'a> CodeGenerator<'a> {
                         } else if attr.type_.clone().unwrap() == INT {
                             self.write(
                                 format!(
-                                    ".quad int_const_{}",
-                                    self.int_const_table.get("0").unwrap()
+                                    // ".quad int_const_{}",
+                                    // self.int_const_table.get("0").unwrap()
+                                    ".quad 0",
                                 ),
                                 true,
                             );
-                        } else if attr.type_.clone().unwrap() == PRIMSLOT.to_string() {
+                        } else if attr.type_.clone().unwrap() == RAW_INT.to_string() {
                             self.write(format!(".quad 0"), true);
                         }
                     }
@@ -348,7 +349,7 @@ impl<'a> CodeGenerator<'a> {
                             self.write(format!("movq %rax, {}(%rbx)", offset_), true);
                         } else {
                             let type_ = attr.type_.clone().unwrap();
-                            if type_ != PRIMSLOT.to_string() {
+                            if type_ != RAW_INT.to_string() {
                                 self.write(
                                     format!(
                                         "movq ${}_prototype, {}(%rbx)",
@@ -525,7 +526,7 @@ main:
     subq $8, %rsp
     # 0x....d9b0
     call Main.main
-    movq 24(%rax), %rax
+    # movq 24(%rax), %rax
     addq $8, %rsp
     ret "
             ),

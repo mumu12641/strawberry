@@ -4,7 +4,7 @@ use crate::{
     grammar::lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, OBJECT, STRING,
+    BOOL, INT, OBJECT, STRING, RAW_INT,
 };
 
 use super::{
@@ -175,7 +175,7 @@ impl TypeGet for Expr {
         match self {
             Expr::Bool(_) => return BOOL.to_string(),
             Expr::Str(_) => return STRING.to_string(),
-            Expr::Int(_) => return INT.to_string(),
+            Expr::Int(_) => return RAW_INT.to_string(),
             Expr::New(constructor_call) => return constructor_call.class_name.clone(),
             Expr::Identifier(e) => return e.type_.clone(),
             Expr::Dispatch(e) => return e.type_.clone(),

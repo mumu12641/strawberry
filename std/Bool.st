@@ -5,7 +5,7 @@
 */
 
 class Bool inherits Object {
-    val : PrimSlot;
+    val : int;
     public fn to_string() -> String {
         if (!self){
             return "false";

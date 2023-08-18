@@ -5,7 +5,10 @@
 */
 
 class Int inherits Object {
-    val : PrimSlot;
+    val : int;
+    constructor(val_:int){
+        val = val_;
+    };
     public fn to_string() -> String {
         // stack will be aligned to 16 bit
         __asm__("addq $8, %rsp"); 
