@@ -34,4 +34,5 @@ class String inherits Object {
     public fn to_string() -> String {
         return self;
     };
+
 };

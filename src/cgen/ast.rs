@@ -62,11 +62,6 @@ impl CodeGenerate for Expr {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         match self {
             Expr::Int(const_) => {
-                // let index = code_generator
-                //     .int_const_table
-                //     .get(const_.to_string().as_str())
-                //     .unwrap();
-                // code_generator.write(format!("movq $int_const_{}, %rax", index), true);
                 code_generator.write(format!("movq ${}, %rax", const_), true);
             }
             Expr::Str(const_) => {
@@ -202,15 +197,6 @@ impl CodeGenerate for Expr {
 
 impl CodeGenerate for Return {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
-        // todo!()
-        //        let e = self.val.deref();
-        //        e.code_generate(code_generator);
-        //        // code_generator.method_end();
-        //        code_generator.write(
-        //            format!("addq ${}, %rsp", code_generator.environment.align_stack),
-        //            true,
-        //        );
-        //        code_generator.method_end();
         match &self.val {
             Some(e) => e.deref().code_generate(code_generator),
             None => {}
@@ -252,9 +238,6 @@ impl CodeGenerate for Dispatch {
                     _ => {}
                 }
 
-                // check null
-                // code_generator.write(format!("cmpq $0, %rax"), true);
-                // code_generator.write(format!("je abort"), true);
                 code_generator.write(format!("cmpq $0, {}(%rax)", NULL_TAG_OFFSET), true);
                 code_generator.write(format!("je abort"), true);
                 code_generator.write(format!("movq {}(%rax), %rdi", DISPATCH_TABLE_OFFSET), true);
@@ -297,12 +280,6 @@ impl CodeGenerate for Dispatch {
 impl CodeGenerate for Let {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         for decl_ in self.var_decls.deref() {
-            // expr_.init.
-            // for expr_ in decl_.init
-            // println!(
-            //     "in let {} code_generator.environment.var_offset = {}",
-            //     decl_.name, code_generator.environment.var_offset
-            // );
             code_generator
                 .environment
                 .env
@@ -316,16 +293,6 @@ impl CodeGenerate for Let {
                         // type_: decl_.type_.clone(),
                     },
                 );
-
-            // let location = code_generator
-            //     .environment
-            //     .env
-            //     .get_mut(&code_generator.environment.curr_class)
-            //     .unwrap()
-            //     .find(&decl_.name)
-            //     .unwrap()
-            //     .clone();
-
             if let Some(expr_) = decl_.init.deref() {
                 expr_.code_generate(code_generator);
                 code_generator.write(
@@ -427,58 +394,37 @@ impl CodeGenerate for Math {
         }
 
         if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
-            // %r10 is right, %r11 is left
-            code_generator.write(format!("movq {}(%rax), %r10", INT_CONST_VAL_OFFSET), true);
-            code_generator.write(format!("movq (%rsp), %r11"), true);
-            code_generator.write(format!("movq {}(%r11), %r11", INT_CONST_VAL_OFFSET), true);
-            code_generator.write(format!("addq $8, %rsp"), true);
+            code_generator.write(format!("push %rax"), true);
 
             match self.op.deref() {
                 MathOp::ComputeOp(op_) => {
                     match op_ {
                         ComputeOp::Add => {
-                            code_generator.write(format!("addq %r10, %r11"), true);
+                            code_generator.write(format!("call Int.add"), true);
                         }
                         ComputeOp::Minus => {
-                            code_generator.write(format!("subq %r10, %r11"), true);
+                            code_generator.write(format!("call Int.minus"), true);
                         }
                         ComputeOp::Mul => {
-                            code_generator.write(format!("movq %r11, %rax"), true);
-                            code_generator.write(format!("mulq %r10"), true);
-                            code_generator.write(format!("movq %rax, %r11"), true);
+                            code_generator.write(format!("call Int.mul"), true);
                         }
                         ComputeOp::Divide => {
-                            code_generator.write(format!("movq %r11, %rax"), true);
-                            code_generator.write(format!("divq %r10"), true);
-                            code_generator.write(format!("movq %rax, %r11"), true);
+                            code_generator.write(format!("call Int.divide"), true);
                         }
                     };
-                    code_generator.write(format!("pushq %r11"), true);
-                    code_generator.write(format!("pushq $Int_prototype"), true);
-                    code_generator.write(format!("call Object.malloc"), true);
-                    code_generator.write(format!("addq $8, %rsp"), true);
-                    code_generator.write(format!("call Int.init"), true);
-                    code_generator.write(format!("movq (%rsp), %r11"), true);
-                    code_generator
-                        .write(format!("movq %r11, {}(%rax)", INT_CONST_VAL_OFFSET), true);
-                    code_generator.write(format!("addq $8, %rsp"), true);
                 }
                 MathOp::CondOp(op_) => {
-                    // sub
-                    // if true jmp then
-                    // else
-                    code_generator.write(format!("movq $bool_const_1, %rdi"), true);
-                    code_generator.write(format!("movq $bool_const_0, %rax"), true);
-                    code_generator.write(format!("subq %r10, %r11"), true);
                     match op_ {
-                        CondOp::More => code_generator.write(format!("cmovg %rdi, %rax"), true),
-                        CondOp::MoreE => code_generator.write(format!("cmovge %rdi, %rax"), true),
-                        CondOp::Less => code_generator.write(format!("cmovl %rdi, %rax"), true),
-                        CondOp::LessE => code_generator.write(format!("cmovle %rdi, %rax"), true),
-                        CondOp::Equal => code_generator.write(format!("cmove %rdi, %rax"), true),
+                        CondOp::More => code_generator.write(format!("call Int.more"), true),
+                        CondOp::MoreE => code_generator.write(format!("call Int.moree"), true),
+                        CondOp::Less => code_generator.write(format!("call Int.less"), true),
+                        CondOp::LessE => code_generator.write(format!("call Int.lesse"), true),
+                        CondOp::Equal => code_generator.write(format!("call Int.equal"), true),
                     }
                 }
             }
+            code_generator.write(format!("addq $8, %rsp"), true);
+            code_generator.write(format!("addq $8, %rsp"), true);
 
             // %r11 is the result
         }
@@ -490,7 +436,6 @@ impl CodeGenerate for Math {
             code_generator.write(format!("pushq %r10"), true);
             code_generator.write(format!("pushq %r11"), true);
             code_generator.write(format!("call String.concat"), true);
-
             code_generator.write(format!("addq $24, %rsp"), true);
         }
     }
@@ -588,12 +533,6 @@ impl CodeGenerate for For {
     fn code_generate(&self, code_generator: &mut CodeGenerator) {
         // todo!()
 
-        // jmp test ->label_loop + 1
-        // loop:    label_loop
-        //      body
-        // test:
-        //      test.code
-        //      goto loop
         code_generator
             .environment
             .env

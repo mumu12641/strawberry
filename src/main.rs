@@ -132,8 +132,6 @@ fn handle_args() {
 
 fn compile(files: Vec<String>) {
     let mut all_classes: Vec<Class> = vec![];
-    // let mut compile_class: Vec<Class> = vec![];
-    // let mut import_map: HashMap<String, Vec<Import>> = HashMap::new();
     let main_file = "./src/main.st".to_string();
 
     // init
@@ -146,9 +144,6 @@ fn compile(files: Vec<String>) {
     table.int_table.insert("0".to_string());
     let mut class_table = ClassTable::new();
 
-    // install constants
-    //    class_table.install_basic_class();
-
     if !files.contains(&main_file) {
         let err = format!("❌ There is no main.st in your src directory!");
         println!("{}", err.red());
@@ -157,7 +152,6 @@ fn compile(files: Vec<String>) {
     for file_name in files {
         let mut file = File::open(&file_name).unwrap();
         let mut content = String::new();
-        // file.read_to_string(&mut content).expect("error");
         if let Ok(_) = file.read_to_string(&mut content) {
         } else {
             println!("{}", "❌ Some unexpected errors occurred, maybe you can solve it by recreating the project".red());
@@ -169,12 +163,6 @@ fn compile(files: Vec<String>) {
         match program {
             Ok(mut v) => {
                 all_classes.append(&mut v.1);
-
-                // if file_name == main_file {
-                //     compile_class.append(&mut v.1);
-                // }
-                //  dbg!(&file_name);
-                // import_map.insert(file_name, v.0);
             }
             Err(e) => {
                 let err = format!("❌ Oops, syntax error has occurred in {}!", &file_name);
@@ -203,27 +191,6 @@ fn compile(files: Vec<String>) {
             }
         }
     }
-    // let mut curr_import = import_map.get(&main_file).unwrap();
-    // let mut flag = true;
-
-    // while flag {
-    //     if curr_import.is_empty() {
-    //         break;
-    //     }
-    //     for i in curr_import {
-    //         let index = all_classes
-    //             .iter()
-    //             .position(|c| c.file_name == i.file_name && c.name == i.class_name)
-    //             .unwrap();
-    //         if !compile_class.contains(&all_classes[index]) {
-    //             compile_class.insert(0, all_classes[index].clone());
-    //             curr_import = import_map.get(&all_classes[index].file_name).unwrap();
-    //             flag = true;
-    //         } else {
-    //             flag = false;
-    //         }
-    //     }
-    // }
 
     println!(
         "{}",
@@ -306,25 +273,6 @@ fn create_project_folder(name: &str) {
     ).unwrap();
 }
 
-// for debug
-// fn print_table(table: &Tables) {
-//     println!("***String Table***");
-//     for i in &table.string_table {
-//         println!("{i}");
-//     }
-//     println!();
-//     println!("***Int Table***");
-//     for i in &table.int_table {
-//         println!("{i}");
-//     }
-//     println!();
-//     println!("***Id Table***");
-//     for i in &table.id_table {
-//         println!("{i}");
-//     }
-//     println!();
-// }
-
 #[test]
 fn test() {
     let mut file = File::open("src/helloworld.st").unwrap();
@@ -381,41 +329,4 @@ fn some_test() {
     let joined = v.join("-");
     assert_eq!("Foo-Bar", joined);
     println!("{}", joined)
-}
-#[test]
-fn ir_test() {
-    // let mut file = File::open("./src/helloworld.st").unwrap();
-    // let mut content = String::new();
-    // file.read_to_string(&mut content).expect("error");
-    // println!("{}", content);
-    // // init
-    // let mut table = table::Tables::new();
-    // table.string_table.insert("".to_string());
-    // table.string_table.insert("Object".to_string());
-    // table.string_table.insert("%s".to_string());
-    // table.int_table.insert("0".to_string());
-    // let mut class_table = ClassTable::new();
-
-    // class_table.install_basic_class();
-    // content = fix_offset(content);
-    // let lexer: Lexer = Lexer::new(&content, &mut table, "./src/helloworld.st");
-
-    // let program = strawberry::ProgramParser::new().parse(lexer);
-
-    // match program {
-    //     Ok(v) => {
-    //         println!("{:?}", &v);
-    //         let context = Context::create();
-    //         let module = context.create_module("test ir");
-    //         let codegen = IrGenerator {
-    //             classes: v.1,
-    //             context: &context,
-    //             module,
-    //             builder: context.create_builder(),
-    //         };
-
-    //         unsafe { codegen.ir_generate(&table) };
-    //     },
-    //     Err(_) => todo!(),
-    // };
 }

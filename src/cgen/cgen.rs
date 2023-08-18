@@ -165,22 +165,6 @@ impl<'a> CodeGenerator<'a> {
         }
 
         index = 0;
-        // for int_ in &self.tables.int_table.clone() {
-        //     self.write(".align 8".to_string(), true);
-        //     self.write(format!("int_const_{}:", index), false);
-        //     // self.write(format!(".quad {}", 4 * 8), true);
-        //     // self.write(format!(".quad 1"), true);
-        //     // self.write(format!(".quad Int_dispatch_table"), true);
-
-        //     self.write(format!(".quad {}", int_), true);
-
-        //     self.write("".to_string(), false);
-
-        //     self.int_const_table.insert(int_.clone(), index);
-        //     index += 1;
-        // }
-
-        index = 0;
         for i in 0..2 {
             self.write(".align 8".to_string(), true);
             self.write(format!("bool_const_{}:", index), false);

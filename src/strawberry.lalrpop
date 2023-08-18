@@ -247,7 +247,7 @@ expr: Expr = {
         position: pos,
     }),
 
-    <pos: "return">  <val:math_expr> ";"=> Expr::Return(Return{
+    <pos: "return">  <val:cond_expr> ";"=> Expr::Return(Return{
         val: Some(Box::new(val)),
         position: pos,
     }),

@@ -32,4 +32,35 @@ class Int inherits Object {
         __asm__("ret");
         return "";
     };
+    public fn get_val_() -> int {
+        return self.val;
+    };
+    public fn add(other:Int) -> Int{
+        return new Int(self.val + other.get_val_());
+    };
+    public fn minus(other:Int) -> Int{
+        return new Int(self.val - other.get_val_());
+    };
+    public fn mul(other:Int) -> Int{
+        return new Int(self.val * other.get_val_());
+    };
+    public fn divide(other:Int) -> Int{
+        return new Int(self.val / other.get_val_());
+    };
+    public fn more(other:Int) -> Bool{
+        return self.val > other.get_val_();
+    };
+    public fn moree(other:Int) -> Bool{
+        return self.val => other.get_val_();
+    };
+    public fn less(other:Int) -> Bool{
+        return self.val < other.get_val_();
+    };
+    public fn lesse(other:Int) -> Bool{
+        return self.val <= other.get_val_();
+    };
+    public fn equal(other:Int) -> Bool{
+        return self.val == other.get_val_();
+    };
+
 };
