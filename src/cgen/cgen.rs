@@ -7,7 +7,7 @@ use crate::{
     },
     utils::table::{ClassTable, SymbolTable, Tables},
     BOOL, DISPATCH_TABLE_OFFSET, FIELD_BASIC_OFFSET, INT, NULL_TAG_OFFSET, OBJECT, PRIMSLOT,
-    RAW_INT, RUNTIME_ERR, STRING,
+    RUNTIME_ERR, STRING,
 };
 
 use super::ast::CodeGenerate;
@@ -214,7 +214,7 @@ impl<'a> CodeGenerator<'a> {
                                 ),
                                 true,
                             );
-                        } else if attr.type_.clone().unwrap() == RAW_INT.to_string() {
+                        } else if attr.type_.clone().unwrap() == INT.to_string() {
                             self.write(format!(".quad 0"), true);
                         }
                     }
@@ -323,7 +323,7 @@ impl<'a> CodeGenerator<'a> {
                             self.write(format!("movq %rax, {}(%rbx)", offset_), true);
                         } else {
                             let type_ = attr.type_.clone().unwrap();
-                            if type_ != RAW_INT.to_string() {
+                            if type_ != INT.to_string() {
                                 self.write(
                                     format!(
                                         "movq ${}_prototype, {}(%rbx)",

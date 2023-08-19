@@ -30,8 +30,8 @@ mod semantic;
 mod utils;
 const STRING: &str = "String";
 const OBJECT: &str = "Object";
-const INT: &str = "Int";
-const RAW_INT: &str = "int";
+const INT: &str = "int";
+const INTEGER: &str = "Integer";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
 const VOID: &str = "Void";
@@ -120,7 +120,7 @@ fn handle_args() {
         let home_dir = home_dir().unwrap().into_os_string().into_string().unwrap();
         let mut files: Vec<String> = vec![
             format!("{}/.strawberry/std/Object.st", home_dir),
-            format!("{}/.strawberry/std/Int.st", home_dir),
+            format!("{}/.strawberry/std/Integer.st", home_dir),
             format!("{}/.strawberry/std/String.st", home_dir),
             format!("{}/.strawberry/std/Bool.st", home_dir),
             format!("{}/.strawberry/std/Void.st", home_dir),

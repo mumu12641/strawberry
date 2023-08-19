@@ -13,7 +13,7 @@ use crate::{
         table::{ClassTable, SymbolTable},
         util::do_vecs_match,
     },
-    BOOL, INT, OBJECT, RAW_INT, SELF, STRING, VOID,
+    BOOL, INT, OBJECT, SELF, STRING, VOID,
 };
 
 use super::semantic::SemanticError;
@@ -27,7 +27,7 @@ impl TypeChecker for Expr {
         match self {
             Expr::Bool(_) => return Ok(BOOL.to_string()),
             Expr::Str(_) => return Ok(STRING.to_string()),
-            Expr::Int(_) => return Ok(RAW_INT.to_string()),
+            Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(constructor_call) => {
                 if let Some(_) = class_table.classes.get(&constructor_call.class_name) {
                     // find the class
@@ -137,7 +137,7 @@ impl TypeChecker for Dispatch {
             .check_type(symbol_table, class_table)
         {
             Ok(target_type) => {
-                if target_type == RAW_INT {
+                if target_type == INT {
                     return Err(SemanticError::new(
                         format!("Raw type int can't use <.> operator!",),
                         Some(self.position),
@@ -345,11 +345,11 @@ impl TypeChecker for Math {
                                 ))
                             }
                         }
-                    } else if left == RAW_INT.to_string() && right == RAW_INT.to_string() {
+                    } else if left == INT.to_string() && right == INT.to_string() {
                         match self.op.deref() {
                             MathOp::ComputeOp(_) => {
-                                self.type_ = RAW_INT.to_string();
-                                return Ok(RAW_INT.to_string());
+                                self.type_ = INT.to_string();
+                                return Ok(INT.to_string());
                             }
                             MathOp::CondOp(_) => {
                                 self.type_ = BOOL.to_string();

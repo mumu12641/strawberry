@@ -4,7 +4,7 @@
 * @update: 2023/7/12
 */
 
-class Int inherits Object {
+class Integer inherits Object {
     val : int;
     constructor(val_:int){
         val = val_;
@@ -35,31 +35,31 @@ class Int inherits Object {
     public fn get_val_() -> int {
         return self.val;
     };
-    public fn add(other:Int) -> Int{
-        return new Int(self.val + other.get_val_());
+    public fn add(other:Integer) -> Integer{
+        return new Integer(self.val + other.get_val_());
     };
-    public fn minus(other:Int) -> Int{
-        return new Int(self.val - other.get_val_());
+    public fn minus(other:Integer) -> Integer{
+        return new Integer(self.val - other.get_val_());
     };
-    public fn mul(other:Int) -> Int{
-        return new Int(self.val * other.get_val_());
+    public fn mul(other:Integer) -> Integer{
+        return new Integer(self.val * other.get_val_());
     };
-    public fn divide(other:Int) -> Int{
-        return new Int(self.val / other.get_val_());
+    public fn divide(other:Integer) -> Integer{
+        return new Integer(self.val / other.get_val_());
     };
-    public fn more(other:Int) -> Bool{
+    public fn more(other:Integer) -> Bool{
         return self.val > other.get_val_();
     };
-    public fn moree(other:Int) -> Bool{
+    public fn moree(other:Integer) -> Bool{
         return self.val => other.get_val_();
     };
-    public fn less(other:Int) -> Bool{
+    public fn less(other:Integer) -> Bool{
         return self.val < other.get_val_();
     };
-    public fn lesse(other:Int) -> Bool{
+    public fn lesse(other:Integer) -> Bool{
         return self.val <= other.get_val_();
     };
-    public fn equal(other:Int) -> Bool{
+    public fn equal(other:Integer) -> Bool{
         return self.val == other.get_val_();
     };
 

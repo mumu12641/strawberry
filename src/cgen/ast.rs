@@ -9,7 +9,7 @@ use crate::{
         Identifier, Type,
     },
     BOOL, BOOL_CONST_VAL_OFFSET, DISPATCH_TABLE_OFFSET, INT, INT_CONST_VAL_OFFSET, NULL_TAG_OFFSET,
-    RAW_INT, STRING, STRING_CONST_VAL_OFFSET,
+    STRING, STRING_CONST_VAL_OFFSET, INTEGER,
 };
 
 use super::cgen::{CodeGenerator, Location};
@@ -352,7 +352,7 @@ impl CodeGenerate for Math {
 
         right.code_generate(code_generator);
 
-        if right.get_type() == RAW_INT && left.get_type() == RAW_INT {
+        if right.get_type() == INT && left.get_type() == INT {
             code_generator.write(format!("movq %rax, %r10"), true);
             code_generator.write(format!("movq (%rsp), %r11"), true);
             code_generator.write(format!("addq $8, %rsp"), true);
@@ -393,35 +393,33 @@ impl CodeGenerate for Math {
             }
         }
 
-        if right.get_type() == INT.to_string() && left.get_type() == INT.to_string() {
+        if right.get_type() == INTEGER.to_string() && left.get_type() == INTEGER.to_string() {
             code_generator.write(format!("push %rax"), true);
 
             match self.op.deref() {
                 MathOp::ComputeOp(op_) => {
                     match op_ {
                         ComputeOp::Add => {
-                            code_generator.write(format!("call Int.add"), true);
+                            code_generator.write(format!("call Integer.add"), true);
                         }
                         ComputeOp::Minus => {
-                            code_generator.write(format!("call Int.minus"), true);
+                            code_generator.write(format!("call Integer.minus"), true);
                         }
                         ComputeOp::Mul => {
-                            code_generator.write(format!("call Int.mul"), true);
+                            code_generator.write(format!("call Integer.mul"), true);
                         }
                         ComputeOp::Divide => {
-                            code_generator.write(format!("call Int.divide"), true);
+                            code_generator.write(format!("call Integer.divide"), true);
                         }
                     };
                 }
-                MathOp::CondOp(op_) => {
-                    match op_ {
-                        CondOp::More => code_generator.write(format!("call Int.more"), true),
-                        CondOp::MoreE => code_generator.write(format!("call Int.moree"), true),
-                        CondOp::Less => code_generator.write(format!("call Int.less"), true),
-                        CondOp::LessE => code_generator.write(format!("call Int.lesse"), true),
-                        CondOp::Equal => code_generator.write(format!("call Int.equal"), true),
-                    }
-                }
+                MathOp::CondOp(op_) => match op_ {
+                    CondOp::More => code_generator.write(format!("call Integer.more"), true),
+                    CondOp::MoreE => code_generator.write(format!("call Integer.moree"), true),
+                    CondOp::Less => code_generator.write(format!("call Integer.less"), true),
+                    CondOp::LessE => code_generator.write(format!("call Integer.lesse"), true),
+                    CondOp::Equal => code_generator.write(format!("call Integer.equal"), true),
+                },
             }
             code_generator.write(format!("addq $8, %rsp"), true);
             code_generator.write(format!("addq $8, %rsp"), true);

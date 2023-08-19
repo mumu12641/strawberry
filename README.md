@@ -94,7 +94,7 @@ The syntax of strawberry is very similar to object-oriented languages such as ja
 
 ```
 class Main { 
-	fun main() -> Int {
+	fun main() -> int {
 	    	print("hello world!");
 	    	return 0;
 	};
@@ -125,7 +125,7 @@ class Main{
 	fun main() -> int {
 		let square = new Square;
 		square.set(2);
-		print(new Int(squrae.get_area()).to_string());		// output:4
+		print(new Integer(squrae.get_area()).to_string());		// output:4
 		return 0;
 	};
 	fun draw(shape:Shape) -> Shape {
@@ -163,9 +163,9 @@ class Square inherits Shape{
 class Main{
     fun main() -> int {
         let a = 5;
-	print(new Int(a).to_string() + "\\n");
+	print(new Integer(a).to_string() + "\\n");
 	for(let b = 2; b < 5; b = b + 1;){
-		print(new Int(b).to_string() + "\\n");
+		print(new Integer(b).to_string() + "\\n");
 	}
 	while(a > 0){
 		if(a > 3){
@@ -197,7 +197,7 @@ class Main{
 
 ```
 class Main { 
-	fun main() -> Int { 
+	fun main() -> int { 
 		let n1 = new Node(1);
 		let n2 = new Node(2);
 		let n3 = new Node(3);
@@ -211,7 +211,7 @@ class Main {
 		let h = l.get_head();
 
 		while(!null(h)){
-			print(h.get_val().to_string() + "\\n");
+			print(new Integer(h.get_val()).to_string() + "\\n");
 			h = h.get_next();
 		}
 		
@@ -220,19 +220,19 @@ class Main {
 };
 
 class Node{
-	val:Int = 0;
+	val:int = 0;
 	next:Node;
 
-	constructor(val_:Int){
+	constructor(val_:int){
 		val = val_;
 	};
 
-    public fn set_val(val_:Int) -> Void{
+    public fn set_val(val_:int) -> Void{
 		val = val_;
 		return;
 	};
 
-	public fn get_val() -> Int{
+	public fn get_val() -> int{
 		return val;
 	};
 
