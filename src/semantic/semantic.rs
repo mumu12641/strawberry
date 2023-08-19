@@ -13,7 +13,6 @@ use crate::{
     table::ClassTable,
     utils::table::SymbolTable,
     DEBUG,
-    INT,
     SELF,
 };
 

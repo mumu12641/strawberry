@@ -5,16 +5,22 @@ extern crate clap;
 
 lalrpop_mod!(pub strawberry);
 use clap::{Arg, ColorChoice};
+use grammar::ast::class::Feature;
 use grammar::lexer::Lexer;
 use grammar::lexer::Position;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
+use IR::abstract_present::AbstractCode;
+use IR::abstract_present::AbstractFunction;
+use IR::ast2ir::Ast2IR;
 
 use simple_home_dir::*;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
 use std::io::prelude::*;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::path::Path;
 use std::process::Command;
 use utils::table::{self, ClassTable};
@@ -22,12 +28,15 @@ use utils::table::{self, ClassTable};
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
 use crate::utils::util::fix_offset;
+use crate::IR::abstract_present::{AbstractProgram, AbstractType};
 
+mod IR;
 mod cgen;
 mod grammar;
 mod llvm;
 mod semantic;
 mod utils;
+
 const STRING: &str = "String";
 const OBJECT: &str = "Object";
 const INT: &str = "int";
@@ -62,7 +71,7 @@ _\$$$$$$\  | $$ __ | $$   \$$/      $$| $$ | $$ | $$| $$  | $$| $$    $$| $$   \
                                                                                              \$$    $$
                                                                                               \$$$$$$ 
 "#;
-const logo_img:&str =r#"
+const logo_img: &str = r#"
                                                             
                                                             
                                                             
@@ -88,6 +97,7 @@ const logo_img:&str =r#"
                                                             
                                                             
 "#;
+
 fn main() {
     handle_args();
 }
@@ -111,7 +121,7 @@ fn handle_args() {
     let matches = cmd.clone().get_matches();
 
     if let Some(matches) = matches.subcommand_matches("new") {
-        let msg = format!   ("🎉 Congratulations, you successfully created the project, please use cd ./{}, and then use strawberry build to build the project!", matches.get_one::<String>("name").unwrap());
+        let msg = format!("🎉 Congratulations, you successfully created the project, please use cd ./{}, and then use strawberry build to build the project!", matches.get_one::<String>("name").unwrap());
         println!("{}", msg.green());
         create_project_folder(matches.get_one::<String>("name").unwrap());
     } else if let Some(_) = matches.subcommand_matches("build") {
@@ -309,7 +319,7 @@ fn test() {
     table.string_table.insert("Object".to_string());
     table.string_table.insert("%s".to_string());
     table.int_table.insert("0".to_string());
-    let mut class_table = ClassTable::new();
+    let mut _class_table = ClassTable::new();
 
     // install constants
 
@@ -321,17 +331,42 @@ fn test() {
     let program = strawberry::ProgramParser::new().parse(lexer);
     match program {
         Ok(v) => {
-            let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
-            // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
-            let result = semantic_checker.check(&mut class_table);
-            match result {
-                Ok(v) => {
-                    println!("{:?}", v);
-                }
-                Err(e) => {
-                    println!("{}", e.err_msg);
+            // let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
+            // // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
+            // let result = semantic_checker.check(&mut class_table);
+            // match result {
+            //     Ok(v) => {
+            //         println!("{:?}", v);
+            //     }
+            //     Err(e) => {
+            //         println!("{}", e.err_msg);
+            //     }
+            // }
+            // println!("{:?}", v.1);
+            let mut abstrct_program = AbstractProgram { functions: vec![] };
+            for class_ in v.1 {
+                for feature in class_.features {
+
+                    if let Feature::Method(mut method_) = feature {
+                        let mut instrs: Vec<AbstractCode> = vec![];
+                        for exprs in method_.body.deref_mut() {
+                            //
+                            for expr in exprs {
+                                expr.ast2ir(&mut instrs);
+                            }
+                        }
+                        abstrct_program.functions.push(AbstractFunction {
+                            args: vec![],
+                            instrs,
+                            name: format!("{}.{}", &class_.name, &method_.name),
+                            return_type: method_.return_type,
+                        });
+                        // dbg!(abstrct_program.functions)
+                        println!("{:?}",abstrct_program.functions)
+                    }
                 }
             }
+            println!("{}", abstrct_program);
         }
         Err(e) => {
             println!("{:?}", e);

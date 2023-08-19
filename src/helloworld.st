@@ -1,6 +1,7 @@
 
 class Main{
-fun main() -> Int{
-		return 0;
-	};
+public fn main() -> int{
+let a:int=0 +1;
+return 0;
+};
 };
