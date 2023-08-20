@@ -23,12 +23,15 @@ use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
 use std::process::Command;
+use std::vec;
 use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
 use crate::utils::util::fix_offset;
+use crate::IR::abstract_present::AbstractBasicBlock;
 use crate::IR::abstract_present::{AbstractProgram, AbstractType};
+use crate::IR::ast2ir::Ast2IREnv;
 
 mod IR;
 mod cgen;
@@ -71,32 +74,29 @@ _\$$$$$$\  | $$ __ | $$   \$$/      $$| $$ | $$ | $$| $$  | $$| $$    $$| $$   \
                                                                                              \$$    $$
                                                                                               \$$$$$$ 
 "#;
-const logo_img: &str = r#"
-                                                            
-                                                            
-                                                            
-            ##                                              
-             %###   ((((                                    
-            //( ###((//(((((((//////                        
-            //////##//////////////                          
-       &//(((///(((////((*/(((((((((                        
-      //((////#(((((((((******/((((((                       
-  //////////(((((((((((((((((((((((((## /    #%             
-     #####(((((((((((((((##((((((((((((((*** ##             
-    #####((((((((##(((((((((((((((((((((((((*## ****        
-    ######((((((((((((((((((((((((((((((((*/(#((((((&       
-     ###(((((((((((((((##(((((((((((###/***//**(((((((((    
-     ####(((((##((((((((((((((((((((((****//***#(((((((     
-      ####((((((((((((((((((##(((####**********(##((((((    
-        ###(#(((((((##(((((((((((((((********#(((((((((     
-         ####(((((((((((((##((((((###/*****((##(((((((      
-            ####((##(((((((((((((((((***/##(((((((((        
-               ####(((((((((((((((((***(((##(((((           
-                    &#####(((((((((***((((((((              
-                              ((   *((((                    
-                                                            
-                                                            
-"#;
+// const logo_img: &str = r#"
+
+//             ##
+//              %###   ((((
+//             //( ###((//(((((((//////
+//             //////##//////////////
+//        &//(((///(((////((*/(((((((((
+//       //((////#(((((((((******/((((((
+//   //////////(((((((((((((((((((((((((## /    #%
+//      #####(((((((((((((((##((((((((((((((*** ##
+//     #####((((((((##(((((((((((((((((((((((((*## ****
+//     ######((((((((((((((((((((((((((((((((*/(#((((((&
+//      ###(((((((((((((((##(((((((((((###/***//**(((((((((
+//      ####(((((##((((((((((((((((((((((****//***#(((((((
+//       ####((((((((((((((((((##(((####**********(##((((((
+//         ###(#(((((((##(((((((((((((((********#(((((((((
+//          ####(((((((((((((##((((((###/*****((##(((((((
+//             ####((##(((((((((((((((((***/##(((((((((
+//                ####(((((((((((((((((***(((##(((((
+//                     &#####(((((((((***((((((((
+//                               ((   *((((
+
+// "#;
 
 fn main() {
     handle_args();
@@ -342,27 +342,37 @@ fn test() {
             //         println!("{}", e.err_msg);
             //     }
             // }
-            // println!("{:?}", v.1);
+            println!("{:?}", v.1.clone());
             let mut abstrct_program = AbstractProgram { functions: vec![] };
+            let mut env = Ast2IREnv {
+                naming_num: 0,
+                branch_num: 0,
+                curr_block: 0,
+            };
             for class_ in v.1 {
                 for feature in class_.features {
-
                     if let Feature::Method(mut method_) = feature {
-                        let mut instrs: Vec<AbstractCode> = vec![];
+                        let mut blocks: Vec<AbstractBasicBlock> = vec![AbstractBasicBlock {
+                            instrs: vec![],
+                            name: ".entry".to_string(),
+                            successors: vec![],
+                        }];
+
                         for exprs in method_.body.deref_mut() {
                             //
                             for expr in exprs {
-                                expr.ast2ir(&mut instrs);
+                                expr.ast2ir(&mut blocks, &mut env);
                             }
                         }
                         abstrct_program.functions.push(AbstractFunction {
                             args: vec![],
-                            instrs,
+                            // instrs,
+                            blocks,
                             name: format!("{}.{}", &class_.name, &method_.name),
-                            return_type: method_.return_type,
+                            return_type: AbstractType::Type(method_.return_type),
                         });
                         // dbg!(abstrct_program.functions)
-                        println!("{:?}",abstrct_program.functions)
+                        println!("{:?}", abstrct_program.functions)
                     }
                 }
             }

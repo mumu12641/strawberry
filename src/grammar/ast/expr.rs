@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{write, Debug, Display};
 
 use crate::{
     grammar::lexer::Position,
@@ -195,3 +195,23 @@ impl Expr {
         }
     }
 }
+
+impl Display for MathOp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MathOp::ComputeOp(compute_op) => match compute_op {
+                ComputeOp::Add => write!(f, "add"),
+                ComputeOp::Minus => write!(f, "minus"),
+                ComputeOp::Mul => write!(f, "mul"),
+                ComputeOp::Divide => write!(f, "divide"),
+            },
+            MathOp::CondOp(cond_op) =>  match cond_op {
+                CondOp::Equal => write!(f, "equal"),
+                CondOp::More => write!(f, "more"),
+                CondOp::MoreE => write!(f, "more equal"),
+                CondOp::Less => write!(f, "less"),
+                CondOp::LessE => write!(f, "less equal"),
+            },
+        }
+    }
+} 
