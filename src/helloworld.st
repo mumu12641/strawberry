@@ -1,15 +1,15 @@
 
 class Main{
 public fn main() -> int{
-let a:int=0 +1;
+let a:int=0;
 // let b:int = a + 1;
 // if(a>1){
 // a=1;
 // }else{
 // a=0;
 // }
-while(a >1+3){
-a=a+1;
+while(a >1){
+a=1;
 }
 return 0;
 };

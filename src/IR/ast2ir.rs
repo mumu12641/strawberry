@@ -3,15 +3,9 @@ use std::{
     vec,
 };
 
-use owo_colors::colors::css::SlateBlue;
-
 use crate::{
-    grammar::ast::{
-        expr::{
-            Assignment, ComputeOp, Cond, ConstructorCall, Expr, IdentifierSrtuct, Let, Math,
-            Return, While,
-        },
-        Int,
+    grammar::ast::expr::{
+        Assignment, Cond, ConstructorCall, Expr, IdentifierSrtuct, Let, Math, Return, While,
     },
     INT,
 };
@@ -224,21 +218,23 @@ impl Ast2IR for Cond {
         blocks: &mut Vec<AbstractBasicBlock>,
         env: &mut Ast2IREnv,
     ) -> Option<Dest> {
-        // self.
+        // get labels
         let condition = self.test.ast2ir(blocks, env).unwrap();
         let left = env.get_env_br_name(env.get_branch_num());
         let right = env.get_env_br_name(env.get_branch_num() + 1);
         let end = env.get_env_br_name(env.get_branch_num() + 2);
         env.update_branch_env(3);
 
+        // br
         env.get_curr_block(blocks)
             .instrs
-            .push(AbstractCode::Instruction(AbstractInstruction::Effect {
-                args: vec![condition],
-                funcs: vec![],
-                labels: vec![left.clone(), right.clone()],
-                op: "br".to_string(),
+            .push(AbstractCode::Instruction(AbstractInstruction::Br {
+                arg: condition,
+                true_label: left.clone(),
+                false_label: right.clone(),
             }));
+
+        // left
         env.get_curr_block(blocks)
             .instrs
             .push(AbstractCode::Label { label: left });
@@ -247,12 +243,11 @@ impl Ast2IR for Cond {
         }
         env.get_curr_block(blocks)
             .instrs
-            .push(AbstractCode::Instruction(AbstractInstruction::Effect {
-                args: vec![],
-                funcs: vec![],
-                labels: vec![end.clone()],
-                op: "jmp".to_string(),
+            .push(AbstractCode::Instruction(AbstractInstruction::Jmp {
+                label: end.clone(),
             }));
+
+        // right
         env.get_curr_block(blocks)
             .instrs
             .push(AbstractCode::Label { label: right });
@@ -261,12 +256,11 @@ impl Ast2IR for Cond {
         }
         env.get_curr_block(blocks)
             .instrs
-            .push(AbstractCode::Instruction(AbstractInstruction::Effect {
-                args: vec![],
-                funcs: vec![],
-                labels: vec![end.clone()],
-                op: "jmp".to_string(),
+            .push(AbstractCode::Instruction(AbstractInstruction::Jmp {
+                label: end.clone(),
             }));
+
+        // end
         env.get_curr_block(blocks)
             .instrs
             .push(AbstractCode::Label { label: end });
@@ -280,11 +274,13 @@ impl Ast2IR for While {
         blocks: &mut Vec<AbstractBasicBlock>,
         env: &mut Ast2IREnv,
     ) -> Option<Dest> {
+        // get labels
         let condition_br = env.get_env_br_name(env.get_branch_num());
         let body_br = env.get_env_br_name(env.get_branch_num() + 1);
         let end_br = env.get_env_br_name(env.get_branch_num() + 2);
         env.update_branch_env(3);
 
+        // update and br
         env.update_block(
             AbstractBasicBlock {
                 instrs: vec![],
@@ -297,16 +293,17 @@ impl Ast2IR for While {
             label: condition_br.clone(),
         });
 
+        // condition head
         let condition = self.test.deref_mut().ast2ir(blocks, env).unwrap();
         env.get_curr_block(blocks)
             .instrs
-            .push(AbstractCode::Instruction(AbstractInstruction::Effect {
-                args: vec![condition],
-                funcs: vec![],
-                labels: vec![body_br.clone(), end_br.clone()],
-                op: "br".to_string(),
+            .push(AbstractCode::Instruction(AbstractInstruction::Br {
+                arg: condition,
+                true_label: body_br.clone(),
+                false_label: end_br.clone(),
             }));
 
+        // body
         env.update_block(
             AbstractBasicBlock {
                 instrs: vec![],
@@ -322,16 +319,13 @@ impl Ast2IR for While {
         for expr in self.body.deref_mut() {
             expr.ast2ir(blocks, env);
         }
-
         env.get_curr_block(blocks)
             .instrs
-            .push(AbstractCode::Instruction(AbstractInstruction::Effect {
-                args: vec![],
-                funcs: vec![],
-                labels: vec![condition_br.clone()],
-                op: "jmp".to_string(),
+            .push(AbstractCode::Instruction(AbstractInstruction::Jmp {
+                label: condition_br,
             }));
 
+        // end
         env.update_block(
             AbstractBasicBlock {
                 instrs: vec![],
@@ -350,8 +344,8 @@ impl Ast2IR for While {
 impl Ast2IR for ConstructorCall {
     fn ast2ir(
         &mut self,
-        blocks: &mut Vec<AbstractBasicBlock>,
-        env: &mut Ast2IREnv,
+        _blocks: &mut Vec<AbstractBasicBlock>,
+        _env: &mut Ast2IREnv,
     ) -> Option<Dest> {
         todo!()
     }

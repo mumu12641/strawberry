@@ -58,7 +58,9 @@ impl Display for AbstractFunction {
 pub struct AbstractBasicBlock {
     pub instrs: Vec<AbstractCode>,
     pub name: String,
-    pub successors: Vec<Self>,
+
+    // keep successors's index at abstract function
+    pub successors: Vec<usize>,
 }
 
 impl Display for AbstractBasicBlock {
@@ -122,6 +124,16 @@ pub enum AbstractInstruction {
         src: String,
     },
 
+    Br {
+        arg: String,
+        true_label: String,
+        false_label: String,
+    },
+
+    Jmp {
+        label: String,
+    },
+
     Value {
         args: Vec<String>,
         dest: String,
@@ -167,6 +179,14 @@ impl Display for AbstractInstruction {
             },
 
             AbstractInstruction::Ret { src } => write!(f, "ret {}", src),
+
+            AbstractInstruction::Br {
+                arg,
+                true_label,
+                false_label,
+            } => write!(f, "br {} .{} .{};", arg, true_label, false_label),
+
+            AbstractInstruction::Jmp { label } => write!(f, "jmp .{};", label),
 
             AbstractInstruction::Value {
                 args,

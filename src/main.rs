@@ -26,12 +26,15 @@ use std::process::Command;
 use std::vec;
 use utils::table::{self, ClassTable};
 
+use crate::IR::pass::dom::DOM;
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
 use crate::utils::util::fix_offset;
 use crate::IR::abstract_present::AbstractBasicBlock;
 use crate::IR::abstract_present::{AbstractProgram, AbstractType};
 use crate::IR::ast2ir::Ast2IREnv;
+use crate::IR::pass::cfg::CFG;
+use crate::IR::pass::ssa::SSAPass;
 
 mod IR;
 mod cgen;
@@ -321,27 +324,12 @@ fn test() {
     table.int_table.insert("0".to_string());
     let mut _class_table = ClassTable::new();
 
-    // install constants
 
     //*   class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
-    // for i in lexer {
-    //     println!("{:?}", i);
-    // }
     let program = strawberry::ProgramParser::new().parse(lexer);
     match program {
         Ok(v) => {
-            // let mut semantic_checker: SemanticChecker = SemanticChecker::new(v.1.clone());
-            // // if DEBUG {let result: Result<Vec<Class>, SemanticError> =
-            // let result = semantic_checker.check(&mut class_table);
-            // match result {
-            //     Ok(v) => {
-            //         println!("{:?}", v);
-            //     }
-            //     Err(e) => {
-            //         println!("{}", e.err_msg);
-            //     }
-            // }
             println!("{:?}", v.1.clone());
             let mut abstrct_program = AbstractProgram { functions: vec![] };
             let mut env = Ast2IREnv {
@@ -364,19 +352,30 @@ fn test() {
                                 expr.ast2ir(&mut blocks, &mut env);
                             }
                         }
-                        abstrct_program.functions.push(AbstractFunction {
-                            args: vec![],
-                            // instrs,
-                            blocks,
-                            name: format!("{}.{}", &class_.name, &method_.name),
-                            return_type: AbstractType::Type(method_.return_type),
-                        });
-                        // dbg!(abstrct_program.functions)
-                        println!("{:?}", abstrct_program.functions)
+                        let mut cfg_pass = CFG {
+                            function: AbstractFunction {
+                                args: vec![],
+                                // instrs,
+                                blocks: blocks.clone(),
+                                name: format!("{}.{}", &class_.name, &method_.name),
+                                return_type: AbstractType::Type(method_.clone().return_type),
+                            },
+                        };
+
+                        // build cfg
+                        cfg_pass.create_cfg();
+
+                        // ssa
+                        let mut dom = DOM {
+                            function: cfg_pass.function,
+                        };
+                        dom.get_dom();
+                        abstrct_program.functions.push(dom.function);
+                        println!("{:?}", abstrct_program.functions);
                     }
                 }
             }
-            println!("{}", abstrct_program);
+            // println!("{}", abstrct_program);
         }
         Err(e) => {
             println!("{:?}", e);
@@ -386,15 +385,18 @@ fn test() {
 
 #[test]
 fn some_test() {
-    let a = "%d as";
-    let s = a.replace("%d", "1");
-    println!("{}", s);
+    // let a = "%d as";
+    // let s = a.replace("%d", "1");
+    // println!("{}", s);
 
-    let binding = "Foo".to_string();
-    let binding12 = "Bar".to_string();
-    let string_list: Vec<&String> = vec![&binding, &binding12];
-    let v: Vec<String> = string_list.iter().map(|x| x.to_string()).collect();
-    let joined = v.join("-");
-    assert_eq!("Foo-Bar", joined);
-    println!("{}", joined)
+    // let binding = "Foo".to_string();
+    // let binding12 = "Bar".to_string();
+    // let string_list: Vec<&String> = vec![&binding, &binding12];
+    // let v: Vec<String> = string_list.iter().map(|x| x.to_string()).collect();
+    // let joined = v.join("-");
+    // assert_eq!("Foo-Bar", joined);
+    // println!("{}", joined)
+    for i in 0..1 {
+        println!("{}", i);
+    }
 }
