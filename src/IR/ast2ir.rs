@@ -42,7 +42,7 @@ impl Ast2IREnv {
     }
 
     pub fn get_env_br_name(&mut self, num: i32) -> String {
-        return format!("branch{}", num);
+        return format!(".branch{}", num);
     }
 
     pub fn get_curr_block<'a>(

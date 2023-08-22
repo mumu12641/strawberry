@@ -6,15 +6,19 @@ extern crate clap;
 lalrpop_mod!(pub strawberry);
 use clap::{Arg, ColorChoice};
 use grammar::ast::class::Feature;
+use grammar::ast::Identifier;
+use grammar::ast::Type;
 use grammar::lexer::Lexer;
 use grammar::lexer::Position;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
+use IR::abstract_present::AbstractArgument;
 use IR::abstract_present::AbstractCode;
 use IR::abstract_present::AbstractFunction;
 use IR::ast2ir::Ast2IR;
 
 use simple_home_dir::*;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
@@ -26,7 +30,6 @@ use std::process::Command;
 use std::vec;
 use utils::table::{self, ClassTable};
 
-use crate::IR::pass::dom::DOM;
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
 use crate::utils::util::fix_offset;
@@ -34,6 +37,7 @@ use crate::IR::abstract_present::AbstractBasicBlock;
 use crate::IR::abstract_present::{AbstractProgram, AbstractType};
 use crate::IR::ast2ir::Ast2IREnv;
 use crate::IR::pass::cfg::CFG;
+use crate::IR::pass::dom::DOM;
 use crate::IR::pass::ssa::SSAPass;
 
 mod IR;
@@ -324,13 +328,12 @@ fn test() {
     table.int_table.insert("0".to_string());
     let mut _class_table = ClassTable::new();
 
-
     //*   class_table.install_basic_class();
     let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
     let program = strawberry::ProgramParser::new().parse(lexer);
     match program {
         Ok(v) => {
-            println!("{:?}", v.1.clone());
+            // println!("{:?}", v.1.clone());
             let mut abstrct_program = AbstractProgram { functions: vec![] };
             let mut env = Ast2IREnv {
                 naming_num: 0,
@@ -352,9 +355,19 @@ fn test() {
                                 expr.ast2ir(&mut blocks, &mut env);
                             }
                         }
+                        let param_vec: Vec<AbstractArgument> = method_
+                            .param
+                            .deref()
+                            .iter()
+                            .map(|p| AbstractArgument {
+                                name: p.0.clone(),
+                                arg_type: IR::abstract_present::AbstractType::Type(p.1.clone()),
+                            })
+                            .collect();
+                        // for param in method_.param.deref() {}
                         let mut cfg_pass = CFG {
                             function: AbstractFunction {
-                                args: vec![],
+                                args: param_vec,
                                 // instrs,
                                 blocks: blocks.clone(),
                                 name: format!("{}.{}", &class_.name, &method_.name),
@@ -366,12 +379,19 @@ fn test() {
                         cfg_pass.create_cfg();
 
                         // ssa
-                        let mut dom = DOM {
-                            function: cfg_pass.function,
+                        let dom = DOM::new(cfg_pass.function);
+                        let mut ssa = SSAPass {
+                            function: dom.function,
+                            dom_frontier: dom.dom_frontier,
+                            dom_tree: dom.dom_tree,
+                            pred: dom.preds,
                         };
-                        dom.get_dom();
-                        abstrct_program.functions.push(dom.function);
-                        println!("{:?}", abstrct_program.functions);
+                        ssa.to_ssa();
+                        abstrct_program.functions.push(ssa.function);
+                        println!("all done");
+                        for f in &abstrct_program.functions {
+                            println!("{}", f);
+                        }
                     }
                 }
             }
@@ -399,4 +419,8 @@ fn some_test() {
     for i in 0..1 {
         println!("{}", i);
     }
+    let mut map: HashMap<usize, usize> = HashMap::new();
+    map.insert(1, 1);
+    map.insert(1, 2);
+    println!("{:?}", map)
 }

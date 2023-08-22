@@ -10,6 +10,7 @@ let a:int=0;
 // }
 while(a >1){
 a=1;
+b=1;
 }
 return 0;
 };

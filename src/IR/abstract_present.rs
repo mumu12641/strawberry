@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 use crate::grammar::ast::{
     expr::{ComputeOp, MathOp},
-    Type,
+    Str, Type,
 };
 
 use super::ast2ir::Dest;
@@ -94,7 +94,7 @@ pub enum AbstractCode {
 impl Display for AbstractCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            AbstractCode::Label { label } => write!(f, ".{}:", label),
+            AbstractCode::Label { label } => write!(f, "{}:", label),
             AbstractCode::Instruction(instr) => write!(f, "  {}", instr),
         }
     }
@@ -134,20 +134,25 @@ pub enum AbstractInstruction {
         label: String,
     },
 
-    Value {
-        args: Vec<String>,
+    Phi {
         dest: String,
-        funcs: Vec<String>,
         labels: Vec<String>,
-        src: String,
-        type_: Option<AbstractType>,
-    },
-    Effect {
         args: Vec<String>,
-        funcs: Vec<String>,
-        labels: Vec<String>,
-        op: String,
     },
+    // Value {
+    //     args: Vec<String>,
+    //     dest: String,
+    //     funcs: Vec<String>,
+    //     labels: Vec<String>,
+    //     src: String,
+    //     type_: Option<AbstractType>,
+    // },
+    // Effect {
+    //     args: Vec<String>,
+    //     funcs: Vec<String>,
+    //     labels: Vec<String>,
+    //     op: String,
+    // },
 }
 
 impl Display for AbstractInstruction {
@@ -184,52 +189,61 @@ impl Display for AbstractInstruction {
                 arg,
                 true_label,
                 false_label,
-            } => write!(f, "br {} .{} .{};", arg, true_label, false_label),
+            } => write!(f, "br {} {} {};", arg, true_label, false_label),
 
-            AbstractInstruction::Jmp { label } => write!(f, "jmp .{};", label),
+            AbstractInstruction::Jmp { label } => write!(f, "jmp {};", label),
 
-            AbstractInstruction::Value {
-                args,
-                dest,
-                funcs,
-                labels,
-                src,
-                type_,
-            } => {
-                match type_ {
-                    Some(type__) => write!(f, "{dest}: {type__} = {src}")?,
-                    None => write!(f, "{dest} = {src}")?,
-                }
-                for func in funcs {
-                    write!(f, " @{func}")?;
-                }
+            Self::Phi { dest, labels, args } => {
+                write!(f, "{} = phi ", dest)?;
                 for arg in args {
-                    write!(f, " {arg}")?;
+                    write!(f, "{} ", arg)?;
                 }
                 for label in labels {
-                    write!(f, " .{label}")?;
+                    write!(f, "{} ", label)?;
                 }
-                write!(f, ";")
-            }
+                Ok(())
+            } // AbstractInstruction::Value {
+              //     args,
+              //     dest,
+              //     funcs,
+              //     labels,
+              //     src,
+              //     type_,
+              // } => {
+              //     match type_ {
+              //         Some(type__) => write!(f, "{dest}: {type__} = {src}")?,
+              //         None => write!(f, "{dest} = {src}")?,
+              //     }
+              //     for func in funcs {
+              //         write!(f, " @{func}")?;
+              //     }
+              //     for arg in args {
+              //         write!(f, " {arg}")?;
+              //     }
+              //     for label in labels {
+              //         write!(f, " .{label}")?;
+              //     }
+              //     write!(f, ";")
+              // }
 
-            AbstractInstruction::Effect {
-                op,
-                args,
-                funcs,
-                labels,
-            } => {
-                write!(f, "{op}")?;
-                for func in funcs {
-                    write!(f, " @{func}")?;
-                }
-                for arg in args {
-                    write!(f, " {arg}")?;
-                }
-                for label in labels {
-                    write!(f, " .{label}")?;
-                }
-                write!(f, ";")
-            }
+              // AbstractInstruction::Effect {
+              //     op,
+              //     args,
+              //     funcs,
+              //     labels,
+              // } => {
+              //     write!(f, "{op}")?;
+              //     for func in funcs {
+              //         write!(f, " @{func}")?;
+              //     }
+              //     for arg in args {
+              //         write!(f, " {arg}")?;
+              //     }
+              //     for label in labels {
+              //         write!(f, " .{label}")?;
+              //     }
+              //     write!(f, ";")
+              // }
         }
     }
 }
