@@ -54,7 +54,7 @@ impl AbstractCode {
                 // AbstractInstruction::Constant { dest, const_type, value } => todo!(),
                 AbstractInstruction::Compute { left, right, .. } => {
                     *left = stack.get(left).unwrap().last().unwrap().to_string();
-                    *left = stack.get(right).unwrap().last().unwrap().to_string();
+                    *right = stack.get(right).unwrap().last().unwrap().to_string();
                 }
                 AbstractInstruction::Assign { src, .. } => {
                     *src = stack.get(src).unwrap().last().unwrap().to_string()

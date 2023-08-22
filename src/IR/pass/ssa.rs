@@ -32,79 +32,47 @@ impl SSAPass {
     }
 
     pub fn from_ssa(&mut self) {
-        // # function input args
-        // func_args = func.get('args', [])
-
-        // blocks = block_map(list(form_blocks(func['instrs'])))
-
-        // def add_id_instr(arg, label, instr):
-        //     '''
-        //     add `id` instruction in the block `label`
-        //     '''
-        //     # generate add_instr
-        //     id_instr = dict()
-        //     id_instr['op'] = 'id'
-        //     id_instr['type'] = instr['type']
-        //     id_instr['dest'] = instr['dest']
-        //     id_instr['args'] = [arg]
-
-        //     blocks[label].insert(-1, id_instr) # insert before the last instruction
-
-        // for name, block in blocks.items():
-        //     phi_node_idx = list()
-        //     for idx, instr in enumerate(block):
-
-        //         if instr.get('op', None) == 'phi':
-        //             phi_node_idx.append(idx)
-        //             for arg, label in zip(instr['args'], instr['labels']):
-        //                 # print(f"name: {name}, dest: {instr['dest']}, arg: {arg}, label: {label}")
-        //                 add_id_instr(arg, label, instr)
-
-        //     # remove this phi node. Need to delete from bottom to top, otherwise there would be some index error.
-        //     for phi_idx in sorted(phi_node_idx, reverse=True):
-        //         del block[phi_idx]
-
-        // # Assemble instructions
-        // func['instrs'] = flatten(blocks.values())
         let blocks = self.function.blocks.clone();
         for (i, block) in blocks.iter().enumerate() {
             let mut phi_node_idx: Vec<usize> = vec![];
             for (index, code) in block.instrs.iter().enumerate() {
                 // if is phi
                 if let AbstractCode::Instruction(instr) = code {
-                    // phi_node_idx.push(index);
                     if let AbstractInstruction::Phi { dest, labels, args } = instr {
-                        println!("now phi idx is {}",index);
+                        println!("now phi idx is {}", index);
                         phi_node_idx.push(index);
                         for i in 0..labels.len() {
-                            let label_pos = self
-                                .function
-                                .blocks
-                                .iter()
-                                .position(|b| b.name == labels[i])
-                                .unwrap();
-                            self.function
-                                .blocks
-                                .get_mut(label_pos)
-                                .unwrap()
-                                .instrs
-                                .push(AbstractCode::Instruction(AbstractInstruction::Assign {
-                                    src: args[i].clone(),
-                                    dest: dest.clone(),
-                                    type_: None,
-                                }));
-                            // self.function.blocks.get_mut(
-                            //     self.function
-                            //         .blocks
-                            //         .iter()
-                            //         .position(|b| b.name == labels.get(i).unwrap()),
-                            // );
+                            if args[i] != "__undefined".to_string() {
+                                let label_pos = self
+                                    .function
+                                    .blocks
+                                    .iter()
+                                    .position(|b| b.name == labels[i])
+                                    .unwrap();
+                                let instrs =
+                                    &mut self.function.blocks.get_mut(label_pos).unwrap().instrs;
+                                instrs.insert(
+                                    instrs.len() - 1,
+                                    AbstractCode::Instruction(AbstractInstruction::Assign {
+                                        src: args[i].clone(),
+                                        dest: dest.clone(),
+                                        type_: None,
+                                    }),
+                                );
+                                // .push(AbstractCode::Instruction(AbstractInstruction::Assign {
+                                //     src: args[i].clone(),
+                                //     dest: dest.clone(),
+                                //     type_: None,
+                                // }));
+                                // .insert(, element)
+                                // ;
+                            }
                         }
                     }
                 }
                 // remove phi_node_idx
             }
-            for idx in phi_node_idx {
+            for _ in phi_node_idx {
                 // block
                 self.function.blocks.get_mut(i).unwrap().instrs.remove(1);
             }
@@ -145,6 +113,8 @@ impl SSAPass {
             code.ssa_change_src(stack);
             code.ssa_change_dest(stack, &mut push_num, var_env);
         }
+        println!("after change src and dest ");
+        println!("{}", self.function);
 
         for succ in successors {
             println!("now succ is {}", succ);
@@ -154,7 +124,9 @@ impl SSAPass {
                 code.ssa_change_phi(stack, &block_name);
             }
         }
+        println!("after change succ 's phi ");
         println!("{}", self.function);
+        println!("block {} has done!", &block_name);
         for tree_index in self.dom_tree.get(&index).unwrap().clone() {
             self.rename(tree_index, stack, var_env);
         }
@@ -197,6 +169,8 @@ impl SSAPass {
                 }
             }
         }
+        println!("after insert phi node");
+        println!("{}", self.function);
     }
     fn get_var_info(&self) -> HashMap<String, HashSet<usize>> {
         let mut var_info: HashMap<String, HashSet<usize>> = HashMap::new();

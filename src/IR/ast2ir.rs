@@ -280,6 +280,15 @@ impl Ast2IR for While {
         let end_br = env.get_env_br_name(env.get_branch_num() + 2);
         env.update_branch_env(3);
 
+        if env.curr_block == 0 {
+            // is the first block
+            env.get_curr_block(blocks)
+                .instrs
+                .push(AbstractCode::Instruction(AbstractInstruction::Jmp {
+                    label: condition_br.clone(),
+                }))
+        }
+
         // update and br
         env.update_block(
             AbstractBasicBlock {
