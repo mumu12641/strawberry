@@ -16,6 +16,16 @@ impl AbstractCode {
         };
     }
 
+    pub fn get_phi(&self) -> Option<&crate::IR::util::AbstractInstruction> {
+        match self {
+            AbstractCode::Instruction(instr) => match instr {
+                AbstractInstruction::Phi { .. } => return Some(instr),
+                _ => return None,
+            },
+            _ => return None,
+        };
+    }
+
     pub fn ssa_change_phi(
         &mut self,
         stack: &mut HashMap<&String, Vec<String>>,
@@ -23,12 +33,6 @@ impl AbstractCode {
     ) {
         if let AbstractCode::Instruction(instr) = self {
             if let AbstractInstruction::Phi { args, labels, .. } = instr {
-                // println!("{}", );
-                // println!("label_name is {}", label_name);
-                // for i in labels.clone() {
-                //     println!("phi 's label is {}", i);
-                // }
-                // let index = labels.iter().position(|l| *l == label_name).unwrap();
 
                 if let Some(index) = labels.iter().position(|l| *l == *label_name) {
                     let var = args.get(index).unwrap();

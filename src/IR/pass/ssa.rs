@@ -31,6 +31,86 @@ impl SSAPass {
         self.rename_var();
     }
 
+    pub fn from_ssa(&mut self) {
+        // # function input args
+        // func_args = func.get('args', [])
+
+        // blocks = block_map(list(form_blocks(func['instrs'])))
+
+        // def add_id_instr(arg, label, instr):
+        //     '''
+        //     add `id` instruction in the block `label`
+        //     '''
+        //     # generate add_instr
+        //     id_instr = dict()
+        //     id_instr['op'] = 'id'
+        //     id_instr['type'] = instr['type']
+        //     id_instr['dest'] = instr['dest']
+        //     id_instr['args'] = [arg]
+
+        //     blocks[label].insert(-1, id_instr) # insert before the last instruction
+
+        // for name, block in blocks.items():
+        //     phi_node_idx = list()
+        //     for idx, instr in enumerate(block):
+
+        //         if instr.get('op', None) == 'phi':
+        //             phi_node_idx.append(idx)
+        //             for arg, label in zip(instr['args'], instr['labels']):
+        //                 # print(f"name: {name}, dest: {instr['dest']}, arg: {arg}, label: {label}")
+        //                 add_id_instr(arg, label, instr)
+
+        //     # remove this phi node. Need to delete from bottom to top, otherwise there would be some index error.
+        //     for phi_idx in sorted(phi_node_idx, reverse=True):
+        //         del block[phi_idx]
+
+        // # Assemble instructions
+        // func['instrs'] = flatten(blocks.values())
+        let blocks = self.function.blocks.clone();
+        for (i, block) in blocks.iter().enumerate() {
+            let mut phi_node_idx: Vec<usize> = vec![];
+            for (index, code) in block.instrs.iter().enumerate() {
+                // if is phi
+                if let AbstractCode::Instruction(instr) = code {
+                    // phi_node_idx.push(index);
+                    if let AbstractInstruction::Phi { dest, labels, args } = instr {
+                        println!("now phi idx is {}",index);
+                        phi_node_idx.push(index);
+                        for i in 0..labels.len() {
+                            let label_pos = self
+                                .function
+                                .blocks
+                                .iter()
+                                .position(|b| b.name == labels[i])
+                                .unwrap();
+                            self.function
+                                .blocks
+                                .get_mut(label_pos)
+                                .unwrap()
+                                .instrs
+                                .push(AbstractCode::Instruction(AbstractInstruction::Assign {
+                                    src: args[i].clone(),
+                                    dest: dest.clone(),
+                                    type_: None,
+                                }));
+                            // self.function.blocks.get_mut(
+                            //     self.function
+                            //         .blocks
+                            //         .iter()
+                            //         .position(|b| b.name == labels.get(i).unwrap()),
+                            // );
+                        }
+                    }
+                }
+                // remove phi_node_idx
+            }
+            for idx in phi_node_idx {
+                // block
+                self.function.blocks.get_mut(i).unwrap().instrs.remove(1);
+            }
+        }
+    }
+
     fn rename_var(&mut self) {
         // stack[v] is a stack of variable names (for every variable v)
         let var_infos = self.get_var_info();
@@ -39,28 +119,10 @@ impl SSAPass {
         // to generate new var
         let mut var_env: HashMap<&String, usize> = HashMap::new();
         for var_info in &var_infos {
-            // stack.push(var_info.0);
             stack.insert(var_info.0, vec![var_info.0.clone()]);
             var_env.insert(var_info.0, 0);
         }
         self.rename(0, &mut stack, &mut var_env);
-        // def rename(block):
-        // for instr in block:
-        //   replace each argument to instr with stack[old name]
-        //   replace instr's destination with a new name
-        //   push that new name onto stack[old name]
-
-        // for s in block's successors:
-        //   for p in s's ϕ-nodes:
-        //     Assuming p is for a variable v, make it read from stack[v].
-
-        // for b in blocks immediately dominated by block:
-        //   # That is, children in the dominance tree.
-        //   rename(b)
-
-        // pop all the names we just pushed onto the stacks
-
-        // rename(entry)
     }
     fn rename(
         &mut self,
@@ -70,12 +132,10 @@ impl SSAPass {
     ) {
         println!("");
         println!("***********************");
-
         println!("var env is {:?}", var_env);
-        // println!("")
-
         let block_name = self.function.blocks.get_mut(index).unwrap().name.clone();
         println!("now block is {}", &block_name);
+
         let mut push_num: HashMap<&String, usize> = HashMap::new();
         let successors = self.function.blocks.get(index).unwrap().successors.clone();
         for key in var_env.keys() {

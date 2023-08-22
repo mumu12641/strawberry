@@ -387,6 +387,9 @@ fn test() {
                             pred: dom.preds,
                         };
                         ssa.to_ssa();
+                        println!("************");
+                        println!("from ssa is");
+                        ssa.from_ssa();
                         abstrct_program.functions.push(ssa.function);
                         println!("all done");
                         for f in &abstrct_program.functions {
