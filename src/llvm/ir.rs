@@ -3,27 +3,35 @@
 //     values::BasicValueEnum, AddressSpace,
 // };
 
-// use crate::{
-//     grammar::ast::class::{Class, Feature},
-//     utils::table::Tables,
-// };
-// /// * Build constant
-// /// * Build class name table
-// /// * Build dispatch table
-// /// * Build class obj table
-// /// * IO_protObj
-// /// * Emit other code
-// ///
-// //  malloc的时候, 应该找到每一个 class 的 protObj，里
-// pub struct IrGenerator<'ctx> {
-//     pub classes: Vec<Class>,
-//     pub context: &'ctx Context,
-//     pub module: Module<'ctx>,
-//     pub builder: Builder<'ctx>,
-// }
 
-// impl<'ctx> IrGenerator<'ctx> {
-//     pub unsafe fn ir_generate(&self, tables: &Tables) {
+
+use inkwell::{context::Context, module::Module, builder::Builder};
+
+use crate::{
+    grammar::ast::class::{Class, Feature},
+    utils::table::Tables,
+};
+/// * Build constant
+/// * Build class name table
+/// * Build dispatch table
+/// * Build class obj table
+/// * IO_protObj
+/// * Emit other code
+///
+//  malloc的时候, 应该找到每一个 class 的 protObj，里
+pub struct IrGenerator<'ctx> {
+    pub classes: Vec<Class>,
+    pub context: &'ctx Context,
+    pub module: Module<'ctx>,
+    pub builder: Builder<'ctx>,
+}
+
+impl<'ctx> IrGenerator<'ctx> {
+    pub unsafe fn ir_generate(&self, tables: &Tables) {
+        // self.classes
+        // self.context.get_struct_type(name)
+    }
+}
 //         let main_function =
 //             self.module
 //                 .add_function("main", self.context.i32_type().fn_type(&[], false), None);

@@ -118,10 +118,10 @@ impl CodeGenerate for Expr {
                 Some(exprs) => {
                     for expr in exprs {
                         expr.code_generate(code_generator);
-                        code_generator.write(format!("push %rax"), true);
+                        code_generator.write(format!("pushq %rax"), true);
                     }
                     code_generator.write(
-                        format!("push ${}_prototype", constructor_call.class_name),
+                        format!("pushq ${}_prototype", constructor_call.class_name),
                         true,
                     );
                     code_generator.write(format!("call Object.malloc"), true);
@@ -156,7 +156,7 @@ impl CodeGenerate for Expr {
                 }
                 None => {
                     code_generator.write(
-                        format!("push ${}_prototype", constructor_call.class_name),
+                        format!("pushq ${}_prototype", constructor_call.class_name),
                         true,
                     );
                     code_generator.write(format!("call Object.malloc"), true);
@@ -219,7 +219,7 @@ impl CodeGenerate for Dispatch {
             DispatchExpr::Method(method) => {
                 for i in method.actual.deref() {
                     i.code_generate(code_generator);
-                    code_generator.write(format!("push %rax"), true);
+                    code_generator.write(format!("pushq %rax"), true);
                 }
                 // change curr_class to target
                 target_.code_generate(code_generator);
@@ -394,7 +394,7 @@ impl CodeGenerate for Math {
         }
 
         if right.get_type() == INTEGER.to_string() && left.get_type() == INTEGER.to_string() {
-            code_generator.write(format!("push %rax"), true);
+            code_generator.write(format!("pushq %rax"), true);
 
             match self.op.deref() {
                 MathOp::ComputeOp(op_) => {

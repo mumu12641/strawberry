@@ -4,27 +4,24 @@ extern crate lalrpop_util;
 extern crate clap;
 
 lalrpop_mod!(pub strawberry);
+
+use clap::builder;
 use clap::{Arg, ColorChoice};
-use grammar::ast::class::Feature;
-use grammar::ast::Identifier;
-use grammar::ast::Type;
+
 use grammar::lexer::Lexer;
 use grammar::lexer::Position;
+use inkwell::context::Context;
 use owo_colors::OwoColorize;
 use semantic::semantic::{SemanticChecker, SemanticError};
-use IR::abstract_present::AbstractArgument;
-use IR::abstract_present::AbstractCode;
-use IR::abstract_present::AbstractFunction;
-use IR::ast2ir::Ast2IR;
 
 use simple_home_dir::*;
+
 use std::collections::HashMap;
 use std::fs;
 use std::fs::metadata;
 use std::fs::File;
 use std::io::prelude::*;
-use std::ops::Deref;
-use std::ops::DerefMut;
+
 use std::path::Path;
 use std::process::Command;
 use std::vec;
@@ -32,15 +29,9 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
+use crate::llvm::ir::IrGenerator;
 use crate::utils::util::fix_offset;
-use crate::IR::abstract_present::AbstractBasicBlock;
-use crate::IR::abstract_present::{AbstractProgram, AbstractType};
-use crate::IR::ast2ir::Ast2IREnv;
-use crate::IR::pass::cfg::CFG;
-use crate::IR::pass::dom::DOM;
-use crate::IR::pass::ssa::SSAPass;
 
-mod IR;
 mod cgen;
 mod grammar;
 mod llvm;
@@ -247,6 +238,18 @@ fn compile(files: Vec<String>) {
                 "{}",
                 "🎺 Congratulations you passped the semantic check!".green()
             );
+
+            let context = Context::create();
+            let module = context.create_module("test");
+            let builder = context.create_builder();
+            let codegen = IrGenerator {
+                context: &context,
+                module,
+                builder,
+                classes: v.clone(),
+            };
+            unsafe { codegen.ir_generate(&table) };
+
             let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
             let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
             cgen.code_generate();
@@ -311,99 +314,6 @@ fn create_project_folder(name: &str) {
     file.write(
         b"class Main { \n\tfun main() -> Int { \n\t\tprint(\"Hello world!\"); \n\t\treturn 0; \n\t};\n};",
     ).unwrap();
-}
-
-#[test]
-fn test() {
-    let mut file = File::open("src/helloworld.st").unwrap();
-    let mut content = String::new();
-    file.read_to_string(&mut content).expect("error");
-    // println!("{:?}", content.as_bytes());
-
-    // init
-    let mut table = table::Tables::new();
-    table.string_table.insert("".to_string());
-    table.string_table.insert("Object".to_string());
-    table.string_table.insert("%s".to_string());
-    table.int_table.insert("0".to_string());
-    let mut _class_table = ClassTable::new();
-
-    //*   class_table.install_basic_class();
-    let lexer: Lexer = Lexer::new(&content, &mut table, "test.st");
-    let program = strawberry::ProgramParser::new().parse(lexer);
-    match program {
-        Ok(v) => {
-            // println!("{:?}", v.1.clone());
-            let mut abstrct_program = AbstractProgram { functions: vec![] };
-            let mut env = Ast2IREnv {
-                naming_num: 0,
-                branch_num: 0,
-                curr_block: 0,
-            };
-            for class_ in v.1 {
-                for feature in class_.features {
-                    if let Feature::Method(mut method_) = feature {
-                        let mut blocks: Vec<AbstractBasicBlock> = vec![AbstractBasicBlock {
-                            instrs: vec![],
-                            name: ".entry".to_string(),
-                            successors: vec![],
-                        }];
-
-                        for exprs in method_.body.deref_mut() {
-                            //
-                            for expr in exprs {
-                                expr.ast2ir(&mut blocks, &mut env);
-                            }
-                        }
-                        let param_vec: Vec<AbstractArgument> = method_
-                            .param
-                            .deref()
-                            .iter()
-                            .map(|p| AbstractArgument {
-                                name: p.0.clone(),
-                                arg_type: IR::abstract_present::AbstractType::Type(p.1.clone()),
-                            })
-                            .collect();
-                        // for param in method_.param.deref() {}
-                        let mut cfg_pass = CFG {
-                            function: AbstractFunction {
-                                args: param_vec,
-                                // instrs,
-                                blocks: blocks.clone(),
-                                name: format!("{}.{}", &class_.name, &method_.name),
-                                return_type: AbstractType::Type(method_.clone().return_type),
-                            },
-                        };
-
-                        // build cfg
-                        cfg_pass.create_cfg();
-
-                        // ssa
-                        let dom = DOM::new(cfg_pass.function);
-                        let mut ssa = SSAPass {
-                            function: dom.function,
-                            dom_frontier: dom.dom_frontier,
-                            dom_tree: dom.dom_tree,
-                            pred: dom.preds,
-                        };
-                        ssa.to_ssa();
-                        println!("************");
-                        println!("from ssa is");
-                        ssa.from_ssa();
-                        abstrct_program.functions.push(ssa.function);
-                        println!("all done");
-                        for f in &abstrct_program.functions {
-                            println!("{}", f);
-                        }
-                    }
-                }
-            }
-            // println!("{}", abstrct_program);
-        }
-        Err(e) => {
-            println!("{:?}", e);
-        }
-    };
 }
 
 #[test]
