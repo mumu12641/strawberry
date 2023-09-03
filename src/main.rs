@@ -29,6 +29,7 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
+use crate::llvm::ctx::Ctx;
 use crate::llvm::ir::IrGenerator;
 use crate::utils::util::fix_offset;
 
@@ -239,11 +240,14 @@ fn compile(files: Vec<String>) {
                 "🎺 Congratulations you passped the semantic check!".green()
             );
 
-            let context = Context::create();
-            let module = context.create_module("test");
-            let builder = context.create_builder();
+            let ctx = Ctx {
+                context: &Context::create(),
+            };
+            let module = ctx.context.create_module("test");
+            let builder = ctx.context.create_builder();
+
             let codegen = IrGenerator {
-                context: &context,
+                ctx: &ctx,
                 module,
                 builder,
                 classes: v.clone(),

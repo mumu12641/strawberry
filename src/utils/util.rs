@@ -19,3 +19,4 @@ pub fn fix_offset(raw: String) -> String {
     result.push_str(unsafe { this.get_unchecked(last_end..this.len()) });
     return result;
 }
+
