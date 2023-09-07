@@ -162,7 +162,7 @@ fn handle_args() {
     }
 }
 
-fn compile(files: Vec<String>) {
+fn compile<'a>(files: Vec<String>) {
     let mut all_classes: Vec<Class> = vec![];
     let main_file = "./src/main.st".to_string();
 
@@ -240,19 +240,17 @@ fn compile(files: Vec<String>) {
                 "🎺 Congratulations you passped the semantic check!".green()
             );
 
-            let ctx = Ctx {
-                context: &Context::create(),
-            };
-            let module = ctx.context.create_module("test");
-            let builder = ctx.context.create_builder();
+            let ctx = Context::create();
+            let module = ctx.create_module("test");
+            let builder = ctx.create_builder();
 
-            let codegen = IrGenerator {
+            let codegen: IrGenerator<'_> = IrGenerator {
                 ctx: &ctx,
                 module,
                 builder,
                 classes: v.clone(),
             };
-            unsafe { codegen.ir_generate(&table) };
+            codegen.ir_generate();
 
             let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
             let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
