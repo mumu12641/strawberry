@@ -29,7 +29,6 @@ use utils::table::{self, ClassTable};
 
 use crate::cgen::cgen::CodeGenerator;
 use crate::grammar::ast::class::Class;
-use crate::llvm::ctx::Ctx;
 use crate::llvm::ir::IrGenerator;
 use crate::utils::util::fix_offset;
 
