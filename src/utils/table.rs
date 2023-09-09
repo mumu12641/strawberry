@@ -24,7 +24,7 @@ impl Tables {
         }
     }
 }
-
+#[derive(Debug)]
 pub struct ClassTable {
     pub classes: HashMap<Type, Class>,
     pub inheritance: HashMap<Type, Vec<Class>>,
@@ -43,7 +43,7 @@ impl ClassTable {
         return self.classes.clone();
     }
 
-    pub fn get_inheritance(&mut self) -> HashMap<String, Vec<Class>> {
+    pub fn get_inheritance(&self) -> HashMap<String, Vec<Class>> {
         return self.inheritance.clone();
     }
 
@@ -200,7 +200,7 @@ impl ClassTable {
         return false;
     }
 
-    pub fn get_parent(&mut self, child: &Type) -> String {
+    pub fn get_parent(&self, child: &Type) -> String {
         let binding = self.get_inheritance();
         let v = binding.get(child).unwrap();
         v.get(v.len() - 2).unwrap().name.clone()

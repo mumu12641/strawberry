@@ -243,26 +243,30 @@ fn compile<'a>(files: Vec<String>) {
             let module = ctx.create_module("test");
             let builder = ctx.create_builder();
 
-            let codegen: IrGenerator<'_> = IrGenerator {
-                ctx: &ctx,
+            let codegen: IrGenerator<'_> = IrGenerator::new(
+                v.clone(),
+                &ctx,
                 module,
                 builder,
-                classes: v.clone(),
-            };
-            codegen.ir_generate();
+                &mut class_table,
+                table,
+            );
+            unsafe {
+                codegen.ir_generate();
+            }
 
-            let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
-            let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
-            cgen.code_generate();
-            Command::new("gcc")
-                .arg("-no-pie")
-                .arg("-static")
-                .arg("-m64")
-                .arg("./build/a.s")
-                .arg("-o")
-                .arg("./build/a.out")
-                .spawn()
-                .expect("gcc command failed to start");
+            // let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
+            // let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
+            // cgen.code_generate();
+            // Command::new("gcc")
+            //     .arg("-no-pie")
+            //     .arg("-static")
+            //     .arg("-m64")
+            //     .arg("./build/a.s")
+            //     .arg("-o")
+            //     .arg("./build/a.out")
+            //     .spawn()
+            //     .expect("gcc command failed to start");
             println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
         }
         Err(e) => {
