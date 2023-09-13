@@ -32,17 +32,28 @@ pub struct IrGenerator<'ctx> {
     pub builder: Builder<'ctx>,
     pub class_table: &'ctx mut ClassTable,
     pub tables: Tables,
-    // pub env: Env<'ctx>,
+    pub env: Env<'ctx>,
 }
 #[derive(Debug)]
 pub struct Env<'a> {
-    pub function_table: HashMap<Type, &'a FunctionType<'a>>,
+    // pub function_table: HashMap<Type, &'a FunctionType<'a>>,
+
+    //* (class, field) -> offset */
+    pub field_offset_map: HashMap<(Type, Type), u32>,
+
+    //* (class, method) -> offset of method table */
+    pub method_offset_map: HashMap<(Type, Type), usize>,
+
+    //*  */
+    pub struct_type_place_holders: HashMap<Type, StructType<'a>>,
 }
 
 impl Env<'_> {
     pub fn new() -> Self {
         Env {
-            function_table: HashMap::new(),
+            field_offset_map: HashMap::new(),
+            method_offset_map: HashMap::new(),
+            struct_type_place_holders: HashMap::new(),
         }
     }
 }
@@ -62,30 +73,46 @@ impl<'ctx> IrGenerator<'ctx> {
             module,
             builder,
             class_table,
-            tables, // env: Env::new(),
+            tables,
+            env: Env::new(),
         }
     }
 
-    pub unsafe fn ir_generate(&self) {
+    pub unsafe fn ir_generate(&mut self) {
         //* for placeholder */
-        let mut placeholder: HashMap<&Type, StructType> = HashMap::new();
-        for class in &self.classes {
-            placeholder.insert(&class.name, self.ctx.opaque_struct_type(&class.name));
-        }
-
-        //* generate method ir */
-        //* first is init_method*/
-        self.gen_init_method();
+        self.gen_placeholders();
 
         //* generate class prototypes */
-        for class in &self.classes {
-            class.emit_llvm_type(self, *placeholder.get(&class.name).unwrap());
+        let classes = self.classes.clone();
+        for class in &classes {
+            class.emit_llvm_type(self);
         }
-
+        //* generate method ir */
         self.gen_methods();
-
         //* generate main function */
         self.gen_main();
+
+        let _ = self.module.print_to_file("./test.ll");
+    }
+
+    fn gen_constant(&self) {
+        let mut i = 0;
+        for s in &self.tables.string_table {
+            self.builder
+                .build_global_string_ptr(&s.as_str(), &format!("str_const_{}", i));
+
+            i += 1;
+        }
+    }
+
+    fn gen_placeholders(&mut self) {
+        for class in &self.classes {
+            self.env
+                .struct_type_place_holders
+                .insert(class.name.clone(), self.ctx.opaque_struct_type(&class.name));
+        }
+        //* first is init_method*/
+        self.gen_init_method();
     }
 
     fn gen_main(&self) {
@@ -95,11 +122,15 @@ impl<'ctx> IrGenerator<'ctx> {
         let main_entry_block = self.ctx.append_basic_block(main_function, "entry");
         let zero = self.ctx.i32_type().const_int(0, false);
         self.builder.position_at_end(main_entry_block);
+
+        //* for string constant */
+        //* for inkwell's bug */
+        self.gen_constant();
+
         let _ = self
             .builder
             .build_malloc(self.module.get_struct_type("Main").unwrap(), "m");
         self.builder.build_return(Some(&zero));
-        let _ = self.module.print_to_file("./test.ll");
     }
 
     fn gen_init_method(&self) {
@@ -118,9 +149,10 @@ impl<'ctx> IrGenerator<'ctx> {
         }
     }
 
-    fn gen_methods(&self) {
+    fn gen_methods(&mut self) {
         //* emit init method */
-        for class in &self.classes {
+        let classes = self.classes.clone();
+        for class in &classes {
             let init_method = self.get_function(format!("{}.init", &class.name));
             let entry_block = self.ctx.append_basic_block(init_method, "entry");
             self.builder.position_at_end(entry_block);
@@ -138,7 +170,7 @@ impl<'ctx> IrGenerator<'ctx> {
             let m = self.builder.build_struct_gep(
                 init_method.get_first_param().unwrap().into_pointer_value(),
                 0,
-                "A",
+                "method_table",
             );
             self.builder.build_store(
                 m.unwrap(),
@@ -146,6 +178,28 @@ impl<'ctx> IrGenerator<'ctx> {
                     .get_global(&format!("{}_dispatch_table", &class.name))
                     .unwrap(),
             );
+
+            for f in &class.features {
+                if let Feature::Attribute(attr) = f {
+                    if let Some(e) = attr.init.deref() {
+                        let val = e.emit_llvm_ir(self);
+                        let off = self
+                            .env
+                            .field_offset_map
+                            .get(&(class.name.clone(), attr.name.clone()))
+                            .unwrap();
+                        let ptr = self
+                            .builder
+                            .build_struct_gep(
+                                init_method.get_first_param().unwrap().into_pointer_value(),
+                                *off,
+                                "val",
+                            )
+                            .unwrap();
+                        self.builder.build_store(ptr, val);
+                    }
+                }
+            }
 
             self.builder.build_return(None);
         }

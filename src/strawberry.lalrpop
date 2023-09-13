@@ -275,7 +275,7 @@ single_expr:Expr = {
         type_:"Object".to_string()
     }),
     <b:"BOOL"> => Expr::Bool(b),
-    <i:"INT"> => Expr::Int(i.parse::<i32>().unwrap()), 
+    <i:"INT"> => Expr::Int(i.parse::<u64>().unwrap()), 
     // <s:"self"> => Expr::Self_(s),
     
     <pos:"new"> <class_name_:all_type> => Expr::New(ConstructorCall{

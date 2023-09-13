@@ -243,14 +243,8 @@ fn compile<'a>(files: Vec<String>) {
             let module = ctx.create_module("test");
             let builder = ctx.create_builder();
 
-            let codegen: IrGenerator<'_> = IrGenerator::new(
-                v.clone(),
-                &ctx,
-                module,
-                builder,
-                &mut class_table,
-                table,
-            );
+            let mut codegen: IrGenerator<'_> =
+                IrGenerator::new(v.clone(), &ctx, module, builder, &mut class_table, table);
             unsafe {
                 codegen.ir_generate();
             }

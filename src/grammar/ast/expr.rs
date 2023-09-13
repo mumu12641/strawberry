@@ -205,7 +205,7 @@ impl Display for MathOp {
                 ComputeOp::Mul => write!(f, "mul"),
                 ComputeOp::Divide => write!(f, "divide"),
             },
-            MathOp::CondOp(cond_op) =>  match cond_op {
+            MathOp::CondOp(cond_op) => match cond_op {
                 CondOp::Equal => write!(f, "equal"),
                 CondOp::More => write!(f, "more"),
                 CondOp::MoreE => write!(f, "more equal"),
@@ -214,4 +214,4 @@ impl Display for MathOp {
             },
         }
     }
-} 
+}

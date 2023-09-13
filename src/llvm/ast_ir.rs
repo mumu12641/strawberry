@@ -1,11 +1,16 @@
 use crate::{
-    grammar::ast::{class, Type},
+    grammar::ast::{
+        class,
+        expr::{Expr, Self_},
+        Type,
+    },
+    llvm::ir,
     INT,
 };
 
 use inkwell::{
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, StructType},
-    values::{BasicValueEnum, FunctionValue, PointerValue},
+    values::{BasicValue, BasicValueEnum, FunctionValue, PointerValue},
     AddressSpace,
 };
 
@@ -13,15 +18,48 @@ use crate::grammar::ast::class::{Class, Feature};
 
 use super::{ir::IrGenerator, types::LLVMType};
 
+impl Expr {
+    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+        match self {
+            Expr::Int(e) => {
+                // return ir_genrator.builder.
+                return inkwell::values::BasicValueEnum::IntValue(
+                    ir_genrator
+                        .get_llvm_type(LLVMType::I32)
+                        .into_int_type()
+                        .const_int(*e, false),
+                );
+            }
+            _ => {}
+        }
+        unreachable!()
+    }
+}
+// impl EmitLLVMIR<'_> for Expr {
+//     fn emit_llvm_ir<V: BasicValue<'a>>(&self, ir_genrator: &mut IrGenerator) -> V {
+//         todo!()
+//     }
+// }
+// impl EmitLLVMIR for  {
+
+// }
+
 impl Class {
-    pub fn emit_llvm_type<'a>(&'a self, ir_genrator: &'a IrGenerator, placeholder: StructType<'a>) {
+    pub fn emit_llvm_type<'a>(
+        &self,
+        ir_genrator: &'a mut IrGenerator,
+    ) {
         //* class prototype */
         //*     NULL flag
         //*     _dispatch_table
         //*     attrs
 
         let method_prototype: BasicTypeEnum<'_> = self.emit_method_table_llvm_type(ir_genrator);
-
+        let placeholder = ir_genrator
+            .env
+            .struct_type_place_holders
+            .get(&self.name)
+            .unwrap();
         let mut attrs: Vec<BasicTypeEnum> = vec![
             ir_genrator.get_llvm_type(LLVMType::I32),
             BasicTypeEnum::PointerType(method_prototype.ptr_type(AddressSpace::default())),
@@ -29,21 +67,41 @@ impl Class {
 
         for f in &self.features {
             match f {
-                Feature::Attribute(attr) => attrs.push(ir_genrator.get_llvm_type(
-                    LLVMType::from_string_to_llvm_type(&attr.type_.clone().unwrap()),
-                )),
+                Feature::Attribute(attr) => {
+                    attrs.push(
+                        ir_genrator.get_llvm_type(LLVMType::from_string_to_llvm_type(
+                            &attr.type_.clone().unwrap(),
+                        )),
+                    );
+                }
+
                 _ => {}
             }
         }
         placeholder.set_body(attrs.as_slice(), false);
+
+        let mut offset = 2;
+        for f in &self.features {
+            match f {
+                Feature::Attribute(attr) => {
+                    ir_genrator
+                        .env
+                        .field_offset_map
+                        .insert((self.name.clone(), attr.name.clone()), offset);
+                    offset += 1;
+                }
+
+                _ => {}
+            }
+        }
     }
 
     //* emit metthod table prototype */
     //* emit method table globale value */
     pub fn emit_method_table_llvm_type<'a>(
-        &'a self,
+        &self,
         ir_genrator: &'a IrGenerator,
-    ) -> BasicTypeEnum {
+    ) -> BasicTypeEnum<'a> {
         let method_prototype = ir_genrator
             .ctx
             .opaque_struct_type(&format!("{}_dispatch_table_prototype", &self.name));
