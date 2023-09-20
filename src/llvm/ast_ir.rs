@@ -1,7 +1,7 @@
 use crate::{
     grammar::ast::{
         class,
-        expr::{Expr, Self_},
+        expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
         Type,
     },
     llvm::ir,
@@ -30,25 +30,69 @@ impl Expr {
                         .const_int(*e, false),
                 );
             }
+            Expr::Dispatch(e) => {
+                return e.emit_llvm_ir(ir_genrator);
+            }
+            Expr::Self_(_) => {
+                return ir_genrator
+                    .env
+                    .curr_function
+                    .unwrap()
+                    .get_first_param()
+                    .unwrap();
+            }
+
+            Expr::Return(e) => {
+                return e.emit_llvm_ir(ir_genrator);
+            }
+
             _ => {}
         }
-        unreachable!()
+        ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
     }
 }
-// impl EmitLLVMIR<'_> for Expr {
-//     fn emit_llvm_ir<V: BasicValue<'a>>(&self, ir_genrator: &mut IrGenerator) -> V {
-//         todo!()
-//     }
-// }
-// impl EmitLLVMIR for  {
 
-// }
+impl Dispatch {
+    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+        match &self.expr {
+            DispatchExpr::Field(field) => {
+                let off = ir_genrator
+                    .env
+                    .var_env
+                    .get(&ir_genrator.env.curr_class)
+                    .unwrap()
+                    .find(field)
+                    .unwrap()
+                    .into_offset();
+
+                let target = self.target.emit_llvm_ir(ir_genrator);
+                let result = ir_genrator
+                    .builder
+                    .build_struct_gep(target.into_pointer_value(), off, "a")
+                    .unwrap();
+                return result.into();
+            }
+            DispatchExpr::Method(_) => {}
+        }
+        unimplemented!()
+    }
+}
+
+impl Return {
+    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+        if let Some(e) = self.val.as_deref() {
+            ir_genrator
+                .builder
+                .build_return(Some(&e.emit_llvm_ir(ir_genrator)));
+        } else {
+            ir_genrator.builder.build_return(None);
+        }
+        ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
+    }
+}
 
 impl Class {
-    pub fn emit_llvm_type<'a>(
-        &self,
-        ir_genrator: &'a mut IrGenerator,
-    ) {
+    pub fn emit_llvm_type<'a>(&self, ir_genrator: &'a mut IrGenerator) {
         //* class prototype */
         //*     NULL flag
         //*     _dispatch_table
@@ -88,6 +132,13 @@ impl Class {
                         .env
                         .field_offset_map
                         .insert((self.name.clone(), attr.name.clone()), offset);
+
+                    ir_genrator
+                        .env
+                        .var_env
+                        .get_mut(&self.name)
+                        .unwrap()
+                        .add(&attr.name, &super::env::VarEnv::Field(offset));
                     offset += 1;
                 }
 

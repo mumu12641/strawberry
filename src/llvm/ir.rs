@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, collections::HashMap, fmt::format, hash::Hash, ops::Deref};
+use std::ops::Deref;
 
 use inkwell::{
     builder::Builder,
@@ -10,16 +10,15 @@ use inkwell::{
 };
 
 use crate::{
-    grammar::ast::{
-        class::{self, Class, Feature, ParamDecl},
-        Type,
-    },
-    utils::table::{ClassTable, Tables},
-    DISPATCH_TABLE_OFFSET, OBJECT,
+    grammar::ast::class::{Class, Feature},
+    utils::table::{ClassTable, SymbolTable, Tables},
+    OBJECT,
 };
 
-use super::types::LLVMType;
-#[derive(Debug)]
+use super::{
+    env::{Env, VarEnv},
+    types::LLVMType,
+};
 /// class prototype
 /// class method table prototype
 /// class init method
@@ -33,29 +32,6 @@ pub struct IrGenerator<'ctx> {
     pub class_table: &'ctx mut ClassTable,
     pub tables: Tables,
     pub env: Env<'ctx>,
-}
-#[derive(Debug)]
-pub struct Env<'a> {
-    // pub function_table: HashMap<Type, &'a FunctionType<'a>>,
-
-    //* (class, field) -> offset */
-    pub field_offset_map: HashMap<(Type, Type), u32>,
-
-    //* (class, method) -> offset of method table */
-    pub method_offset_map: HashMap<(Type, Type), usize>,
-
-    //*  */
-    pub struct_type_place_holders: HashMap<Type, StructType<'a>>,
-}
-
-impl Env<'_> {
-    pub fn new() -> Self {
-        Env {
-            field_offset_map: HashMap::new(),
-            method_offset_map: HashMap::new(),
-            struct_type_place_holders: HashMap::new(),
-        }
-    }
 }
 
 impl<'ctx> IrGenerator<'ctx> {
@@ -82,13 +58,9 @@ impl<'ctx> IrGenerator<'ctx> {
         //* for placeholder */
         self.gen_placeholders();
 
-        //* generate class prototypes */
-        let classes = self.classes.clone();
-        for class in &classes {
-            class.emit_llvm_type(self);
-        }
         //* generate method ir */
         self.gen_methods();
+
         //* generate main function */
         self.gen_main();
 
@@ -111,8 +83,34 @@ impl<'ctx> IrGenerator<'ctx> {
                 .struct_type_place_holders
                 .insert(class.name.clone(), self.ctx.opaque_struct_type(&class.name));
         }
-        //* first is init_method*/
-        self.gen_init_method();
+        //* for init_method place holder*/
+        self.gen_method_placeholder();
+
+        //* generate class prototypes */
+        //* methods placeholder */
+        let classes = self.classes.clone();
+        for class in &classes {
+            self.env
+                .var_env
+                .insert(class.name.clone(), SymbolTable::new());
+            self.env.var_env.get_mut(&class.name).unwrap().enter_scope();
+            class.emit_llvm_type(self);
+        }
+
+        //* for inkwell's bug */
+        //* for string const placeholder */
+        let function = self.module.add_function(
+            "_placeholder",
+            self.ctx.void_type().fn_type(&[], false),
+            None,
+        );
+        let entry_block = self.ctx.append_basic_block(function, "entry");
+        self.builder.position_at_end(entry_block);
+
+        //* for string constant */
+        self.gen_constant();
+
+        self.builder.build_return(None);
     }
 
     fn gen_main(&self) {
@@ -123,18 +121,14 @@ impl<'ctx> IrGenerator<'ctx> {
         let zero = self.ctx.i32_type().const_int(0, false);
         self.builder.position_at_end(main_entry_block);
 
-        //* for string constant */
-        //* for inkwell's bug */
-        self.gen_constant();
-
         let _ = self
             .builder
             .build_malloc(self.module.get_struct_type("Main").unwrap(), "m");
         self.builder.build_return(Some(&zero));
     }
 
-    fn gen_init_method(&self) {
-        //* for place holder */
+    fn gen_method_placeholder(&self) {
+        //* for method place holder */
         for class in &self.classes {
             self.module.add_function(
                 &format!("{}.init", &class.name),
@@ -146,6 +140,30 @@ impl<'ctx> IrGenerator<'ctx> {
                 ),
                 None,
             );
+            for f in &class.features {
+                if let Feature::Method(method) = f {
+                    let mut params: Vec<BasicMetadataTypeEnum> = method
+                        .param
+                        .deref()
+                        .iter()
+                        .map(|param| {
+                            self.get_llvm_type(LLVMType::from_string_to_llvm_type(&param.1))
+                                .into()
+                        })
+                        .collect();
+                    params.insert(
+                        0,
+                        self.get_llvm_type(LLVMType::from_string_to_llvm_type(&class.name))
+                            .into(),
+                    );
+
+                    self.module.add_function(
+                        &format!("{}.{}", &class.name, method.name),
+                        self.get_funtion_type(params.as_slice(), None),
+                        None,
+                    );
+                }
+            }
         }
     }
 
@@ -185,14 +203,18 @@ impl<'ctx> IrGenerator<'ctx> {
                         let val = e.emit_llvm_ir(self);
                         let off = self
                             .env
-                            .field_offset_map
-                            .get(&(class.name.clone(), attr.name.clone()))
-                            .unwrap();
+                            .var_env
+                            .get(&class.name.clone())
+                            .unwrap()
+                            .find(&attr.name)
+                            .unwrap()
+                            .into_offset();
+
                         let ptr = self
                             .builder
                             .build_struct_gep(
                                 init_method.get_first_param().unwrap().into_pointer_value(),
-                                *off,
+                                off,
                                 "val",
                             )
                             .unwrap();
@@ -203,28 +225,42 @@ impl<'ctx> IrGenerator<'ctx> {
 
             self.builder.build_return(None);
         }
+
+        //* emit methods */
         for class in &self.classes {
+            //* curr class */
+            self.env.curr_class = class.name.clone();
+
             for f in &class.features {
                 if let Feature::Method(method) = f {
-                    let mut params: Vec<BasicMetadataTypeEnum> = method
-                        .param
-                        .deref()
-                        .iter()
-                        .map(|param| {
-                            self.get_llvm_type(LLVMType::from_string_to_llvm_type(&param.1))
-                                .into()
-                        })
-                        .collect();
-                    params.insert(
-                        0,
-                        self.get_llvm_type(LLVMType::from_string_to_llvm_type(&class.name))
-                            .into(),
-                    );
-                    self.module.add_function(
-                        &format!("{}.{}", &class.name, method.name),
-                        self.get_funtion_type(params.as_slice(), None),
-                        None,
-                    );
+                    self.env.var_env.get_mut(&class.name).unwrap().enter_scope();
+
+                    let m = self
+                        .module
+                        .get_function(&format!("{}.{}", &class.name, &method.name))
+                        .unwrap();
+                    self.env.curr_function = Some(m);
+
+                    for p in method.param.deref().iter().enumerate() {
+                        self.env.var_env.get_mut(&class.name).unwrap().add(
+                            &p.1 .0,
+                            &VarEnv::Value(m.get_nth_param(p.0.try_into().unwrap()).unwrap()),
+                        );
+                    }
+                    let entry_block = self
+                        .ctx
+                        .append_basic_block(self.env.curr_function.unwrap(), "entry");
+
+                    self.env.curr_block = Some(entry_block);
+                    self.builder.position_at_end(self.env.curr_block.unwrap());
+
+                    if let Some(exps) = method.body.deref() {
+                        for e in exps {
+                            e.emit_llvm_ir(&self);
+                        }
+                    }
+
+                    self.env.var_env.get_mut(&class.name).unwrap().exit_scope();
                 }
             }
         }

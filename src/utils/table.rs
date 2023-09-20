@@ -219,16 +219,11 @@ impl ClassTable {
     }
 }
 
-pub struct SymbolTable<
-    K: PartialEq + Eq + Hash + Clone + Display,
-    V: PartialEq + Eq + Clone + Display,
-> {
+pub struct SymbolTable<K: PartialEq + Eq + Hash + Clone, V: PartialEq + Eq + Clone> {
     pub scopes: Vec<Scope<K, V>>,
 }
 
-impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Display>
-    SymbolTable<K, V>
-{
+impl<K: PartialEq + Eq + Hash + Clone, V: PartialEq + Eq + Clone> SymbolTable<K, V> {
     pub fn new() -> SymbolTable<K, V> {
         SymbolTable { scopes: Vec::new() }
     }
@@ -271,11 +266,11 @@ impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Dis
 }
 
 #[derive(Debug, Clone)]
-pub struct Scope<K: PartialEq + Eq + Hash + Display, V: PartialEq + Eq + Display> {
+pub struct Scope<K: PartialEq + Eq + Hash, V: PartialEq + Eq> {
     pub type_map: HashMap<K, V>,
 }
 
-impl<K: PartialEq + Eq + Hash + Clone + Display, V: PartialEq + Eq + Clone + Display> Scope<K, V> {
+impl<K: PartialEq + Eq + Hash + Clone, V: PartialEq + Eq + Clone> Scope<K, V> {
     pub fn add(&mut self, k: &K, v: &V) {
         self.type_map.insert(k.clone(), v.clone());
     }

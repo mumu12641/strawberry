@@ -238,7 +238,6 @@ fn compile<'a>(files: Vec<String>) {
                 "{}",
                 "🎺 Congratulations you passped the semantic check!".green()
             );
-
             let ctx = Context::create();
             let module = ctx.create_module("test");
             let builder = ctx.create_builder();
