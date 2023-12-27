@@ -37,6 +37,7 @@ mod grammar;
 mod llvm;
 mod semantic;
 mod utils;
+mod ty;
 
 const STRING: &str = "String";
 const OBJECT: &str = "Object";
