@@ -1,8 +1,12 @@
-use crate::grammar::ast::class::*;
-use crate::grammar::ast::expr::*;
-use crate::grammar::token::Token;
-use crate::grammar::lexer::{LineNum, LexicalError};
-use crate::grammar::ast::Type;
+use crate::parser::ast::class::*;
+use crate::parser::ast::class::VarDecl;
+use crate::parser::ast::ParamDecl;
+use crate::parser::ast::expr::*;
+use crate::lexer::token::Token;
+use crate::lexer::lexer::LexicalError;
+use crate::lexer::LineNum;
+use crate::parser::ast::Type;
+use crate::lexer::Position;
 
 grammar<'input>;
 
@@ -434,23 +438,23 @@ extern {
 
         // keywords
         "rawtype" => Token::RawType(<String>),
-        "class" => Token::Class_(<(usize,usize)>,<String>),
+        "class" => Token::Class_(<Position>,<String>),
         "public" => Token::Public,
         "private" => Token::Private,
-        "fun" => Token::Function(<(usize,usize)>),
-        "return" => Token::Return(<(usize,usize)>),
-        "if" => Token::If(<(usize,usize)>),
+        "fun" => Token::Function(<Position>),
+        "return" => Token::Return(<Position>),
+        "if" => Token::If(<Position>),
         "then" => Token::Then,
-        "else" => Token::Else(<(usize,usize)>),
+        "else" => Token::Else(<Position>),
         "inherits" => Token::Inherits,
-        "let" => Token::Let(<(usize,usize)>),
-        "while" => Token::While(<(usize,usize)>),
+        "let" => Token::Let(<Position>),
+        "while" => Token::While(<Position>),
         "for" => Token::For(<(usize, usize)>),
-        "new" => Token::New(<(usize,usize)>),
+        "new" => Token::New(<Position>),
         "isnull" => Token::Isnull,
         "self" => Token::Self_(<String>),
-        "!" => Token::Not(<(usize,usize)>),
-        "constructor" => Token::Constructor(<(usize,usize)>),
+        "!" => Token::Not(<Position>),
+        "constructor" => Token::Constructor(<Position>),
         "->" => Token::Arrow,
         "asm" => Token::ASM,
         "IMPORT" => Token::Import,
@@ -462,10 +466,10 @@ extern {
         "INT" => Token::IntConst(<String>),
         "BOOL" => Token::BoolConst(<bool>),
         "TYPE" => Token::TypeId(<String>),
-        "ID" => Token::Identifier(<String>,<(usize,usize)>),
+        "ID" => Token::Identifier(<String>,<Position>),
             
         // op
-        "=" => Token::Assign(<(usize,usize)>),
+        "=" => Token::Assign(<Position>),
         "+" => Token::Plus,
         "-" => Token::Minus,
         "/" => Token::Divide,

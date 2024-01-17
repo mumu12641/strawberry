@@ -1,12 +1,10 @@
-use crate::{
-    grammar::ast::{
+use crate::
+    parser::ast::{
         class,
         expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
         Type,
-    },
-    llvm::ir,
-    INT,
-};
+    }
+;
 
 use inkwell::{
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, StructType},
@@ -14,7 +12,7 @@ use inkwell::{
     AddressSpace,
 };
 
-use crate::grammar::ast::class::{Class, Feature};
+use crate::parser::ast::class::{Class, Feature};
 
 use super::{ir::IrGenerator, types::LLVMType};
 

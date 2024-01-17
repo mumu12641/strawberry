@@ -3,7 +3,7 @@ pub mod token;
 
 use lazy_static::lazy_static;
 
-use crate::utils::table::Tables;
+use crate::{utils::table::Tables, ctx::CompileContext};
 
 use self::lexer::Lexer;
 
@@ -25,6 +25,6 @@ impl Position {
     }
 }
 
-pub fn lexer_parse<'a>(content: &'a str, table: &'a mut Tables, file_name: &'a str) -> Lexer<'a> {
-    return Lexer::new(&content, table, &file_name);
+pub fn lexer_parse<'a>(ctx: &mut CompileContext) -> Lexer<'a> {
+    return Lexer::new(ctx);
 }

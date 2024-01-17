@@ -1,20 +1,19 @@
 use std::ops::DerefMut;
 
 use crate::{
-    // grammar::ast::{Class, Feature, MethodDecl},
-    grammar::{
-        ast::{
+    // parser::ast::{Class, Feature, MethodDecl},
+    parser::ast::{
             class::{Class, ConstructorDecl, Feature},
-            expr::{Expr, TypeChecker},
+            expr::Expr,
             Identifier, Type,
         },
-        lexer::Position,
-    },
     table::ClassTable,
     utils::table::SymbolTable,
     DEBUG,
-    SELF,
+    SELF, lexer::Position,
 };
+
+use super::type_checker::TypeChecker;
 
 /// * install constants and basic classes.
 /// * get all classes not just user defined but also include IO, Object and so on.

@@ -1,11 +1,11 @@
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    grammar::ast::{
+    parser::ast::{
         class::{Feature, Ownership},
         expr::{
             Assignment, ComputeOp, Cond, Dispatch, DispatchExpr, Expr, For, Isnull, Let, Math,
-            MathOp, Not, Return, TypeChecker, While,
+            MathOp, Not, Return, While,
         },
         Identifier, Type,
     },
@@ -17,6 +17,16 @@ use crate::{
 };
 
 use super::semantic::SemanticError;
+
+pub trait TypeChecker {
+    fn check_type(
+        &mut self,
+        symbol_table: &mut SymbolTable<Identifier, Type>,
+        class_table: &mut ClassTable,
+    ) -> Result<Type, SemanticError> {
+        unreachable!()
+    }
+}
 
 impl TypeChecker for Expr {
     fn check_type(

@@ -10,7 +10,7 @@ use inkwell::{
 };
 
 use crate::{
-    grammar::ast::class::{Class, Feature},
+    parser::ast::class::{Class, Feature},
     utils::table::{ClassTable, SymbolTable, Tables},
     OBJECT,
 };

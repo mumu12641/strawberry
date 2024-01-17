@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::{
-    grammar::ast::{
+    parser::ast::{
         expr::{
             Assignment, ComputeOp, Cond, CondOp, Dispatch, DispatchExpr, Expr, For, Isnull, Let,
             Math, MathOp, Not, Return, TypeGet, While,

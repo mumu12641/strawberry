@@ -4,7 +4,7 @@ use std::{
     hash::Hash,
 };
 
-use crate::grammar::ast::{
+use crate::parser::ast::{
     class::{Class, ConstructorDecl, Feature},
     Type,
 };

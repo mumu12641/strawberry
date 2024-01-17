@@ -3,9 +3,9 @@ use std::{
     ops::Deref,
 };
 
-use crate::{lexer::Position, utils::util::do_vecs_match, EMPTY};
+use crate::{lexer::Position, utils::util::do_vecs_match};
 
-use super::{expr::Expr, Identifier, ParamDecl, Type};
+use super::{expr::Expr, Identifier, ParamDecl, Type, EMPTY_POSITION};
 
 #[derive(Debug, Clone)]
 pub struct Class {

@@ -1,5 +1,5 @@
 extern crate plex;
-use crate::{lexer::EMPTY_POSITION, table::Tables};
+use crate::{ctx::CompileContext, table::Tables, lexer::EMPTY_POSITION};
 
 use plex::lexer;
 
@@ -107,14 +107,13 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(text: &'a str, tables: &'a mut Tables, filename: &'a str) -> Lexer<'a> {
+    pub fn new(ctx: &'a mut CompileContext) -> Lexer<'a> {
         Lexer {
             current_line: 1,
             offset: 0,
-            // original: text,
-            remaining: text,
-            tables,
-            file_name: filename,
+            remaining: &ctx.content,
+            tables: &mut ctx.tables,
+            file_name: &ctx.file_name,
             asm_flag: false,
         }
     }

@@ -1,6 +1,8 @@
 extern crate plex;
+
 use crate::{grammar::token::Token, table::Tables, EMPTY};
 
+use crate::ctx::Compile_ctx;
 use plex::lexer;
 
 lexer! {
@@ -100,23 +102,31 @@ fn parse_string(text: &str) -> Token {
 pub struct Lexer<'a> {
     current_line: usize,
     offset: usize,
-
     remaining: &'a str,
     tables: &'a mut Tables,
     file_name: &'a str,
-
     asm_flag: bool,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(text: &'a str, tables: &'a mut Tables, filename: &'a str) -> Lexer<'a> {
+    // pub fn new(text: &'a str, tables: &'a mut Tables, filename: &'a str) -> Lexer<'a> {
+    //     Lexer {
+    //         current_line: 1,
+    //         offset: 0,
+    //         // original: text,
+    //         remaining: text,
+    //         tables,
+    //         file_name: filename,
+    //         asm_flag: false,
+    //     }
+    // }
+    pub fn new(ctx: &'a mut Compile_ctx) -> Lexer<'a> {
         Lexer {
             current_line: 1,
             offset: 0,
-            // original: text,
-            remaining: text,
-            tables,
-            file_name: filename,
+            remaining: &ctx.content,
+            tables: &mut ctx.tables,
+            file_name: &ctx.file_name,
             asm_flag: false,
         }
     }
@@ -202,7 +212,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Function((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Return(_) => {
@@ -210,7 +220,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Return((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::If(_) => {
@@ -218,7 +228,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::If((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Else(_) => {
@@ -226,7 +236,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Else((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Let(_) => {
@@ -234,7 +244,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Let((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::While(_) => {
@@ -242,7 +252,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::While((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::New(_) => {
@@ -250,7 +260,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::New((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Assign(_) => {
@@ -258,7 +268,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Assign((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Not(_) => {
@@ -266,7 +276,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Not((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::For(_) => {
@@ -274,7 +284,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::For((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 Token::Constructor(_) => {
@@ -282,7 +292,7 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Constructor((self.current_line, self.offset)),
                         self.offset,
-                    )))
+                    )));
                 }
 
                 token => {

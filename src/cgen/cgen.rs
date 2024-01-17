@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
-    grammar::ast::{
+    parser::ast::{
         class::{Class, Feature},
         Type,
     },

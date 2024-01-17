@@ -1,5 +1,5 @@
 use crate::{
-    grammar::ast::{class, Type},
+    parser::ast::{class, Type},
     INT,
 };
 
@@ -9,7 +9,7 @@ use inkwell::{
     AddressSpace,
 };
 
-use crate::grammar::ast::class::{Class, Feature};
+use crate::parser::ast::class::{Class, Feature};
 
 use super::ir::{self, IrGenerator};
 pub enum LLVMType {

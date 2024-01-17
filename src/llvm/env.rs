@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    grammar::ast::{Identifier, Type},
+    parser::ast::{Identifier, Type},
     utils::table::SymbolTable,
 };
 

@@ -952,6 +952,7 @@ dependencies = [
  "inkwell",
  "lalrpop",
  "lalrpop-util",
+ "lazy_static",
  "owo-colors",
  "plex",
  "regex",
