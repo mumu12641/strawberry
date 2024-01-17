@@ -1,8 +1,5 @@
 use super::Position;
 
-
-
-
 #[derive(Debug, Clone)]
 pub enum Token {
     // raw type

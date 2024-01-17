@@ -33,11 +33,12 @@ use crate::llvm::ir::IrGenerator;
 use crate::utils::util::fix_offset;
 
 mod cgen;
+mod ctx;
 mod grammar;
 mod llvm;
 mod semantic;
-mod utils;
 mod ty;
+mod utils;
 
 const STRING: &str = "String";
 const OBJECT: &str = "Object";
@@ -73,35 +74,9 @@ _\$$$$$$\  | $$ __ | $$   \$$/      $$| $$ | $$ | $$| $$  | $$| $$    $$| $$   \
                                                                                              \$$    $$
                                                                                               \$$$$$$ 
 "#;
-// const logo_img: &str = r#"
 
-//             ##
-//              %###   ((((
-//             //( ###((//(((((((//////
-//             //////##//////////////
-//        &//(((///(((////((*/(((((((((
-//       //((////#(((((((((******/((((((
-//   //////////(((((((((((((((((((((((((## /    #%
-//      #####(((((((((((((((##((((((((((((((*** ##
-//     #####((((((((##(((((((((((((((((((((((((*## ****
-//     ######((((((((((((((((((((((((((((((((*/(#((((((&
-//      ###(((((((((((((((##(((((((((((###/***//**(((((((((
-//      ####(((((##((((((((((((((((((((((****//***#(((((((
-//       ####((((((((((((((((((##(((####**********(##((((((
-//         ###(#(((((((##(((((((((((((((********#(((((((((
-//          ####(((((((((((((##((((((###/*****((##(((((((
-//             ####((##(((((((((((((((((***/##(((((((((
-//                ####(((((((((((((((((***(((##(((((
-//                     &#####(((((((((***((((((((
-//                               ((   *((((
-
-// "#;
 
 fn main() {
-    handle_args();
-}
-
-fn handle_args() {
     println!("\n{}", LOGO.green());
     let mut cmd = clap::Command::new("Strawberry")
         .color(ColorChoice::Auto)
@@ -138,8 +113,6 @@ fn handle_args() {
         while path_flag {
             path_flag = false;
             if let Ok(paths) = fs::read_dir(&curr_path) {
-                // paths.
-
                 for path in paths {
                     if let Ok(d) = &path {
                         let path_name = d.path().to_str().unwrap().to_string();
@@ -152,7 +125,7 @@ fn handle_args() {
                     }
                 }
             } else {
-                let err = format!("❌ Failed to build because the current directory is not a strawberry project, try strawberry new example");
+                let err = format!("❌ Failed to build because the current directory is not a strawberry project, try \"strawberry new example\"");
                 println!("{}", err.red());
             }
         }
@@ -190,7 +163,9 @@ fn compile<'a>(files: Vec<String>) {
             return;
         }
         content = fix_offset(content);
+
         let lexer: Lexer = Lexer::new(&content, &mut table, &file_name);
+
         let program = strawberry::ProgramParser::new().parse(lexer);
         match program {
             Ok(mut v) => {
@@ -239,28 +214,28 @@ fn compile<'a>(files: Vec<String>) {
                 "{}",
                 "🎺 Congratulations you passped the semantic check!".green()
             );
-            let ctx = Context::create();
-            let module = ctx.create_module("test");
-            let builder = ctx.create_builder();
+            // let ctx = Context::create();
+            // let module = ctx.create_module("test");
+            // let builder = ctx.create_builder();
 
-            let mut codegen: IrGenerator<'_> =
-                IrGenerator::new(v.clone(), &ctx, module, builder, &mut class_table, table);
-            unsafe {
-                codegen.ir_generate();
-            }
+            // let mut codegen: IrGenerator<'_> =
+            //     IrGenerator::new(v.clone(), &ctx, module, builder, &mut class_table, table);
+            // unsafe {
+            //     codegen.ir_generate();
+            // }
 
-            // let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
-            // let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
-            // cgen.code_generate();
-            // Command::new("gcc")
-            //     .arg("-no-pie")
-            //     .arg("-static")
-            //     .arg("-m64")
-            //     .arg("./build/a.s")
-            //     .arg("-o")
-            //     .arg("./build/a.out")
-            //     .spawn()
-            //     .expect("gcc command failed to start");
+            let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
+            let mut cgen = CodeGenerator::new(v, &mut class_table, table, &mut asm_file);
+            cgen.code_generate();
+            Command::new("gcc")
+                .arg("-no-pie")
+                .arg("-static")
+                .arg("-m64")
+                .arg("./build/a.s")
+                .arg("-o")
+                .arg("./build/a.out")
+                .spawn()
+                .expect("gcc command failed to start");
             println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
         }
         Err(e) => {
