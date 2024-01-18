@@ -1,9 +1,11 @@
 pub mod lexer;
 pub mod token;
 
+use std::cell::RefCell;
+
 use lazy_static::lazy_static;
 
-use crate::{utils::table::Tables, ctx::CompileContext};
+use crate::{ctx::CompileContext, utils::table::Tables};
 
 use self::lexer::Lexer;
 
@@ -13,7 +15,7 @@ lazy_static! {
 pub type LineNum = usize;
 pub type Off = usize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub row: usize,
     pub column: usize,
@@ -25,6 +27,6 @@ impl Position {
     }
 }
 
-pub fn lexer_parse<'a>(ctx: &mut CompileContext) -> Lexer<'a> {
+pub fn lexer_parse<'a>(ctx: &'a RefCell<CompileContext>) -> Lexer<'a> {
     return Lexer::new(ctx);
 }

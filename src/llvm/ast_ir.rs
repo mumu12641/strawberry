@@ -2,7 +2,7 @@ use crate::
     parser::ast::{
         class,
         expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
-        Type,
+        TypeName,
     }
 ;
 

@@ -9,7 +9,7 @@ use crate::parser::ast::{
     Type,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tables {
     pub string_table: HashSet<String>,
     pub int_table: HashSet<String>,
@@ -24,7 +24,7 @@ impl Tables {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClassTable {
     pub classes: HashMap<Type, Class>,
     pub inheritance: HashMap<Type, Vec<Class>>,
@@ -46,145 +46,6 @@ impl ClassTable {
     pub fn get_inheritance(&self) -> HashMap<String, Vec<Class>> {
         return self.inheritance.clone();
     }
-
-    // pub fn install_basic_class(&mut self) -> bool {
-    //     // install basic classes
-
-    //     let object_ = Class {
-    //         name: OBJECT.to_string(),
-    //         parent: Some("None".to_string()),
-    //         features: vec![
-    //             Feature::Method(MethodDecl {
-    //                 name: "print".to_string(),
-    //                 param: Box::new(vec![("val".to_string(), STRING.to_string())]),
-    //                 return_type: OBJECT.to_string(),
-    //                 body: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //             Feature::Method(MethodDecl {
-    //                 name: "to_string".to_string(),
-    //                 param: Box::new(vec![]),
-    //                 return_type: STRING.to_string(),
-    //                 body: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //             Feature::Method(MethodDecl {
-    //                 name: "malloc".to_string(),
-    //                 param: Box::new(vec![("object".to_string(), OBJECT.to_string())]),
-    //                 return_type: OBJECT.to_string(),
-    //                 body: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //         ],
-    //         position: (0, 0), // features: vec![],
-    //         file_name: OBJECT.to_string(),
-    //     };
-    //     let string_ = Class {
-    //         name: STRING.to_string(),
-    //         parent: Some(OBJECT.to_string()),
-    //         features: vec![
-    //             Feature::Attribute(VarDecl {
-    //                 name: "val".to_string(),
-    //                 type_: Some("prim_slot".to_string()),
-    //                 init: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //             Feature::Attribute(VarDecl {
-    //                 name: "len".to_string(),
-    //                 type_: Some("prim_slot".to_string()),
-    //                 init: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //             Feature::Method(MethodDecl {
-    //                 name: "concat".to_string(),
-    //                 param: Box::new(vec![
-    //                     ("dest".to_string(), STRING.to_string()),
-    //                     ("src".to_string(), STRING.to_string()),
-    //                 ]),
-    //                 return_type: STRING.to_string(),
-    //                 body: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //         ],
-    //         position: (0, 0),
-    //         file_name: STRING.to_string(),
-    //     };
-    //     let int_ = Class {
-    //         name: INT.to_string(),
-    //         parent: Some(OBJECT.to_string()),
-    //         features: vec![
-    //             Feature::Attribute(VarDecl {
-    //                 name: "val".to_string(),
-    //                 type_: Some("prim_slot".to_string()),
-    //                 init: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //             Feature::Method(MethodDecl {
-    //                 name: "to_string".to_string(),
-    //                 param: Box::new(vec![]),
-    //                 return_type: STRING.to_string(),
-    //                 body: Box::new(None),
-    //                 position: EMPTY,
-    //                 ownership: Ownership::Public,
-    //             }),
-    //         ],
-    //         position: (0, 0),
-    //         file_name: INT.to_string(),
-    //     };
-    //     let bool_ = Class {
-    //         name: BOOL.to_string(),
-    //         parent: Some(OBJECT.to_string()),
-    //         features: vec![Feature::Attribute(VarDecl {
-    //             name: "val".to_string(),
-    //             type_: Some("prim_slot".to_string()),
-    //             init: Box::new(None),
-    //             position: EMPTY,
-    //             ownership: Ownership::Public,
-    //         })],
-    //         position: (0, 0),
-    //         file_name: BOOL.to_string(),
-    //     };
-
-    //     let void_ = Class {
-    //         name: VOID.to_string(),
-    //         parent: Some(OBJECT.to_string()),
-    //         features: vec![],
-    //         position: (0, 0),
-    //         file_name: VOID.to_string(),
-    //     };
-
-    //     self.classes.insert(OBJECT.to_string(), object_.clone());
-    //     self.classes.insert(STRING.to_string(), string_.clone());
-    //     self.classes.insert(INT.to_string(), int_.clone());
-    //     self.classes.insert(BOOL.to_string(), bool_.clone());
-    //     self.classes.insert(VOID.to_string(), void_.clone());
-
-    //     // Option
-    //     match self.classes.get(&OBJECT.to_string()) {
-    //         Some(c) => {
-    //             self.inheritance
-    //                 .insert(STRING.to_string(), vec![c.clone(), string_.clone()]);
-    //             self.inheritance
-    //                 .insert(INT.to_string(), vec![c.clone(), int_.clone()]);
-    //             self.inheritance
-    //                 .insert(BOOL.to_string(), vec![c.clone(), bool_.clone()]);
-    //             self.inheritance
-    //                 .insert(VOID.to_string(), vec![c.clone(), void_.clone()]);
-    //             self.inheritance.insert(OBJECT.to_string(), vec![c.clone()]);
-    //         }
-    //         None => {}
-    //     }
-    //     // self.inheritance.insert(OBJECT.to_string(), vec![])
-
-    //     true
-    // }
 
     pub fn is_less_or_equal(&self, child: &Type, parent: &Type) -> bool {
         if child == parent {

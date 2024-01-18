@@ -23,9 +23,9 @@ mod ctx;
 // mod grammar;
 mod lexer;
 mod parser;
-mod llvm;
+// mod llvm;
 mod semantic;
-mod ty;
+// mod ty;
 mod utils;
 
 const STRING: &str = "String";

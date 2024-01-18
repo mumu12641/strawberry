@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Display, fs::File, io::Write, ops::Deref};
 
 use crate::{
+    ctx::CompileContext,
     parser::ast::{
         class::{Class, Feature},
         Type,
@@ -25,6 +26,7 @@ impl Display for Location {
     }
 }
 
+#[derive(Default)]
 pub struct Environment {
     pub env: HashMap<String, SymbolTable<String, Location>>,
     // pub type_env: SymbolTable<String, Type>,
@@ -46,9 +48,10 @@ pub struct Environment {
 /// save self to stack
 ///
 pub struct CodeGenerator<'a> {
-    pub classes: Vec<Class>,
-    pub class_table: &'a mut ClassTable,
-    pub tables: Tables,
+    // pub classes: Vec<Class>,
+    // pub class_table: &'a mut ClassTable,
+    // pub tables: Tables,
+    pub ctx: CompileContext,
     pub asm_file: &'a mut File,
 
     pub str_const_table: HashMap<String, usize>,
@@ -59,29 +62,26 @@ pub struct CodeGenerator<'a> {
 
 impl<'a> CodeGenerator<'a> {
     pub fn new(
-        classes_: Vec<Class>,
-        class_table_: &'a mut ClassTable,
-        tables_: Tables,
+        // classes_: Vec<Class>,
+        // class_table_: &'a mut ClassTable,
+        // tables_: Tables,
+        ctx: CompileContext,
         asm_file_: &'a mut File,
     ) -> CodeGenerator<'a> {
         CodeGenerator {
-            classes: classes_,
-            class_table: class_table_,
-            tables: tables_,
+            ctx,
             asm_file: asm_file_,
-
             str_const_table: HashMap::new(),
-            // int_const_table: HashMap::new(),
             dispatch_table: HashMap::new(),
-            environment: Environment {
-                env: HashMap::new(),
-                field_map: HashMap::new(),
-                // type_env: SymbolTable::new(),
-                curr_class: "none".to_string(),
-                var_offset: 1,
-                label: 0,
-                align_stack: 0,
-            },
+            // environment: Environment {
+            //     env: HashMap::new(),
+            //     field_map: HashMap::new(),
+            //     curr_class: "none".to_string(),
+            //     var_offset: 1,
+            //     label: 0,
+            //     align_stack: 0,
+            // },
+            environment: Environment::default(),
         }
     }
 
@@ -133,7 +133,7 @@ impl<'a> CodeGenerator<'a> {
         self.write("#   emit contants".to_string(), true);
         self.write(".section    .data".to_string(), true);
         let mut index = 0;
-        for str_ in &self.tables.string_table.clone() {
+        for str_ in &self.ctx.tables.string_table.clone() {
             self.write(".align 8".to_string(), true);
             self.write(format!("str_const_ascii_{}:", index), false);
             self.write(format!(".ascii \"{}\"", str_), true);
@@ -171,15 +171,15 @@ impl<'a> CodeGenerator<'a> {
     fn code_prototype(&mut self) {
         self.write("#   class prototype".to_string(), true);
 
-        for class_ in &self.class_table.classes.clone() {
+        for class_ in &self.ctx.class_table.classes.clone() {
             if class_.0 == &PRIMSLOT.to_string() {
                 continue;
             }
-            let attr_len = self.class_table.get_attr_num_recursive(class_.0);
+            let attr_len = self.ctx.class_table.get_attr_num_recursive(class_.0);
             self.write(".align 8".to_string(), true);
             self.write(format!("{}_prototype:", class_.0), false);
 
-            let inheritance = self.class_table.get_inheritance();
+            let inheritance = self.ctx.class_table.get_inheritance();
 
             self.write(format!(".quad {}", (attr_len + 3) * 8), true);
             // for null
@@ -227,11 +227,12 @@ impl<'a> CodeGenerator<'a> {
 
     fn code_dispatch_table(&mut self) {
         self.write("#   dispatch tables".to_string(), true);
-        for class_ in &self.class_table.classes.clone() {
+        for class_ in &self.ctx.class_table.classes.clone() {
             self.write(".align 8".to_string(), true);
             self.write(format!("{}_dispatch_table:", class_.0), false);
 
             let inheritance = self
+                .ctx
                 .class_table
                 .get_inheritance()
                 .get(class_.0)
@@ -278,18 +279,18 @@ impl<'a> CodeGenerator<'a> {
     }
 
     fn code_method(&mut self) {
-        let inheritance = self.class_table.get_inheritance();
+        let inheritance = self.ctx.class_table.get_inheritance();
         self.write("#   init method".to_string(), true);
         self.write(".text".to_string(), true);
 
         // for all classes's init method
-        for class_ in &self.class_table.classes.clone() {
+        for class_ in &self.ctx.class_table.classes.clone() {
             self.write(format!("{}.init:", class_.0), false);
             self.method_start();
 
             // Object <- A <- Main
             if class_.0 != OBJECT {
-                let parent = self.class_table.get_parent(class_.0);
+                let parent = self.ctx.class_table.get_parent(class_.0);
                 self.write(format!("call {}.init", parent), true);
             }
 
@@ -350,7 +351,7 @@ impl<'a> CodeGenerator<'a> {
             self.method_end();
         }
 
-        let classes = &self.classes.clone();
+        let classes = &self.ctx.classes.clone();
         for class_ in classes {
             self.environment.curr_class = class_.name.clone();
 

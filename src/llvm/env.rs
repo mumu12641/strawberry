@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    parser::ast::{Identifier, Type},
+    parser::ast::{Identifier, TypeName},
     utils::table::SymbolTable,
 };
 

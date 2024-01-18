@@ -1,9 +1,11 @@
-use std::{
-    hash::{Hash, Hasher},
-    ops::Deref,
-};
 
 use crate::{lexer::Position, utils::util::do_vecs_match};
+use std::collections::HashMap;
+use std::{
+    hash::{Hash, Hasher},
+    io::SeekFrom,
+    ops::Deref,
+};
 
 use super::{expr::Expr, Identifier, ParamDecl, Type, EMPTY_POSITION};
 
@@ -15,7 +17,7 @@ pub struct Class {
     pub position: Position,
     pub file_name: String,
 }
-
+impl Eq for Class {}
 impl PartialEq for Class {
     fn eq(&self, other: &Self) -> bool {
         self.name == other.name
@@ -27,7 +29,7 @@ impl Hash for Class {
         self.name.hash(state);
     }
 }
-impl Eq for Class {}
+
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Feature {
@@ -105,19 +107,20 @@ pub struct VarDecl {
     pub init: Box<Option<Expr>>,
     pub position: Position,
     pub ownership: Ownership,
+    
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Ownership {
-    Private,
-    Public,
-    Default,
-}
 
 impl PartialEq for VarDecl {
     fn eq(&self, other: &Self) -> bool {
         return self.name == other.name;
     }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ownership {
+    Private,
+    Public,
+    Default,
 }
 
 #[derive(Debug, Clone)]
@@ -168,6 +171,8 @@ pub struct ConstructorDecl {
     pub body: Box<Option<Vec<Expr>>>,
     pub position: Position,
 }
+
+
 impl PartialEq for ConstructorDecl {
     fn eq(&self, other: &Self) -> bool {
         let other_param = other.param.deref();

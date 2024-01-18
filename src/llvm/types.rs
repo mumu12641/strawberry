@@ -1,5 +1,5 @@
 use crate::{
-    parser::ast::{class, Type},
+    parser::ast::{class, TypeName},
     INT,
 };
 

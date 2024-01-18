@@ -1,5 +1,10 @@
 extern crate plex;
-use crate::{ctx::CompileContext, table::Tables, lexer::EMPTY_POSITION};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    cell::RefCell,
+};
+
+use crate::{ctx::CompileContext, lexer::EMPTY_POSITION, table::Tables};
 
 use plex::lexer;
 
@@ -101,19 +106,22 @@ pub struct Lexer<'a> {
     current_line: usize,
     offset: usize,
     remaining: &'a str,
-    tables: &'a mut Tables,
-    file_name: &'a str,
+    // tables: &'a mut Tables,
+    // file_name: &'a str,
+    pub ctx: &'a RefCell<CompileContext>,
     asm_flag: bool,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(ctx: &'a mut CompileContext) -> Lexer<'a> {
+    // impl Lexer {
+    pub fn new(ctx: &'a RefCell<CompileContext>) -> Lexer<'a> {
         Lexer {
             current_line: 1,
             offset: 0,
-            remaining: &ctx.content,
-            tables: &mut ctx.tables,
-            file_name: &ctx.file_name,
+            remaining: "",
+            // tables: &mut ctx.tables,
+            // file_name: &ctx.file_name,
+            ctx,
             asm_flag: false,
         }
     }
@@ -123,12 +131,26 @@ impl<'a> Lexer<'a> {
 pub struct LexicalError {}
 
 impl<'a> Iterator for Lexer<'a> {
+    // impl Iterator for Lexer {
     type Item = Result<(LineNum, Token, Off), LexicalError>;
     fn next(&mut self) -> Option<Result<(LineNum, Token, Off), LexicalError>> {
         loop {
-            let tok = if let Some((tok, new_remaining)) = next_token(self.remaining) {
-                self.offset += self.remaining.chars().count() - new_remaining.chars().count();
-                self.remaining = new_remaining;
+            // self.remaining = &self.ctx.clone().borrow().content;
+            // let tok = if let Some((tok, new_remaining)) = next_token(&self.ctx.borrow().content) {
+            //     self.offset +=
+            //         self.ctx.borrow().content.chars().count() - new_remaining.chars().count();
+            //     self.ctx.borrow_mut().content = new_remaining.to_owned();
+            //     tok
+            // } else {
+            //     return None;
+            // };
+            let file_name = self.ctx.borrow().file_name.clone();
+            let mut borrow_mut = self.ctx.borrow_mut();
+            
+
+            let tok = if let Some((tok, new_remaining)) = next_token(&borrow_mut.content) {
+                self.offset += borrow_mut.content.chars().count() - new_remaining.chars().count();
+                borrow_mut.content = new_remaining.to_owned();
                 tok
             } else {
                 return None;
@@ -153,7 +175,12 @@ impl<'a> Iterator for Lexer<'a> {
 
                 Token::StringConst(text) => {
                     if self.asm_flag == false {
-                        self.tables.string_table.insert(text.clone());
+                        // self.ctx
+                        //     .borrow_mut()
+                        //     .tables
+                        //     .string_table
+                        //     .insert(text.clone());
+                        borrow_mut.tables.string_table.insert(text.clone());
                     } else {
                         self.asm_flag = false;
                     }
@@ -164,11 +191,13 @@ impl<'a> Iterator for Lexer<'a> {
                     )));
                 }
                 Token::IntConst(text) => {
-                    self.tables.int_table.insert(text.clone());
+                    // self.ctx.borrow_mut().tables.int_table.insert(text.clone());
+                    borrow_mut.tables.int_table.insert(text.clone());
                     return Some(Ok((self.current_line, Token::IntConst(text), self.offset)));
                 }
                 Token::Identifier(text, _) => {
-                    self.tables.id_table.insert(text.clone());
+                    // self.ctx.borrow_mut().tables.id_table.insert(text.clone());
+                    borrow_mut.tables.id_table.insert(text.clone());
 
                     return Some(Ok((
                         self.current_line,
@@ -177,7 +206,12 @@ impl<'a> Iterator for Lexer<'a> {
                     )));
                 }
                 Token::TypeId(text) => {
-                    self.tables.string_table.insert(text.clone());
+                    // self.ctx
+                    //     .borrow_mut()
+                    //     .tables
+                    //     .string_table
+                    //     .insert(text.clone());
+                    borrow_mut.tables.string_table.insert(text.clone());
 
                     return Some(Ok((self.current_line, Token::TypeId(text), self.offset)));
                 }
@@ -187,7 +221,8 @@ impl<'a> Iterator for Lexer<'a> {
                         self.current_line,
                         Token::Class_(
                             Position::new(self.current_line, self.offset),
-                            self.file_name.to_string(),
+                            // self.ctx.borrow().file_name.to_string(),
+                            file_name,
                         ),
                         self.offset,
                     )));

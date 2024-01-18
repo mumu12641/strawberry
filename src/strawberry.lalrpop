@@ -2,10 +2,10 @@ use crate::parser::ast::class::*;
 use crate::parser::ast::class::VarDecl;
 use crate::parser::ast::ParamDecl;
 use crate::parser::ast::expr::*;
+use crate::parser::ast::Type;
 use crate::lexer::token::Token;
 use crate::lexer::lexer::LexicalError;
 use crate::lexer::LineNum;
-use crate::parser::ast::Type;
 use crate::lexer::Position;
 
 grammar<'input>;
@@ -90,7 +90,6 @@ feature: Feature = {
             body: Box::new(Some(e)),
             position: pos,
             ownership: Ownership::Private,
-            // body: Box::new(Box::new(e)),
         })
     },
     "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:all_type> "{" <e:semi_list<expr>>  "}" ";" => {
@@ -101,7 +100,6 @@ feature: Feature = {
             body: Box::new(Some(e)),
             position: pos,
             ownership: Ownership::Public,
-            // body: Box::new(Box::new(e)),
         })
     },
 
@@ -136,8 +134,8 @@ feature: Feature = {
     },
     <pos:"constructor"> "(" <param_:comma_list<param>?> ")" "{"  "}" ";" =>{
         Feature::Constructor(ConstructorDecl{
-           param: Box::new(param_.unwrap_or(vec![])),
-           body: Box::new(None),
+            param: Box::new(param_.unwrap_or(vec![])),
+            body: Box::new(None),
             position:pos,
         })
     },
@@ -449,7 +447,7 @@ extern {
         "inherits" => Token::Inherits,
         "let" => Token::Let(<Position>),
         "while" => Token::While(<Position>),
-        "for" => Token::For(<(usize, usize)>),
+        "for" => Token::For(<Position>),
         "new" => Token::New(<Position>),
         "isnull" => Token::Isnull,
         "self" => Token::Self_(<String>),

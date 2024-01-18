@@ -1,3 +1,5 @@
+use std::borrow::{Borrow, BorrowMut};
+use std::cell::RefCell;
 use std::fs::{self, metadata, File};
 use std::io::Read;
 use std::process::Command;
@@ -6,14 +8,14 @@ use clap::parser;
 use owo_colors::OwoColorize;
 use simple_home_dir::home_dir;
 
-use crate::cgen::cgen::CodeGenerator;
+use crate::cgen::cgen;
 use crate::ctx::CompileContext;
 use crate::lexer::lexer::Lexer;
 use crate::lexer::{self, Position};
 use crate::parser::ast::class::Class;
 use crate::semantic::semantic::{SemanticChecker, SemanticError};
-use crate::strawberry;
 use crate::utils::table::ClassTable;
+use crate::{semantic, strawberry};
 
 pub fn build() {
     let mut curr_path = "./src".to_string();
@@ -50,111 +52,12 @@ pub fn build() {
 }
 
 fn compile<'a>(files: Vec<String>) {
-    let mut all_classes: Vec<Class> = vec![];
-    let main_file = "./src/main.st".to_string();
     let mut ctx = CompileContext::new();
-
-    if !files.contains(&main_file) {
-        let err = format!("❌ There is no main.st in your src directory!");
-        println!("{}", err.red());
-    }
-
-    for file_name in files {
-        let mut file = File::open(&file_name).unwrap();
-        let mut content = String::new();
-        if let Ok(_) = file.read_to_string(&mut content) {
-        } else {
-            println!("{}", "❌ Some unexpected errors occurred, maybe you can solve it by recreating the project".red());
-            return;
-        }
-        ctx.preprocess(content);
-        ctx.file_name = file_name;
-
-        // let lexer: Lexer = Lexer::new(&mut ctx);
-        let lexer: Lexer = lexer::lexer_parse(&mut ctx);
-        crate::parser::parse(lexer, &mut ctx);
-        // let program = strawberry::ProgramParser::new().parse(lexer);
-
-        // match program {
-        //     Ok(mut v) => {
-        //         all_classes.append(&mut v.1);
-        //     }
-        //     Err(e) => {
-        //         let err = format!("❌ Oops, syntax error has occurred in {}!", &ctx.file_name);
-        //         println!("{}", err.red());
-        //         print!("{}", "Err: ".red());
-        //         match e {
-        //             lalrpop_util::ParseError::UnrecognizedToken { token, expected } => {
-        //                 let err = format!("There is an unrecognized token <{:?}> !", token.1,);
-        //                 println!("{}", err.red());
-        //                 print_err_msg(
-        //                     Position::new(token.0, token.2),
-        //                     &ctx.file_name,
-        //                     &format!("Maybe you can try {} here!", expected.join(" or ")),
-        //                 );
-        //             }
-        //             lalrpop_util::ParseError::ExtraToken { token } => {
-        //                 let err = format!(
-        //                     "There is an extra token <{:?}> at {}:{}:{}",
-        //                     token.1, &ctx.file_name, token.0, token.2,
-        //                 );
-        //                 println!("{}", err.red());
-        //             }
-        //             _ => {}
-        //         }
-        //         return;
-        //     }
-        // }
-    }
-
-    // println!(
-    //     "{}",
-    //     "🎉 Congratulations you passped the syntax analysis!".green()
-    // );
-    let mut semantic_checker: SemanticChecker = SemanticChecker::new(ctx.classes.clone());
-    // if DEBUG {
-    //     println!("Res: {:?}", &all_classes);
-    // }
-    let result: Result<Vec<Class>, SemanticError> = semantic_checker.check(&mut ctx.class_table);
-    match result {
-        Ok(v) => {
-            println!(
-                "{}",
-                "🎺 Congratulations you passped the semantic check!".green()
-            );
-            // let ctx = Context::create();
-            // let module = ctx.create_module("test");
-            // let builder = ctx.create_builder();
-
-            // let mut codegen: IrGenerator<'_> =
-            //     IrGenerator::new(v.clone(), &ctx, module, builder, &mut class_table, table);
-            // unsafe {
-            //     codegen.ir_generate();
-            // }
-
-            let mut asm_file = std::fs::File::create("./build/a.s").expect("create failed");
-            let mut cgen = CodeGenerator::new(v, &mut ctx.class_table, ctx.tables, &mut asm_file);
-            cgen.code_generate();
-            Command::new("gcc")
-                .arg("-no-pie")
-                .arg("-static")
-                .arg("-m64")
-                .arg("./build/a.s")
-                .arg("-o")
-                .arg("./build/a.out")
-                .spawn()
-                .expect("gcc command failed to start");
-            println!("{}", "🔑 Congratulations you successfully generated assembly code, please execute ./build/a.out in your shell!".green());
-        }
-        Err(e) => {
-            println!("{}", "❌ Oops, semantic error has occurred!".red());
-            if let Some(pos) = e.position {
-                print_err_msg(pos, &e.file_name, &e.err_msg);
-            } else {
-                println!("{}{}", format!("--> ").blue(), e.file_name.blue());
-                println!("\t{}", e.err_msg.blue());
-            }
-        }
+    let ctx_ref = RefCell::new(ctx);
+    crate::parser::parse_file(files, &ctx_ref);
+    let result = semantic::semantic_check(ctx_ref);
+    if let Ok(ctx) = result {
+        crate::cgen::code_gen(ctx);
     }
 }
 

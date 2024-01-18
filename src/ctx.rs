@@ -1,7 +1,12 @@
-use crate::{utils::table::{ClassTable, Tables, self}, RUNTIME_ERR, parser::ast::class::Class};
+use crate::{
+    parser::ast::class::Class,
+    utils::table::{self, ClassTable, Tables},
+    RUNTIME_ERR,
+};
 
+#[derive(Debug, Clone)]
 pub struct CompileContext {
-    pub classes:Vec<Class>,
+    pub classes: Vec<Class>,
     pub content: String,
     pub file_name: String,
     pub tables: Tables,
@@ -19,7 +24,7 @@ impl CompileContext {
         tables.int_table.insert("0".to_string());
         let mut class_table = ClassTable::new();
         CompileContext {
-            classes:vec![],
+            classes: vec![],
             content: "".to_string(),
             file_name: "".to_string(),
             tables,
@@ -39,14 +44,4 @@ impl CompileContext {
         result.push_str(unsafe { this.get_unchecked(last_end..this.len()) });
         self.content = result;
     }
-    // fn init_ctx() {
-    //     let mut table = table::Tables::new();
-    //     table.string_table.insert("".to_string());
-    //     table.string_table.insert("Object".to_string());
-    //     table.string_table.insert("%s".to_string());
-    //     table.string_table.insert("%d".to_string());
-    //     table.string_table.insert(RUNTIME_ERR.to_string());
-    //     table.int_table.insert("0".to_string());
-    //     let mut class_table = ClassTable::new();
-    // }
 }

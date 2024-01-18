@@ -1,31 +1,21 @@
-use std::ops::DerefMut;
+use std::{cell::RefCell, collections::HashSet, ops::DerefMut};
 
 use crate::{
+    ctx::CompileContext,
+    lexer::Position,
     // parser::ast::{Class, Feature, MethodDecl},
     parser::ast::{
-            class::{Class, ConstructorDecl, Feature},
-            expr::Expr,
-            Identifier, Type,
-        },
+        class::{Class, ConstructorDecl, Feature},
+        expr::Expr,
+        Identifier, Type,
+    },
     table::ClassTable,
     utils::table::SymbolTable,
     DEBUG,
-    SELF, lexer::Position,
+    SELF,
 };
 
 use super::type_checker::TypeChecker;
-
-/// * install constants and basic classes.
-/// * get all classes not just user defined but also include IO, Object and so on.
-/// * check Main
-/// * check inherit
-/// * check attributes
-/// * check method override
-/// * check all expressions
-pub struct SemanticChecker {
-    classes: Vec<Class>,
-    symbol_table: SymbolTable<Identifier, Type>,
-}
 
 #[derive(Debug)]
 pub struct SemanticError {
@@ -44,18 +34,30 @@ impl SemanticError {
     }
 }
 
+/// * install constants and basic classes.
+/// * get all classes not just user defined but also include IO, Object and so on.
+/// * check Main
+/// * check inherit
+/// * check attributes
+/// * check method override
+/// * check all expressions
+pub struct SemanticChecker {
+    symbol_table: SymbolTable<Identifier, Type>,
+    pub ctx: CompileContext,
+}
 impl SemanticChecker {
-    pub fn new(classes_: Vec<Class>) -> SemanticChecker {
-        SemanticChecker {
-            classes: classes_,
+    pub fn new(ctx: CompileContext) -> Self {
+        Self {
             symbol_table: SymbolTable::new(),
+            ctx,
         }
     }
-    pub fn check(&mut self, class_table: &mut ClassTable) -> Result<Vec<Class>, SemanticError> {
+    pub fn check(&mut self) -> Result<Vec<Class>, SemanticError> {
         let mut main_flag = false;
         let mut main_method_flag = false;
+
         //* check repeat class */
-        for i in &self.classes {
+        for i in &self.ctx.classes {
             if i.name == "Main".to_string() {
                 main_flag = true;
                 for feature in &i.features {
@@ -66,14 +68,17 @@ impl SemanticChecker {
                     }
                 }
             }
-            if class_table.classes.contains_key(&i.name) {
+            if self.ctx.class_table.classes.contains_key(&i.name) {
                 return Err(SemanticError {
                     err_msg: format!("Class {} has been redefined!", i.name),
                     file_name: i.file_name.clone(),
                     position: Some(i.position),
                 });
             } else {
-                class_table.classes.insert(i.name.clone(), i.clone());
+                self.ctx
+                    .class_table
+                    .classes
+                    .insert(i.name.clone(), i.clone());
             }
         }
 
@@ -94,55 +99,57 @@ impl SemanticChecker {
         }
 
         //* check inheritance */
-        for i in &self.classes {
+        for i in &self.ctx.classes {
             let mut inherit_vec: Vec<Class> = Vec::new();
-            let mut curr_parent: Option<String>;
             inherit_vec.insert(0, i.clone());
-            curr_parent = i.parent.clone();
-            loop {
-                match curr_parent {
-                    Some(ref s) => {
-                        if s.clone() == "None".to_string() {
-                            // current is object
-                            break;
-                        } else if s == &i.name {
+            let mut curr_parent = i.parent.clone();
+
+            while let Some(ref parent_name) = curr_parent {
+                if parent_name == "None" {
+                    // current is object
+                    break;
+                } else if parent_name == &i.name {
+                    return Err(SemanticError {
+                        err_msg: format!(
+                            "There is an inheritance cycle about Class {}!",
+                            parent_name
+                        ),
+                        file_name: i.file_name.clone(),
+                        position: Some(i.position),
+                    });
+                } else {
+                    let parent_class = self.ctx.class_table.classes.get(parent_name);
+                    match parent_class {
+                        Some(parent_class) => {
+                            inherit_vec.insert(0, parent_class.clone());
+                            curr_parent = parent_class.parent.clone();
+                        }
+                        None => {
                             return Err(SemanticError {
                                 err_msg: format!(
-                                    "There is an inheritance cycle about Class {}!",
-                                    s
+                                    "Your Class {} inherits an undefined Class {} !",
+                                    i.name, parent_name
                                 ),
                                 file_name: i.file_name.clone(),
                                 position: Some(i.position),
                             });
-                        } else {
-                            if let Some(c) = class_table.classes.get(&(s.clone())) {
-                                inherit_vec.insert(0, c.clone());
-                                curr_parent = c.parent.clone();
-                            } else {
-                                return Err(SemanticError {
-                                    err_msg: format!(
-                                        "Your Class {} inherits an undefined Class {} !",
-                                        i.name, s
-                                    ),
-                                    file_name: i.file_name.clone(),
-                                    position: Some(i.position),
-                                });
-                            }
-                        }
-                    }
-                    None => {
-                        if let Some(c) = class_table.classes.get(&"Object".to_string()) {
-                            inherit_vec.insert(0, c.clone());
-                            break;
                         }
                     }
                 }
             }
-            class_table.inheritance.insert(i.name.clone(), inherit_vec);
+
+            if let Some(object_class) = self.ctx.class_table.classes.get(&"Object".to_string()) {
+                inherit_vec.insert(0, object_class.clone());
+            }
+
+            self.ctx
+                .class_table
+                .inheritance
+                .insert(i.name.clone(), inherit_vec);
         }
 
         //* check construtor */
-        for i in &self.classes {
+        for i in &self.ctx.classes {
             // ! do not clone
             let mut construtor_vec: Vec<ConstructorDecl> = vec![];
             for feature in &i.features {
@@ -161,31 +168,28 @@ impl SemanticChecker {
                     _ => {}
                 }
             }
-            class_table
+            self.ctx
+                .class_table
                 .class_constructors
                 .insert(i.name.clone(), construtor_vec);
         }
 
         //* check  method */
-        for i in &self.classes {
+        for i in &self.ctx.classes {
             // Main:  Main -> Object -> A
 
-            if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
+            if let Some(v) = self.ctx.class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter().rev() {
-                    if DEBUG {
-                        println!(" -> {}", &curr_parent.name);
-                    }
-
                     for feature in &curr_parent.features {
                         match feature {
                             Feature::Method(method_) => {
-                                // just check name, find it if the class override curr_parent's method
+                                //*  just check name, find it if the class override curr_parent's method
                                 if i.features.contains(&feature) {
-                                    // check returan_type and attr and ownership
+                                    //* check returan_type and attr and ownership
                                     let index =
                                         i.features.iter().position(|r| r == feature).unwrap();
 
-                                    // check param
+                                    //* check param
                                     if !i.features[index].check_param(&feature) {
                                         return Err(SemanticError {
                                             err_msg: format!(
@@ -195,7 +199,7 @@ impl SemanticChecker {
                                             file_name:  i.file_name.clone().clone(),
                                         });
                                     }
-                                    // check return type
+                                    //* check return type
                                     if !i.features[index].check_return_type(&feature) {
                                         return Err(SemanticError {
                                             err_msg: format!(
@@ -205,7 +209,7 @@ impl SemanticChecker {
                                             file_name:  i.file_name.clone(),
                                         });
                                     }
-                                    // check ownership
+                                    //* check ownership
                                     if feature.get_ownership() != i.features[index].get_ownership()
                                     {
                                         return Err(SemanticError {
@@ -236,20 +240,12 @@ impl SemanticChecker {
             }
         }
 
-        // check all expression
-        if DEBUG {
-            println!();
-            println!("Now check all expression");
-        }
-        // mut to add type to expression;
-        for i in &mut self.classes {
-            if DEBUG {
-                println!("current class is {}", i.name);
-            }
-
+        //* mut to add type to expression;
+        for i in &mut self.ctx.classes {
             self.symbol_table.enter_scope();
             self.symbol_table.add(&SELF.to_string(), &i.name);
-            if let Some(v) = class_table.inheritance.get(&(i.name.clone())) {
+
+            if let Some(v) = self.ctx.class_table.inheritance.get(&(i.name.clone())) {
                 for curr_parent in v.iter() {
                     for feature in &curr_parent.features {
                         if let Feature::Attribute(attr) = feature {
@@ -259,6 +255,7 @@ impl SemanticChecker {
                     }
                 }
             }
+
             for j in &mut i.features {
                 match j {
                     Feature::Method(method) => {
@@ -272,7 +269,10 @@ impl SemanticChecker {
                                 match expr {
                                     Expr::Return(re) => {
                                         return_ = true;
-                                        match re.check_type(&mut self.symbol_table, class_table) {
+                                        match re.check_type(
+                                            &mut self.symbol_table,
+                                            &mut self.ctx.class_table,
+                                        ) {
                                             Err(e) => {
                                                 return Err(SemanticError {
                                                     err_msg: e.err_msg,
@@ -281,7 +281,9 @@ impl SemanticChecker {
                                                 });
                                             }
                                             Ok(type_) => {
-                                                if !class_table
+                                                if !self
+                                                    .ctx
+                                                    .class_table
                                                     .is_less_or_equal(&type_, &method.return_type)
                                                 {
                                                     return Err(SemanticError {
@@ -296,9 +298,10 @@ impl SemanticChecker {
                                         }
                                     }
                                     _ => {
-                                        if let Err(e) =
-                                            expr.check_type(&mut self.symbol_table, class_table)
-                                        {
+                                        if let Err(e) = expr.check_type(
+                                            &mut self.symbol_table,
+                                            &mut self.ctx.class_table,
+                                        ) {
                                             return Err(SemanticError {
                                                 err_msg: e.err_msg,
                                                 file_name: i.file_name.clone(),
@@ -336,7 +339,8 @@ impl SemanticChecker {
                                         position: Some(re.position),
                                     });
                                 }
-                                if let Err(e) = expr.check_type(&mut self.symbol_table, class_table)
+                                if let Err(e) = expr
+                                    .check_type(&mut self.symbol_table, &mut self.ctx.class_table)
                                 {
                                     return Err(SemanticError {
                                         err_msg: e.err_msg,
@@ -352,10 +356,16 @@ impl SemanticChecker {
                     Feature::Attribute(attr) => {
                         self.symbol_table.enter_scope();
                         if let Some(init_expr) = attr.init.deref_mut() {
-                            match init_expr.check_type(&mut self.symbol_table, class_table) {
+                            match init_expr
+                                .check_type(&mut self.symbol_table, &mut self.ctx.class_table)
+                            {
                                 Ok(init_type) => {
                                     if let Some(attr_type) = &attr.type_ {
-                                        if !class_table.is_less_or_equal(attr_type, &init_type) {
+                                        if !self
+                                            .ctx
+                                            .class_table
+                                            .is_less_or_equal(attr_type, &init_type)
+                                        {
                                             return Err(SemanticError {
                                                 err_msg: format!(
                                                 "Some semantic errors occurred in your Assignment!"
@@ -382,6 +392,6 @@ impl SemanticChecker {
             self.symbol_table.exit_scope();
         }
 
-        return Ok(self.classes.clone());
+        return Ok(self.ctx.classes.clone());
     }
 }

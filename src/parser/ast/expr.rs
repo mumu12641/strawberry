@@ -1,9 +1,10 @@
 use std::fmt::{write, Debug, Display};
 
 use crate::{
+    lexer::Position,
     semantic::semantic::SemanticError,
     utils::table::{ClassTable, SymbolTable},
-    BOOL, INT, OBJECT, STRING, lexer::Position,
+    BOOL, INT, OBJECT, STRING,
 };
 
 use super::{
@@ -41,8 +42,6 @@ pub enum DispatchExpr {
 #[derive(Debug, Clone)]
 pub struct Dispatch {
     pub target: Box<Expr>,
-    // pub fun_name: Identifier,
-    // pub actual: Box<Vec<Expr>>,
     pub expr: DispatchExpr,
     pub position: Position,
     pub type_: Type,
@@ -156,8 +155,6 @@ pub enum Expr {
     Return(Return),
     Import(Import),
 }
-
-
 
 pub trait TypeGet: Debug {
     fn get_type(&self) -> Type;

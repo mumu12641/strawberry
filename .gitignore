@@ -11,3 +11,4 @@ NOTE.md
 *.sh
 /.idea
 /src/IR
+/src/ty
