@@ -15,7 +15,9 @@ lexer! {
     fn next_token(text:'a) -> Token;
 
     //* keywords */
-    "int" => Token::RawType(text.to_owned()),
+    "int" => Token::IntRawType(text.to_owned()),
+    "void" => Token::VoidRawType(text.to_owned()),
+    
     "class" => Token::Class_(*EMPTY_POSITION,"".to_string()),
     "public" => Token::Public,
     "private" => Token::Private,

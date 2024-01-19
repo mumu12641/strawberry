@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    parser::ast::{Identifier, TypeName},
+    parser::ast::{Identifier, Type},
     utils::table::SymbolTable,
 };
 
@@ -39,10 +39,10 @@ impl VarEnv<'_> {
 
 pub struct Env<'a> {
     //* (class, field) -> offset */
-    pub field_offset_map: HashMap<(Type, Type), u32>,
+    pub field_offset_map: HashMap<(Type, Identifier), u32>,
 
     //* (class, method) -> offset of method table */
-    pub method_offset_map: HashMap<(Type, Type), usize>,
+    pub method_offset_map: HashMap<(Type, Identifier), usize>,
 
     //* for struct place holder */
     pub struct_type_place_holders: HashMap<Type, StructType<'a>>,

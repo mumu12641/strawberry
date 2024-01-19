@@ -3,8 +3,9 @@ use super::Position;
 #[derive(Debug, Clone)]
 pub enum Token {
     // raw type
-    RawType(String),
-
+    IntRawType(String),
+    VoidRawType(String),
+    
     // keywords
     Class_(Position, String),
     Self_(String),

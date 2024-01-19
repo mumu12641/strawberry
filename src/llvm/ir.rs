@@ -1,3 +1,4 @@
+use core::num;
 use std::ops::Deref;
 
 use inkwell::{
@@ -5,11 +6,12 @@ use inkwell::{
     context::Context,
     module::Module,
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType, StructType},
-    values::{BasicValueEnum, FunctionValue, PointerValue},
+    values::{AnyValue, BasicValueEnum, FunctionValue, PointerValue},
     AddressSpace,
 };
 
 use crate::{
+    ctx::CompileContext,
     parser::ast::class::{Class, Feature},
     utils::table::{ClassTable, SymbolTable, Tables},
     OBJECT,
@@ -25,31 +27,32 @@ use super::{
 /// class constructor method
 /// expressions
 pub struct IrGenerator<'ctx> {
-    pub classes: Vec<Class>,
-    pub ctx: &'ctx Context,
+    // pub classes: Vec<Class>,
+    // pub ctx: &'ctx Context,
+    // pub module: Module<'ctx>,
+    // pub builder: Builder<'ctx>,
+    // pub class_table: &'ctx mut ClassTable,
+    // pub tables: Tables,
+    // pub env: Env<'ctx>,
+    pub ctx: CompileContext,
+    pub llvm_ctx: &'ctx Context,
     pub module: Module<'ctx>,
     pub builder: Builder<'ctx>,
-    pub class_table: &'ctx mut ClassTable,
-    pub tables: Tables,
     pub env: Env<'ctx>,
 }
 
 impl<'ctx> IrGenerator<'ctx> {
     pub fn new(
-        classes: Vec<Class>,
-        ctx: &'ctx Context,
+        ctx: CompileContext,
+        llvm_ctx: &'ctx Context,
         module: Module<'ctx>,
         builder: Builder<'ctx>,
-        class_table: &'ctx mut ClassTable,
-        tables: Tables,
     ) -> Self {
         IrGenerator {
-            classes,
             ctx,
+            llvm_ctx,
             module,
             builder,
-            class_table,
-            tables,
             env: Env::new(),
         }
     }
@@ -69,7 +72,7 @@ impl<'ctx> IrGenerator<'ctx> {
 
     fn gen_constant(&self) {
         let mut i = 0;
-        for s in &self.tables.string_table {
+        for s in &self.ctx.tables.string_table {
             self.builder
                 .build_global_string_ptr(&s.as_str(), &format!("str_const_{}", i));
 
@@ -78,18 +81,19 @@ impl<'ctx> IrGenerator<'ctx> {
     }
 
     fn gen_placeholders(&mut self) {
-        for class in &self.classes {
-            self.env
-                .struct_type_place_holders
-                .insert(class.name.clone(), self.ctx.opaque_struct_type(&class.name));
+        for class in &self.ctx.classes {
+            self.env.struct_type_place_holders.insert(
+                class.name.clone(),
+                self.llvm_ctx.opaque_struct_type(&class.name),
+            );
         }
-        //* for init_method place holder*/
+        //* for methods place holder*/
         self.gen_method_placeholder();
 
         //* generate class prototypes */
         //* methods placeholder */
-        let classes = self.classes.clone();
-        for class in &classes {
+        let classes = self.ctx.classes.clone();
+        for class in classes {
             self.env
                 .var_env
                 .insert(class.name.clone(), SymbolTable::new());
@@ -101,10 +105,10 @@ impl<'ctx> IrGenerator<'ctx> {
         //* for string const placeholder */
         let function = self.module.add_function(
             "_placeholder",
-            self.ctx.void_type().fn_type(&[], false),
+            self.llvm_ctx.void_type().fn_type(&[], false),
             None,
         );
-        let entry_block = self.ctx.append_basic_block(function, "entry");
+        let entry_block = self.llvm_ctx.append_basic_block(function, "entry");
         self.builder.position_at_end(entry_block);
 
         //* for string constant */
@@ -116,20 +120,32 @@ impl<'ctx> IrGenerator<'ctx> {
     fn gen_main(&self) {
         let main_function =
             self.module
-                .add_function("main", self.ctx.i32_type().fn_type(&[], false), None);
-        let main_entry_block = self.ctx.append_basic_block(main_function, "entry");
-        let zero = self.ctx.i32_type().const_int(0, false);
+                .add_function("main", self.llvm_ctx.i32_type().fn_type(&[], false), None);
+        let main_entry_block = self.llvm_ctx.append_basic_block(main_function, "entry");
+        let zero = self.llvm_ctx.i32_type().const_int(0, false);
         self.builder.position_at_end(main_entry_block);
 
-        let _ = self
+        let main_ptr = self
             .builder
-            .build_malloc(self.module.get_struct_type("Main").unwrap(), "m");
-        self.builder.build_return(Some(&zero));
+            .build_malloc(self.module.get_struct_type("Main").unwrap(), "main_ptr");
+        self.builder.build_call(
+            self.module.get_function("Main.init").unwrap(),
+            &[main_ptr.unwrap().into()],
+            "main",
+        );
+        let result = self.builder.build_call(
+            self.module.get_function("Main.main").unwrap(),
+            &[],
+            "main_result",
+        );
+
+        self.builder
+            .build_return(Some(&result.try_as_basic_value().left().unwrap()));
     }
 
     fn gen_method_placeholder(&self) {
         //* for method place holder */
-        for class in &self.classes {
+        for class in &self.ctx.classes {
             self.module.add_function(
                 &format!("{}.init", &class.name),
                 self.get_funtion_type(
@@ -159,7 +175,15 @@ impl<'ctx> IrGenerator<'ctx> {
 
                     self.module.add_function(
                         &format!("{}.{}", &class.name, method.name),
-                        self.get_funtion_type(params.as_slice(), None),
+                        self.get_funtion_type(
+                            params.as_slice(),
+                            Some(
+                                self.get_llvm_type(LLVMType::from_string_to_llvm_type(
+                                    &method.return_type,
+                                ))
+                                .into(),
+                            ),
+                        ),
                         None,
                     );
                 }
@@ -169,25 +193,30 @@ impl<'ctx> IrGenerator<'ctx> {
 
     fn gen_methods(&mut self) {
         //* emit init method */
-        let classes = self.classes.clone();
+        let classes = self.ctx.classes.clone();
         for class in &classes {
             let init_method = self.get_function(format!("{}.init", &class.name));
-            let entry_block = self.ctx.append_basic_block(init_method, "entry");
+            let entry_block = self.llvm_ctx.append_basic_block(init_method, "entry");
             self.builder.position_at_end(entry_block);
 
             //* call parents' init method */
             if &class.name != OBJECT {
-                let parent = self.class_table.get_parent(&class.name);
+                let parent = self.ctx.class_table.get_parent(&class.name);
+                let cast = self.builder.build_bitcast(
+                    init_method.get_first_param().unwrap(),
+                    self.get_llvm_type(LLVMType::from_string_to_llvm_type(&parent)),
+                    "cast",
+                );
                 self.builder.build_call(
                     self.get_function(format!("{}.init", parent)),
-                    &[init_method.get_first_param().unwrap().into()],
+                    &[cast.into()],
                     "a",
                 );
             }
             //* store method table to class */
             let m = self.builder.build_struct_gep(
                 init_method.get_first_param().unwrap().into_pointer_value(),
-                0,
+                1,
                 "method_table",
             );
             self.builder.build_store(
@@ -197,29 +226,34 @@ impl<'ctx> IrGenerator<'ctx> {
                     .unwrap(),
             );
 
+            let mut num = 0;
             for f in &class.features {
-                if let Feature::Attribute(attr) = f {
-                    if let Some(e) = attr.init.deref() {
-                        let val = e.emit_llvm_ir(self);
-                        let off = self
-                            .env
-                            .var_env
-                            .get(&class.name.clone())
-                            .unwrap()
-                            .find(&attr.name)
-                            .unwrap()
-                            .into_offset();
+                match f {
+                    Feature::Attribute(attr) => {
+                        if let Some(e) = attr.init.deref() {
+                            let val = e.emit_llvm_ir(self);
+                            let off = self
+                                .env
+                                .var_env
+                                .get(&class.name.clone())
+                                .unwrap()
+                                .find(&attr.name)
+                                .unwrap()
+                                .into_offset();
 
-                        let ptr = self
-                            .builder
-                            .build_struct_gep(
-                                init_method.get_first_param().unwrap().into_pointer_value(),
-                                off,
-                                "val",
-                            )
-                            .unwrap();
-                        self.builder.build_store(ptr, val);
+                            let ptr = self
+                                .builder
+                                .build_struct_gep(
+                                    init_method.get_first_param().unwrap().into_pointer_value(),
+                                    off,
+                                    &format!("val_{}", num),
+                                )
+                                .unwrap();
+                            num += 1;
+                            self.builder.build_store(ptr, val);
+                        }
                     }
+                    _ => {}
                 }
             }
 
@@ -227,7 +261,7 @@ impl<'ctx> IrGenerator<'ctx> {
         }
 
         //* emit methods */
-        for class in &self.classes {
+        for class in &self.ctx.classes {
             //* curr class */
             self.env.curr_class = class.name.clone();
 
@@ -248,7 +282,7 @@ impl<'ctx> IrGenerator<'ctx> {
                         );
                     }
                     let entry_block = self
-                        .ctx
+                        .llvm_ctx
                         .append_basic_block(self.env.curr_function.unwrap(), "entry");
 
                     self.env.curr_block = Some(entry_block);
@@ -268,7 +302,7 @@ impl<'ctx> IrGenerator<'ctx> {
 
     pub fn get_llvm_type(&self, llvm_type: LLVMType) -> BasicTypeEnum<'ctx> {
         match llvm_type {
-            LLVMType::I32 => BasicTypeEnum::IntType(self.ctx.i32_type()),
+            LLVMType::I32 => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
             LLVMType::StructType { type_ } => {
                 if let Some(t) = self.module.get_struct_type(&type_) {
                     return BasicTypeEnum::PointerType(
@@ -292,7 +326,7 @@ impl<'ctx> IrGenerator<'ctx> {
                 BasicMetadataTypeEnum::PointerType(type_) => type_.fn_type(params, false),
                 _ => unreachable!(),
             },
-            None => self.ctx.void_type().fn_type(params, false),
+            None => self.llvm_ctx.void_type().fn_type(params, false),
         }
     }
     pub fn get_function(&self, function_name: String) -> FunctionValue<'ctx> {

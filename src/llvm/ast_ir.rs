@@ -1,10 +1,8 @@
-use crate::
-    parser::ast::{
-        class,
-        expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
-        TypeName,
-    }
-;
+use crate::parser::ast::{
+    class,
+    expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
+    Type,
+};
 
 use inkwell::{
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, StructType},
@@ -68,7 +66,8 @@ impl Dispatch {
                     .builder
                     .build_struct_gep(target.into_pointer_value(), off, "a")
                     .unwrap();
-                return result.into();
+                let b = ir_genrator.builder.build_load(result, "b");
+                return b.into();
             }
             DispatchExpr::Method(_) => {}
         }
@@ -116,7 +115,6 @@ impl Class {
                         )),
                     );
                 }
-
                 _ => {}
             }
         }
@@ -152,16 +150,27 @@ impl Class {
         ir_genrator: &'a IrGenerator,
     ) -> BasicTypeEnum<'a> {
         let method_prototype = ir_genrator
-            .ctx
+            .llvm_ctx
             .opaque_struct_type(&format!("{}_dispatch_table_prototype", &self.name));
-        let mut methods: Vec<BasicTypeEnum> = vec![];
+        let self_ptr = BasicMetadataTypeEnum::PointerType(
+            ir_genrator
+                .module
+                .get_struct_type(&self.name)
+                .unwrap()
+                .ptr_type(AddressSpace::default()),
+        );
+        let mut methods: Vec<BasicTypeEnum> = vec![inkwell::types::BasicTypeEnum::PointerType(
+            ir_genrator
+                .llvm_ctx
+                .void_type()
+                .fn_type(&[self_ptr.clone()], false)
+                .ptr_type(AddressSpace::default()),
+        )];
         let mut method_names: Vec<String> = vec![format!("{}.init", &self.name)];
         for f in &self.features {
             if let Feature::Method(method) = f {
-                let mut params_type: Vec<BasicMetadataTypeEnum> =
-                    vec![BasicMetadataTypeEnum::StructType(
-                        ir_genrator.module.get_struct_type(&self.name).unwrap(),
-                    )];
+                let mut params_type: Vec<BasicMetadataTypeEnum> = vec![self_ptr.clone()];
+
                 for param in method.param.as_ref() {
                     params_type.push(
                         ir_genrator
@@ -172,8 +181,7 @@ impl Class {
                 method_names.push(format!("{}.{}", &self.name, method.name));
                 methods.push(BasicTypeEnum::PointerType(
                     ir_genrator
-                        .ctx
-                        .void_type()
+                        .get_llvm_type(LLVMType::from_string_to_llvm_type(&method.return_type))
                         .fn_type(params_type.as_slice(), false)
                         .ptr_type(AddressSpace::default()),
                 ));

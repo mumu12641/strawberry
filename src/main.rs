@@ -13,17 +13,17 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 
+use lazy_static::lazy_static;
 use std::path::Path;
 use utils::table::{self};
-use lazy_static::lazy_static;
 
 mod cgen;
 mod complier;
 mod ctx;
 // mod grammar;
 mod lexer;
+mod llvm;
 mod parser;
-// mod llvm;
 mod semantic;
 // mod ty;
 mod utils;

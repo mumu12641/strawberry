@@ -343,7 +343,7 @@ single_expr:Expr = {
 
 all_type: Type = {
     <class_type: "TYPE">  => class_type,
-    <raw_type: "rawtype"> => raw_type,
+    <rawtype: "rawtype"> => rawtype,
 };
 
 add_minus: MathOp = {
@@ -435,7 +435,8 @@ extern {
     enum Token{
 
         // keywords
-        "rawtype" => Token::RawType(<String>),
+        "rawtype" => Token::IntRawType(<String>),
+        // "intrawtype" => Token::IntRawType(<String>),
         "class" => Token::Class_(<Position>,<String>),
         "public" => Token::Public,
         "private" => Token::Private,
