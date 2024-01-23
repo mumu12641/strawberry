@@ -41,7 +41,6 @@ impl Expr {
             Expr::Return(e) => {
                 return e.emit_llvm_ir(ir_genrator);
             }
-
             _ => {}
         }
         ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
@@ -179,12 +178,15 @@ impl Class {
                     )
                 }
                 method_names.push(format!("{}.{}", &self.name, method.name));
-                methods.push(BasicTypeEnum::PointerType(
+                methods.push(
                     ir_genrator
-                        .get_llvm_type(LLVMType::from_string_to_llvm_type(&method.return_type))
-                        .fn_type(params_type.as_slice(), false)
-                        .ptr_type(AddressSpace::default()),
-                ));
+                        .get_funtion_type(
+                            params_type.as_slice(),
+                            ir_genrator.get_return_type(&method.return_type),
+                        )
+                        .ptr_type(AddressSpace::default())
+                        .into(),
+                );
             }
         }
         method_prototype.set_body(methods.as_slice(), false);

@@ -12,6 +12,10 @@ pub type Int = u64;
 pub type Str = String;
 pub type ParamDecl = (Identifier, Type);
 
+pub fn is_primitive(ty: &str) -> bool {
+    let tys = vec!["int", "bool", "void"];
+    return tys.contains(&ty);
+}
 
 lazy_static! {
     static ref EMPTY_POSITION: Position = Position { row: 0, column: 0 };

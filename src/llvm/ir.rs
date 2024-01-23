@@ -12,7 +12,10 @@ use inkwell::{
 
 use crate::{
     ctx::CompileContext,
-    parser::ast::class::{Class, Feature},
+    parser::ast::{
+        class::{Class, Feature},
+        Type,
+    },
     utils::table::{ClassTable, SymbolTable, Tables},
     OBJECT,
 };
@@ -172,17 +175,11 @@ impl<'ctx> IrGenerator<'ctx> {
                         self.get_llvm_type(LLVMType::from_string_to_llvm_type(&class.name))
                             .into(),
                     );
-
                     self.module.add_function(
                         &format!("{}.{}", &class.name, method.name),
                         self.get_funtion_type(
                             params.as_slice(),
-                            Some(
-                                self.get_llvm_type(LLVMType::from_string_to_llvm_type(
-                                    &method.return_type,
-                                ))
-                                .into(),
-                            ),
+                            self.get_return_type(&method.return_type),
                         ),
                         None,
                     );
@@ -303,6 +300,7 @@ impl<'ctx> IrGenerator<'ctx> {
     pub fn get_llvm_type(&self, llvm_type: LLVMType) -> BasicTypeEnum<'ctx> {
         match llvm_type {
             LLVMType::I32 => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
+            LLVMType::Bool => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
             LLVMType::StructType { type_ } => {
                 if let Some(t) = self.module.get_struct_type(&type_) {
                     return BasicTypeEnum::PointerType(
@@ -314,7 +312,18 @@ impl<'ctx> IrGenerator<'ctx> {
         }
     }
 
-    fn get_funtion_type(
+    pub fn get_return_type(&self, llvm_type: &Type) -> Option<BasicMetadataTypeEnum<'ctx>> {
+        return if LLVMType::is_void_type(llvm_type) {
+            None
+        } else {
+            Some(
+                self.get_llvm_type(LLVMType::from_string_to_llvm_type(llvm_type))
+                    .into(),
+            )
+        };
+    }
+
+    pub fn get_funtion_type(
         &self,
         params: &[BasicMetadataTypeEnum<'ctx>],
         return_type: Option<BasicMetadataTypeEnum<'ctx>>,

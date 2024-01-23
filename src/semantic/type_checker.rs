@@ -7,7 +7,7 @@ use crate::{
             Assignment, ComputeOp, Cond, ConstructorCall, Dispatch, DispatchExpr, Expr, For,
             Isnull, Let, Math, MathOp, Not, Return, While,
         },
-        Identifier, Type,
+        is_primitive, Identifier, Type,
     },
     utils::{
         table::{ClassTable, SymbolTable},
@@ -154,9 +154,9 @@ impl TypeChecker for Dispatch {
     ) -> Result<Type, SemanticError> {
         let target_type = self.target.check_type(symbol_table, class_table)?;
 
-        if target_type == INT {
+        if is_primitive(&target_type) {
             return Err(SemanticError::new(
-                "Raw type int can't use <.> operator!".to_owned(),
+                "Raw type can't use <.> operator!".to_owned(),
                 Some(self.position.clone()),
             ));
         }

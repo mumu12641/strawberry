@@ -82,7 +82,7 @@ feature: Feature = {
 
     
     // method
-    "private"? <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:all_type> "{" <e:semi_list<expr>>  "}" ";" => {
+    "private"? <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:return_type> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -92,7 +92,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:all_type> "{" <e:semi_list<expr>>  "}" ";" => {
+    "public" <pos:"fun"> <method_name:"ID"> "(" <param_:comma_list<param>?>  ")" "->" <r_type:return_type> "{" <e:semi_list<expr>>  "}" ";" => {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -103,7 +103,7 @@ feature: Feature = {
         })
     },
 
-    "private"? <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:all_type> "{"   "}"  ";"=> {
+    "private"? <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:return_type> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -113,7 +113,7 @@ feature: Feature = {
             ownership: Ownership::Private,
         })
     },
-    "public" <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:all_type> "{"   "}"  ";"=> {
+    "public" <pos: "fun"> <method_name:"ID"> "(" <param_:comma_list<param>?> ")" "->" <r_type:return_type> "{"   "}"  ";"=> {
         Feature::Method(MethodDecl{
             name: method_name.0,
             param: Box::new(param_.unwrap_or(vec![])),
@@ -341,10 +341,22 @@ single_expr:Expr = {
 
 };
 
+// without void
 all_type: Type = {
     <class_type: "TYPE">  => class_type,
-    <rawtype: "rawtype"> => rawtype,
+    // <rawtype: "rawtype"> => rawtype,
+    <int_raw_type:"intrawtype"> => int_raw_type,
+    // <void_raw_type:"intrawtype"> => void_raw_type,
+    <bool_raw_type:"boolrawtype"> => bool_raw_type,
 };
+
+
+return_type: Type = {
+    <class_type: "TYPE">  => class_type,
+    <int_raw_type:"intrawtype"> => int_raw_type,
+    <void_raw_type:"voidrawtype"> => void_raw_type,
+    <bool_raw_type:"boolrawtype"> => bool_raw_type,
+}
 
 add_minus: MathOp = {
     "+" => MathOp::ComputeOp(ComputeOp::Add),
@@ -435,8 +447,12 @@ extern {
     enum Token{
 
         // keywords
-        "rawtype" => Token::IntRawType(<String>),
-        // "intrawtype" => Token::IntRawType(<String>),
+        // "rawtype" => Token::IntRawType(<String>),
+        "intrawtype" => Token::IntRawType(<String>),
+        "voidrawtype" => Token::VoidRawType(<String>),
+        "boolrawtype" => Token::BoolRawType(<String>),
+
+
         "class" => Token::Class_(<Position>,<String>),
         "public" => Token::Public,
         "private" => Token::Private,

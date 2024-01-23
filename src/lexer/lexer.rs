@@ -17,7 +17,8 @@ lexer! {
     //* keywords */
     "int" => Token::IntRawType(text.to_owned()),
     "void" => Token::VoidRawType(text.to_owned()),
-    
+    "bool" => Token::BoolRawType(text.to_owned()),
+
     "class" => Token::Class_(*EMPTY_POSITION,"".to_string()),
     "public" => Token::Public,
     "private" => Token::Private,
@@ -148,7 +149,6 @@ impl<'a> Iterator for Lexer<'a> {
             // };
             let file_name = self.ctx.borrow().file_name.clone();
             let mut borrow_mut = self.ctx.borrow_mut();
-            
 
             let tok = if let Some((tok, new_remaining)) = next_token(&borrow_mut.content) {
                 self.offset += borrow_mut.content.chars().count() - new_remaining.chars().count();

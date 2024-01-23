@@ -5,7 +5,8 @@ pub enum Token {
     // raw type
     IntRawType(String),
     VoidRawType(String),
-    
+    BoolRawType(String),
+
     // keywords
     Class_(Position, String),
     Self_(String),

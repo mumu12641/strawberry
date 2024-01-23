@@ -5,7 +5,7 @@
 */
 
 class Object{
-    public fn print(val:String) -> Void {
+    public fn print(val:String) -> void {
         __asm__("movq 24(%rbp), %rax");
         __asm__("pushq 32(%rax)");
         __asm__("movq 24(%rax), %rax");
@@ -21,11 +21,11 @@ class Object{
         return;
     };
 
-    public fn to_string() -> String{
-        return "";    
-    };
+    // public fn to_string() -> String{
+    //     return "";    
+    // };
     
-    public fn malloc() -> Void {
+    public fn malloc() -> void {
         __asm__("movq 24(%rbp), %rax");
         __asm__("movq (%rax), %rdi");
         __asm__("call malloc");
