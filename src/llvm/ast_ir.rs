@@ -26,6 +26,15 @@ impl Expr {
                         .const_int(*e, false),
                 );
             }
+            Expr::Bool(bool_const) => {
+                let index = if *bool_const { 1 } else { 0 };
+                return ir_genrator
+                    .module
+                    .get_global(&format!("bool_const_{}", index))
+                    .unwrap()
+                    .as_basic_value_enum();
+            }
+            Expr::Str(str_const) => {}
             Expr::Dispatch(e) => {
                 return e.emit_llvm_ir(ir_genrator);
             }

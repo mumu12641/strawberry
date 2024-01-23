@@ -347,7 +347,9 @@ all_type: Type = {
     // <rawtype: "rawtype"> => rawtype,
     <int_raw_type:"intrawtype"> => int_raw_type,
     // <void_raw_type:"intrawtype"> => void_raw_type,
-    <bool_raw_type:"boolrawtype"> => bool_raw_type,
+    // <bool_raw_type:"boolrawtype"> => bool_raw_type,
+    // <bool_raw_type:"boolrawtype"> => bool_raw_type,
+      <str_raw_type:"strrawtype"> => str_raw_type,
 };
 
 
@@ -355,7 +357,8 @@ return_type: Type = {
     <class_type: "TYPE">  => class_type,
     <int_raw_type:"intrawtype"> => int_raw_type,
     <void_raw_type:"voidrawtype"> => void_raw_type,
-    <bool_raw_type:"boolrawtype"> => bool_raw_type,
+    <str_raw_type:"strrawtype"> => str_raw_type, 
+    // <bool_raw_type:"boolrawtype"> => bool_raw_type,
 }
 
 add_minus: MathOp = {
@@ -450,7 +453,8 @@ extern {
         // "rawtype" => Token::IntRawType(<String>),
         "intrawtype" => Token::IntRawType(<String>),
         "voidrawtype" => Token::VoidRawType(<String>),
-        "boolrawtype" => Token::BoolRawType(<String>),
+        // "boolrawtype" => Token::BoolRawType(<String>),
+        "strrawtype" => Token::StrRawType(<String>),
 
 
         "class" => Token::Class_(<Position>,<String>),

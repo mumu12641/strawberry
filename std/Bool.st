@@ -6,12 +6,12 @@
 
 class Bool inherits Object {
     val : int;
-    // public fn to_string() -> String {
-    //     if (self.val < 1){
-    //         return "false";
-    //     }else{
-    //         return "true";
-    //     }
-    //     return "";
-    // };
+    public fn to_string() -> String {
+        if (self.val < 1){
+            return "false";
+        }else{
+            return "true";
+        }
+        return "";
+    };
 };

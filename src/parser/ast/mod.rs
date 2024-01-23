@@ -13,7 +13,7 @@ pub type Str = String;
 pub type ParamDecl = (Identifier, Type);
 
 pub fn is_primitive(ty: &str) -> bool {
-    let tys = vec!["int", "bool", "void"];
+    let tys = vec!["int", "str", "void"];
     return tys.contains(&ty);
 }
 

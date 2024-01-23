@@ -29,10 +29,11 @@ mod semantic;
 mod utils;
 
 const STRING: &str = "String";
+const STR: &str = "str";
 const OBJECT: &str = "Object";
 const INT: &str = "int";
 const INTEGER: &str = "Integer";
-const BOOL: &str = "bool";
+const BOOL: &str = "Bool";
 const SELF: &str = "self";
 const VOID: &str = "void";
 const PRIMSLOT: &str = "PrimSlot";

@@ -1,5 +1,8 @@
 use core::num;
-use std::ops::Deref;
+use std::{
+    ops::{Add, Deref},
+    vec,
+};
 
 use inkwell::{
     builder::Builder,
@@ -74,13 +77,60 @@ impl<'ctx> IrGenerator<'ctx> {
     }
 
     fn gen_constant(&self) {
+        //* string const */
         let mut i = 0;
         for s in &self.ctx.tables.string_table {
-            self.builder
-                .build_global_string_ptr(&s.as_str(), &format!("str_const_{}", i));
-
+            let const_name = format!("str_const_{}", i);
+            self.builder.build_global_string_ptr(&s.as_str(), &const_name);
+            let val: Vec<BasicValueEnum> = vec![
+                BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
+                BasicValueEnum::PointerValue(
+                    self.module
+                        .get_global("String_dispatch_table")
+                        .unwrap()
+                        .as_pointer_value(),
+                ),
+                BasicValueEnum::PointerValue(
+                    self.module.get_global(&const_name).unwrap().as_pointer_value(),
+                ),
+            ];
+            let string_prototype = self.llvm_ctx.get_struct_type("String").unwrap();
+            let init = string_prototype.const_named_struct(&val);
+            self.module
+                .add_global(
+                    string_prototype,
+                    Some(AddressSpace::default()),
+                    &format!("string_const_{}", i),
+                )
+                .set_initializer(&init);
             i += 1;
         }
+
+        //* bool const */
+        let bool_protype = self.llvm_ctx.get_struct_type("Bool").unwrap();
+        let global_dispatch = self
+            .module
+            .get_global("Bool_dispatch_table")
+            .unwrap()
+            .as_pointer_value();
+        let true_val: Vec<BasicValueEnum> = vec![
+            BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
+            BasicValueEnum::PointerValue(global_dispatch),
+            BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
+        ];
+        let false_val: Vec<BasicValueEnum> = vec![
+            BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
+            BasicValueEnum::PointerValue(global_dispatch),
+            BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(0, false)),
+        ];
+        let true_init = bool_protype.const_named_struct(true_val.as_slice());
+        let false_init = bool_protype.const_named_struct(false_val.as_slice());
+        self.module
+            .add_global(bool_protype, Some(AddressSpace::default()), "bool_const_0")
+            .set_initializer(&false_init);
+        self.module
+            .add_global(bool_protype, Some(AddressSpace::default()), "bool_const_1")
+            .set_initializer(&true_init);
     }
 
     fn gen_placeholders(&mut self) {
@@ -300,7 +350,10 @@ impl<'ctx> IrGenerator<'ctx> {
     pub fn get_llvm_type(&self, llvm_type: LLVMType) -> BasicTypeEnum<'ctx> {
         match llvm_type {
             LLVMType::I32 => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
-            LLVMType::Bool => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
+            // LLVMType::Bool => BasicTypeEnum::IntType(self.llvm_ctx.i32_type()),
+            LLVMType::Str => BasicTypeEnum::PointerType(
+                self.llvm_ctx.i8_type().ptr_type(AddressSpace::default()),
+            ),
             LLVMType::StructType { type_ } => {
                 if let Some(t) = self.module.get_struct_type(&type_) {
                     return BasicTypeEnum::PointerType(

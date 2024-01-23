@@ -17,7 +17,8 @@ lexer! {
     //* keywords */
     "int" => Token::IntRawType(text.to_owned()),
     "void" => Token::VoidRawType(text.to_owned()),
-    "bool" => Token::BoolRawType(text.to_owned()),
+    // "bool" => Token::BoolRawType(text.to_owned()),
+    "str" => Token::StrRawType(text.to_owned()),
 
     "class" => Token::Class_(*EMPTY_POSITION,"".to_string()),
     "public" => Token::Public,
