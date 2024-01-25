@@ -1,6 +1,6 @@
 use crate::parser::ast::{
     class,
-    expr::{Dispatch, DispatchExpr, Expr, Return, Self_},
+    expr::{Dispatch, DispatchExpr, Expr, IdentifierSrtuct, Let, Return, Self_},
     Type,
 };
 
@@ -12,7 +12,10 @@ use inkwell::{
 
 use crate::parser::ast::class::{Class, Feature};
 
-use super::{ir::IrGenerator, types::LLVMType};
+use super::{
+    ir::{self, IrGenerator},
+    types::LLVMType,
+};
 
 impl Expr {
     pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
@@ -34,8 +37,27 @@ impl Expr {
                     .unwrap()
                     .as_basic_value_enum();
             }
-            Expr::Str(str_const) => {}
+            Expr::Str(str_const) => {
+                let index = ir_genrator
+                    .ctx
+                    .tables
+                    .string_table
+                    .iter()
+                    .position(|x| x == str_const)
+                    .unwrap();
+                return ir_genrator
+                    .module
+                    .get_global(&format!("str_const_{}", index))
+                    .unwrap()
+                    .as_basic_value_enum();
+            }
             Expr::Dispatch(e) => {
+                return e.emit_llvm_ir(ir_genrator);
+            }
+            Expr::Identifier(e) => {
+                return e.emit_llvm_ir(ir_genrator);
+            }
+            Expr::Let(e) => {
                 return e.emit_llvm_ir(ir_genrator);
             }
             Expr::Self_(_) => {
@@ -51,7 +73,29 @@ impl Expr {
                 return e.emit_llvm_ir(ir_genrator);
             }
             _ => {}
+        };
+        ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
+    }
+}
+
+impl IdentifierSrtuct {
+    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+        let map = &ir_genrator.env.var_env;
+        // e.name
+        let symbol_table = map.get(&ir_genrator.env.curr_class).unwrap();
+        let var = symbol_table.find(&self.name).unwrap();
+        match var {
+            super::env::VarEnv::Field(off) => ir_genrator.get_llvm_type(LLVMType::I32).const_zero(),
+            super::env::VarEnv::Value(val) => return val.clone(),
         }
+    }
+}
+
+impl Let {
+    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+
+        // self.var_decls
+        
         ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
     }
 }

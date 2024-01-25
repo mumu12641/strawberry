@@ -11,14 +11,14 @@ use crate::parser::ast::{
 
 #[derive(Debug, Clone)]
 pub struct Tables {
-    pub string_table: HashSet<String>,
+    pub string_table: Vec<String>,
     pub int_table: HashSet<String>,
     pub id_table: HashSet<String>,
 }
 impl Tables {
     pub fn new() -> Tables {
         Tables {
-            string_table: HashSet::new(),
+            string_table: Vec::new(),
             int_table: HashSet::new(),
             id_table: HashSet::new(),
         }

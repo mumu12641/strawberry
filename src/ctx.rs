@@ -16,11 +16,11 @@ pub struct CompileContext {
 impl CompileContext {
     pub fn new() -> Self {
         let mut tables = table::Tables::new();
-        tables.string_table.insert("".to_string());
-        tables.string_table.insert("Object".to_string());
-        tables.string_table.insert("%s".to_string());
-        tables.string_table.insert("%d".to_string());
-        tables.string_table.insert(RUNTIME_ERR.to_string());
+        tables.string_table.push("".to_string());
+        tables.string_table.push("Object".to_string());
+        tables.string_table.push("%s".to_string());
+        tables.string_table.push("%d".to_string());
+        tables.string_table.push(RUNTIME_ERR.to_string());
         tables.int_table.insert("0".to_string());
         let mut class_table = ClassTable::new();
         CompileContext {

@@ -9,7 +9,7 @@ use inkwell::{
     context::Context,
     module::Module,
     types::{BasicMetadataTypeEnum, BasicType, BasicTypeEnum, FunctionType, StructType},
-    values::{AnyValue, BasicValueEnum, FunctionValue, PointerValue},
+    values::{AnyValue, BasicValueEnum, FunctionValue, IntValue, PointerValue},
     AddressSpace,
 };
 
@@ -17,10 +17,11 @@ use crate::{
     ctx::CompileContext,
     parser::ast::{
         class::{Class, Feature},
+        expr::TypeGet,
         Type,
     },
     utils::table::{ClassTable, SymbolTable, Tables},
-    OBJECT,
+    OBJECT, STR,
 };
 
 use super::{
@@ -80,29 +81,35 @@ impl<'ctx> IrGenerator<'ctx> {
         //* string const */
         let mut i = 0;
         for s in &self.ctx.tables.string_table {
+            let len = s.len() + 1;
             let const_name = format!("str_const_{}", i);
-            self.builder.build_global_string_ptr(&s.as_str(), &const_name);
-            let val: Vec<BasicValueEnum> = vec![
-                BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
-                BasicValueEnum::PointerValue(
-                    self.module
-                        .get_global("String_dispatch_table")
-                        .unwrap()
-                        .as_pointer_value(),
-                ),
-                BasicValueEnum::PointerValue(
-                    self.module.get_global(&const_name).unwrap().as_pointer_value(),
-                ),
-            ];
-            let string_prototype = self.llvm_ctx.get_struct_type("String").unwrap();
-            let init = string_prototype.const_named_struct(&val);
-            self.module
-                .add_global(
-                    string_prototype,
-                    Some(AddressSpace::default()),
-                    &format!("string_const_{}", i),
-                )
-                .set_initializer(&init);
+            self.builder
+                .build_global_string_ptr(&s.as_str(), &const_name);
+
+            // ! string const?
+            // let val: Vec<BasicValueEnum> = vec![
+            //     BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(1, false)),
+            //     BasicValueEnum::PointerValue(
+            //         self.module
+            //             .get_global("String_dispatch_table")
+            //             .unwrap()
+            //             .as_pointer_value(),
+            //     ),
+            //     BasicValueEnum::IntValue(self.llvm_ctx.i32_type().const_int(len.try_into().unwrap(), false)),
+            //     BasicValueEnum::PointerValue(
+            //         self.module.get_global(&const_name).unwrap().as_pointer_value(),
+            //     ),
+            // ];
+            // let string_prototype = self.llvm_ctx.get_struct_type("String").unwrap();
+            // let init = string_prototype.const_named_struct(&val);
+            // self.module
+            //     .add_global(
+            //         string_prototype,
+            //         Some(AddressSpace::default()),
+            //         &format!("string_const_{}", i),
+            //     )
+            //     .set_initializer(&init);
+
             i += 1;
         }
 
@@ -188,7 +195,7 @@ impl<'ctx> IrGenerator<'ctx> {
         );
         let result = self.builder.build_call(
             self.module.get_function("Main.main").unwrap(),
-            &[],
+            &[main_ptr.unwrap().into()],
             "main_result",
         );
 
@@ -278,7 +285,6 @@ impl<'ctx> IrGenerator<'ctx> {
                 match f {
                     Feature::Attribute(attr) => {
                         if let Some(e) = attr.init.deref() {
-                            let val = e.emit_llvm_ir(self);
                             let off = self
                                 .env
                                 .var_env
@@ -287,7 +293,6 @@ impl<'ctx> IrGenerator<'ctx> {
                                 .find(&attr.name)
                                 .unwrap()
                                 .into_offset();
-
                             let ptr = self
                                 .builder
                                 .build_struct_gep(
@@ -296,8 +301,25 @@ impl<'ctx> IrGenerator<'ctx> {
                                     &format!("val_{}", num),
                                 )
                                 .unwrap();
+                            
+                            if (e.get_type() == STR) {
+                                unsafe {
+                                    let raw_val = e.emit_llvm_ir(self);
+                                    let val = self.builder.build_in_bounds_gep(
+                                        raw_val.into_pointer_value(),
+                                        &[
+                                            self.llvm_ctx.i32_type().const_int(0, false),
+                                            self.llvm_ctx.i32_type().const_int(0, false),
+                                        ],
+                                        "val",
+                                    );
+                                    self.builder.build_store(ptr, val);
+                                };
+                            } else {
+                                let raw_val = e.emit_llvm_ir(self);
+                                self.builder.build_store(ptr, raw_val);
+                            }
                             num += 1;
-                            self.builder.build_store(ptr, val);
                         }
                     }
                     _ => {}
@@ -337,7 +359,7 @@ impl<'ctx> IrGenerator<'ctx> {
 
                     if let Some(exps) = method.body.deref() {
                         for e in exps {
-                            e.emit_llvm_ir(&self);
+                            e.emit_llvm_ir(self);
                         }
                     }
 

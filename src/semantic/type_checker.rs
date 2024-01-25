@@ -13,7 +13,7 @@ use crate::{
         table::{ClassTable, SymbolTable},
         util::do_vecs_match,
     },
-    BOOL, INT, OBJECT, SELF, STRING, VOID,
+    BOOL, INT, OBJECT, SELF, STR, STRING, VOID,
 };
 
 use super::semantic::SemanticError;
@@ -36,7 +36,7 @@ impl TypeChecker for Expr {
     ) -> Result<Type, SemanticError> {
         match self {
             Expr::Bool(_) => return Ok(BOOL.to_string()),
-            Expr::Str(_) => return Ok(STRING.to_string()),
+            Expr::Str(_) => return Ok(STR.to_string()),
             Expr::Int(_) => return Ok(INT.to_string()),
             Expr::New(constructor_call) => {
                 return constructor_call.check_type(symbol_table, class_table)
@@ -329,33 +329,36 @@ impl TypeChecker for Math {
                                 return Ok(BOOL.to_string());
                             }
                         }
-                    } else if left == STRING.to_string() && right == STRING.to_string() {
-                        match self.op.deref() {
-                            MathOp::ComputeOp(op_) => {
-                                if let ComputeOp::Add = op_ {
-                                    self.type_ = STRING.to_string();
-                                    return Ok(STRING.to_string());
-                                } else {
-                                    return Err(SemanticError::new(
-                                        format!(
-                                            "String cannot be used for mathematical operations other than addition"
-                                        ),
-                                        None,
-                                    ));
-                                }
-                            }
-                            MathOp::CondOp(_) => {
-                                return Err(SemanticError::new(
-                                    format!("String cannot be used in conditional operations"),
-                                    None,
-                                ))
-                            }
-                        }
-                    } else {
+                    }
+                    // ! for string plus
+                    // else if left == STRING.to_string() && right == STRING.to_string() {
+                    //     match self.op.deref() {
+                    //         MathOp::ComputeOp(op_) => {
+                    //             if let ComputeOp::Add = op_ {
+                    //                 self.type_ = STRING.to_string();
+                    //                 return Ok(STRING.to_string());
+                    //             } else {
+                    //                 return Err(SemanticError::new(
+                    //                     format!(
+                    //                         "String cannot be used for mathematical operations other than addition"
+                    //                     ),
+                    //                     None,
+                    //                 ));
+                    //             }
+                    //         }
+                    //         MathOp::CondOp(_) => {
+                    //             return Err(SemanticError::new(
+                    //                 format!("String cannot be used in conditional operations"),
+                    //                 None,
+                    //             ))
+                    //         }
+                    //     }
+                    // }
+                    else {
                         return Err(SemanticError::new(
                             format!("The left and right sides of your mathematical operation are not all INT types!"),
                             None
-                    ));
+                        ));
                     }
                 }
                 Err(e) => return Err(e),

@@ -178,12 +178,9 @@ impl<'a> Iterator for Lexer<'a> {
 
                 Token::StringConst(text) => {
                     if self.asm_flag == false {
-                        // self.ctx
-                        //     .borrow_mut()
-                        //     .tables
-                        //     .string_table
-                        //     .insert(text.clone());
-                        borrow_mut.tables.string_table.insert(text.clone());
+                        if (!borrow_mut.tables.string_table.contains(&text)) {
+                            borrow_mut.tables.string_table.push(text.clone());
+                        }
                     } else {
                         self.asm_flag = false;
                     }
@@ -209,13 +206,9 @@ impl<'a> Iterator for Lexer<'a> {
                     )));
                 }
                 Token::TypeId(text) => {
-                    // self.ctx
-                    //     .borrow_mut()
-                    //     .tables
-                    //     .string_table
-                    //     .insert(text.clone());
-                    borrow_mut.tables.string_table.insert(text.clone());
-
+                    if (!borrow_mut.tables.string_table.contains(&text)) {
+                        borrow_mut.tables.string_table.push(text.clone());
+                    }
                     return Some(Ok((self.current_line, Token::TypeId(text), self.offset)));
                 }
 
