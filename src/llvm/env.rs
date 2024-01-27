@@ -37,6 +37,7 @@ impl VarEnv<'_> {
     }
 }
 
+#[derive(Clone)]
 pub struct Env<'a> {
     //* (class, field) -> offset */
     pub field_offset_map: HashMap<(Type, Identifier), u32>,

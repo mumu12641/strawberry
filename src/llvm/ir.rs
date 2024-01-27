@@ -1,5 +1,6 @@
 use core::num;
 use std::{
+    cell::RefCell,
     ops::{Add, Deref},
     vec,
 };
@@ -64,12 +65,12 @@ impl<'ctx> IrGenerator<'ctx> {
         }
     }
 
-    pub unsafe fn ir_generate(&mut self, env: &mut Env<'ctx>) {
+    pub unsafe fn ir_generate(&mut self, env: RefCell<Env<'ctx>>) {
         //* for placeholder */
-        self.gen_placeholders(env);
+        self.gen_placeholders(&env);
 
         //* generate method ir */
-        self.gen_methods(env);
+        self.gen_methods(&env);
 
         //* generate main function */
         self.gen_main();
@@ -140,9 +141,9 @@ impl<'ctx> IrGenerator<'ctx> {
             .set_initializer(&true_init);
     }
 
-    fn gen_placeholders(&mut self, env: &mut Env<'ctx>) {
+    fn gen_placeholders(&mut self, env: &RefCell<Env<'ctx>>) {
         for class in &self.ctx.classes {
-            env.struct_type_place_holders.insert(
+            env.borrow_mut().struct_type_place_holders.insert(
                 class.name.clone(),
                 self.llvm_ctx.opaque_struct_type(&class.name.clone()),
             );
@@ -154,8 +155,14 @@ impl<'ctx> IrGenerator<'ctx> {
         //* methods placeholder */
         let classes = self.ctx.classes.clone();
         for class in classes {
-            env.var_env.insert(class.name.clone(), SymbolTable::new());
-            env.var_env.get_mut(&class.name).unwrap().enter_scope();
+            env.borrow_mut()
+                .var_env
+                .insert(class.name.clone(), SymbolTable::new());
+            env.borrow_mut()
+                .var_env
+                .get_mut(&class.name)
+                .unwrap()
+                .enter_scope();
             class.emit_llvm_type(self, env);
         }
 
@@ -243,7 +250,7 @@ impl<'ctx> IrGenerator<'ctx> {
         }
     }
 
-    fn gen_methods(&mut self, env: &mut Env<'ctx>) {
+    fn gen_methods(&mut self, env: &RefCell<Env<'ctx>>) {
         //* emit init method */
         let classes = self.ctx.classes.clone();
         for class in &classes {
@@ -284,7 +291,7 @@ impl<'ctx> IrGenerator<'ctx> {
                     Feature::Attribute(attr) => {
                         if let Some(e) = attr.init.deref() {
                             let off = env
-                                .var_env
+                            .borrow_mut().var_env
                                 .get(&class.name.clone())
                                 .unwrap()
                                 .find(&attr.name)
@@ -329,30 +336,30 @@ impl<'ctx> IrGenerator<'ctx> {
         //* emit methods */
         for class in &self.ctx.classes {
             //* curr class */
-            env.curr_class = class.name.clone();
+            env.borrow_mut().curr_class = class.name.clone();
 
             for f in &class.features {
                 if let Feature::Method(method) = f {
-                    env.var_env.get_mut(&class.name).unwrap().enter_scope();
+                    env.borrow_mut().var_env.get_mut(&class.name).unwrap().enter_scope();
 
                     let m = self
                         .module
                         .get_function(&format!("{}.{}", &class.name, &method.name))
                         .unwrap();
-                    env.curr_function = Some(m);
+                    env.borrow_mut().curr_function = Some(m);
 
                     for p in method.param.deref().iter().enumerate() {
-                        env.var_env.get_mut(&class.name).unwrap().add(
+                        env.borrow_mut().var_env.get_mut(&class.name).unwrap().add(
                             &p.1 .0,
                             &VarEnv::Value(m.get_nth_param(p.0.try_into().unwrap()).unwrap()),
                         );
                     }
                     let entry_block = self
                         .llvm_ctx
-                        .append_basic_block(env.curr_function.unwrap(), "entry");
+                        .append_basic_block(env.borrow_mut().curr_function.unwrap(), "entry");
 
-                    env.curr_block = Some(entry_block);
-                    self.builder.position_at_end(env.curr_block.unwrap());
+                    env.borrow_mut().curr_block = Some(entry_block);
+                    self.builder.position_at_end(env.borrow_mut().curr_block.unwrap());
 
                     if let Some(exps) = method.body.deref() {
                         for e in exps {
@@ -360,7 +367,7 @@ impl<'ctx> IrGenerator<'ctx> {
                         }
                     }
 
-                    env.var_env.get_mut(&class.name).unwrap().exit_scope();
+                    env.borrow_mut().var_env.get_mut(&class.name).unwrap().exit_scope();
                 }
             }
         }

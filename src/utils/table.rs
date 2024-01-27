@@ -80,6 +80,7 @@ impl ClassTable {
     }
 }
 
+#[derive(Clone)]
 pub struct SymbolTable<K: PartialEq + Eq + Hash + Clone, V: PartialEq + Eq + Clone> {
     pub scopes: Vec<Scope<K, V>>,
 }

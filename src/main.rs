@@ -111,3 +111,5 @@ fn create_project_folder(name: &str) {
         b"class Main { \n\tfun main() -> Int { \n\t\tprint(\"Hello world!\"); \n\t\treturn 0; \n\t};\n};",
     ).unwrap();
 }
+
+
