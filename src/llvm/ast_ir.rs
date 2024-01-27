@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::parser::ast::{
     class,
     expr::{Dispatch, DispatchExpr, Expr, IdentifierSrtuct, Let, Return, Self_},
@@ -13,12 +15,17 @@ use inkwell::{
 use crate::parser::ast::class::{Class, Feature};
 
 use super::{
+    env::{Env, VarEnv},
     ir::{self, IrGenerator},
     types::LLVMType,
 };
 
 impl Expr {
-    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+    pub fn emit_llvm_ir<'a>(
+        &self,
+        ir_genrator: &'a IrGenerator,
+        env: &'a mut Env,
+    ) -> BasicValueEnum<'a> {
         match self {
             Expr::Int(e) => {
                 // return ir_genrator.builder.
@@ -52,25 +59,20 @@ impl Expr {
                     .as_basic_value_enum();
             }
             Expr::Dispatch(e) => {
-                return e.emit_llvm_ir(ir_genrator);
+                return e.emit_llvm_ir(ir_genrator, env);
             }
             Expr::Identifier(e) => {
-                return e.emit_llvm_ir(ir_genrator);
+                return e.emit_llvm_ir(ir_genrator, env);
             }
             Expr::Let(e) => {
-                return e.emit_llvm_ir(ir_genrator);
+                return e.emit_llvm_ir(ir_genrator, env);
             }
             Expr::Self_(_) => {
-                return ir_genrator
-                    .env
-                    .curr_function
-                    .unwrap()
-                    .get_first_param()
-                    .unwrap();
+                return env.curr_function.unwrap().get_first_param().unwrap();
             }
 
             Expr::Return(e) => {
-                return e.emit_llvm_ir(ir_genrator);
+                return e.emit_llvm_ir(ir_genrator, env);
             }
             _ => {}
         };
@@ -79,10 +81,14 @@ impl Expr {
 }
 
 impl IdentifierSrtuct {
-    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
-        let map = &ir_genrator.env.var_env;
+    pub fn emit_llvm_ir<'a>(
+        &self,
+        ir_genrator: &'a IrGenerator,
+        env: &'a mut Env,
+    ) -> BasicValueEnum<'a> {
+        let map = &env.var_env;
         // e.name
-        let symbol_table = map.get(&ir_genrator.env.curr_class).unwrap();
+        let symbol_table = map.get(&env.curr_class).unwrap();
         let var = symbol_table.find(&self.name).unwrap();
         match var {
             super::env::VarEnv::Field(off) => ir_genrator.get_llvm_type(LLVMType::I32).const_zero(),
@@ -92,28 +98,42 @@ impl IdentifierSrtuct {
 }
 
 impl Let {
-    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
-
+    pub fn emit_llvm_ir<'a>(
+        &self,
+        ir_genrator: &'a IrGenerator,
+        env: &'a mut Env,
+    ) -> BasicValueEnum<'a> {
         // self.var_decls
-        
+        for decl in self.var_decls.deref() {
+            match decl.init.deref() {
+                Some(e) => {
+                    let val = e.emit_llvm_ir(ir_genrator, env);
+                    env.get_curr_env().add(&decl.name, &VarEnv::Value(val));
+                }
+                None => todo!(),
+            }
+        }
         ir_genrator.get_llvm_type(LLVMType::I32).const_zero()
     }
 }
 
 impl Dispatch {
-    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+    pub fn emit_llvm_ir<'a>(
+        &self,
+        ir_genrator: &'a IrGenerator,
+        env: &'a mut Env,
+    ) -> BasicValueEnum<'a> {
         match &self.expr {
             DispatchExpr::Field(field) => {
-                let off = ir_genrator
-                    .env
+                let off = env
                     .var_env
-                    .get(&ir_genrator.env.curr_class)
+                    .get(&env.curr_class)
                     .unwrap()
                     .find(field)
                     .unwrap()
                     .into_offset();
 
-                let target = self.target.emit_llvm_ir(ir_genrator);
+                let target = self.target.emit_llvm_ir(ir_genrator, env);
                 let result = ir_genrator
                     .builder
                     .build_struct_gep(target.into_pointer_value(), off, "a")
@@ -128,11 +148,15 @@ impl Dispatch {
 }
 
 impl Return {
-    pub fn emit_llvm_ir<'a>(&self, ir_genrator: &'a IrGenerator) -> BasicValueEnum<'a> {
+    pub fn emit_llvm_ir<'a>(
+        &self,
+        ir_genrator: &'a IrGenerator,
+        env: &'a mut Env,
+    ) -> BasicValueEnum<'a> {
         if let Some(e) = self.val.as_deref() {
             ir_genrator
                 .builder
-                .build_return(Some(&e.emit_llvm_ir(ir_genrator)));
+                .build_return(Some(&e.emit_llvm_ir(ir_genrator, env)));
         } else {
             ir_genrator.builder.build_return(None);
         }
@@ -141,18 +165,14 @@ impl Return {
 }
 
 impl Class {
-    pub fn emit_llvm_type<'a>(&self, ir_genrator: &'a mut IrGenerator) {
+    pub fn emit_llvm_type<'a>(&self, ir_genrator: &'a mut IrGenerator, env: &'a mut Env) {
         //* class prototype */
         //*     NULL flag
         //*     _dispatch_table
         //*     attrs
 
         let method_prototype: BasicTypeEnum<'_> = self.emit_method_table_llvm_type(ir_genrator);
-        let placeholder = ir_genrator
-            .env
-            .struct_type_place_holders
-            .get(&self.name)
-            .unwrap();
+        let placeholder = env.struct_type_place_holders.get(&self.name).unwrap();
         let mut attrs: Vec<BasicTypeEnum> = vec![
             ir_genrator.get_llvm_type(LLVMType::I32),
             BasicTypeEnum::PointerType(method_prototype.ptr_type(AddressSpace::default())),
@@ -176,14 +196,10 @@ impl Class {
         for f in &self.features {
             match f {
                 Feature::Attribute(attr) => {
-                    ir_genrator
-                        .env
-                        .field_offset_map
+                    env.field_offset_map
                         .insert((self.name.clone(), attr.name.clone()), offset);
 
-                    ir_genrator
-                        .env
-                        .var_env
+                    env.var_env
                         .get_mut(&self.name)
                         .unwrap()
                         .add(&attr.name, &super::env::VarEnv::Field(offset));

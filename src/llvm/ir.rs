@@ -45,7 +45,7 @@ pub struct IrGenerator<'ctx> {
     pub llvm_ctx: &'ctx Context,
     pub module: Module<'ctx>,
     pub builder: Builder<'ctx>,
-    pub env: Env<'ctx>,
+    // pub env: Env<'ctx>,
 }
 
 impl<'ctx> IrGenerator<'ctx> {
@@ -60,16 +60,16 @@ impl<'ctx> IrGenerator<'ctx> {
             llvm_ctx,
             module,
             builder,
-            env: Env::new(),
+            // env: Env::new(),
         }
     }
 
-    pub unsafe fn ir_generate(&mut self) {
+    pub unsafe fn ir_generate(&mut self, env: &mut Env<'ctx>) {
         //* for placeholder */
-        self.gen_placeholders();
+        self.gen_placeholders(env);
 
         //* generate method ir */
-        self.gen_methods();
+        self.gen_methods(env);
 
         //* generate main function */
         self.gen_main();
@@ -140,11 +140,11 @@ impl<'ctx> IrGenerator<'ctx> {
             .set_initializer(&true_init);
     }
 
-    fn gen_placeholders(&mut self) {
+    fn gen_placeholders(&mut self, env: &mut Env<'ctx>) {
         for class in &self.ctx.classes {
-            self.env.struct_type_place_holders.insert(
+            env.struct_type_place_holders.insert(
                 class.name.clone(),
-                self.llvm_ctx.opaque_struct_type(&class.name),
+                self.llvm_ctx.opaque_struct_type(&class.name.clone()),
             );
         }
         //* for methods place holder*/
@@ -154,11 +154,9 @@ impl<'ctx> IrGenerator<'ctx> {
         //* methods placeholder */
         let classes = self.ctx.classes.clone();
         for class in classes {
-            self.env
-                .var_env
-                .insert(class.name.clone(), SymbolTable::new());
-            self.env.var_env.get_mut(&class.name).unwrap().enter_scope();
-            class.emit_llvm_type(self);
+            env.var_env.insert(class.name.clone(), SymbolTable::new());
+            env.var_env.get_mut(&class.name).unwrap().enter_scope();
+            class.emit_llvm_type(self, env);
         }
 
         //* for inkwell's bug */
@@ -245,7 +243,7 @@ impl<'ctx> IrGenerator<'ctx> {
         }
     }
 
-    fn gen_methods(&mut self) {
+    fn gen_methods(&mut self, env: &mut Env<'ctx>) {
         //* emit init method */
         let classes = self.ctx.classes.clone();
         for class in &classes {
@@ -285,8 +283,7 @@ impl<'ctx> IrGenerator<'ctx> {
                 match f {
                     Feature::Attribute(attr) => {
                         if let Some(e) = attr.init.deref() {
-                            let off = self
-                                .env
+                            let off = env
                                 .var_env
                                 .get(&class.name.clone())
                                 .unwrap()
@@ -301,10 +298,10 @@ impl<'ctx> IrGenerator<'ctx> {
                                     &format!("val_{}", num),
                                 )
                                 .unwrap();
-                            
+
                             if (e.get_type() == STR) {
                                 unsafe {
-                                    let raw_val = e.emit_llvm_ir(self);
+                                    let raw_val = e.emit_llvm_ir(self, env);
                                     let val = self.builder.build_in_bounds_gep(
                                         raw_val.into_pointer_value(),
                                         &[
@@ -316,7 +313,7 @@ impl<'ctx> IrGenerator<'ctx> {
                                     self.builder.build_store(ptr, val);
                                 };
                             } else {
-                                let raw_val = e.emit_llvm_ir(self);
+                                let raw_val = e.emit_llvm_ir(self, env);
                                 self.builder.build_store(ptr, raw_val);
                             }
                             num += 1;
@@ -332,38 +329,38 @@ impl<'ctx> IrGenerator<'ctx> {
         //* emit methods */
         for class in &self.ctx.classes {
             //* curr class */
-            self.env.curr_class = class.name.clone();
+            env.curr_class = class.name.clone();
 
             for f in &class.features {
                 if let Feature::Method(method) = f {
-                    self.env.var_env.get_mut(&class.name).unwrap().enter_scope();
+                    env.var_env.get_mut(&class.name).unwrap().enter_scope();
 
                     let m = self
                         .module
                         .get_function(&format!("{}.{}", &class.name, &method.name))
                         .unwrap();
-                    self.env.curr_function = Some(m);
+                    env.curr_function = Some(m);
 
                     for p in method.param.deref().iter().enumerate() {
-                        self.env.var_env.get_mut(&class.name).unwrap().add(
+                        env.var_env.get_mut(&class.name).unwrap().add(
                             &p.1 .0,
                             &VarEnv::Value(m.get_nth_param(p.0.try_into().unwrap()).unwrap()),
                         );
                     }
                     let entry_block = self
                         .llvm_ctx
-                        .append_basic_block(self.env.curr_function.unwrap(), "entry");
+                        .append_basic_block(env.curr_function.unwrap(), "entry");
 
-                    self.env.curr_block = Some(entry_block);
-                    self.builder.position_at_end(self.env.curr_block.unwrap());
+                    env.curr_block = Some(entry_block);
+                    self.builder.position_at_end(env.curr_block.unwrap());
 
                     if let Some(exps) = method.body.deref() {
                         for e in exps {
-                            e.emit_llvm_ir(self);
+                            e.emit_llvm_ir(self, env);
                         }
                     }
 
-                    self.env.var_env.get_mut(&class.name).unwrap().exit_scope();
+                    env.var_env.get_mut(&class.name).unwrap().exit_scope();
                 }
             }
         }
