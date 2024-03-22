@@ -11,7 +11,8 @@
   A toy object-oriented programming language written by rust
 </p>
 </div>
-# :warning: Warning
+
+## :warning: Warning
 
 This project will not be updated in a short period of time
 
