@@ -11,6 +11,9 @@
   A toy object-oriented programming language written by rust
 </p>
 </div>
+# :warning: Warning
+
+This project will not be updated in a short period of time
 
 ## 🍓Why strawberry
 
@@ -50,7 +53,7 @@ If you successfully display the version information, then move on.
 1. Clone the repo
 
    ```
-   git clone https://github.com/mumu12641/strawberry.git
+   git clone -b v0.1 https://github.com/mumu12641/strawberry.git
    ```
 
 2. Install
