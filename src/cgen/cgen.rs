@@ -214,7 +214,11 @@ impl<'a> CodeGenerator<'a> {
                                 ),
                                 true,
                             );
-                        } else if attr.type_.clone().unwrap() == INT.to_string() {
+                        }
+                        // else if attr.type_.clone().unwrap() == INT.to_string() {
+                        //     self.write(format!(".quad 0"), true);
+                        // }
+                        else {
                             self.write(format!(".quad 0"), true);
                         }
                     }
