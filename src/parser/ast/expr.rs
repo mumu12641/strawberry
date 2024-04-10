@@ -1,7 +1,7 @@
 use std::fmt::{write, Debug, Display};
 
 use crate::{
-    lexer::Position, semantic::semantic::SemanticError, utils::table::{ClassTable, SymbolTable}, BOOL, INT, OBJECT, STR, STRING
+    lexer::Position, semantic::semantic::SemanticError, utils::table::{ClassTable, SymbolTable}, BOOL, INT, OBJECT, STRING,
 };
 
 use super::{
@@ -161,7 +161,7 @@ impl TypeGet for Expr {
     fn get_type(&self) -> Type {
         match self {
             Expr::Bool(_) => return BOOL.to_string(),
-            Expr::Str(_) => return STR.to_string(),
+            Expr::Str(_) => return STRING.to_string(),
             Expr::Int(_) => return INT.to_string(),
             Expr::New(constructor_call) => return constructor_call.class_name.clone(),
             Expr::Identifier(e) => return e.type_.clone(),

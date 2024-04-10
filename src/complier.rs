@@ -57,7 +57,7 @@ fn compile<'a>(files: Vec<String>) {
     crate::parser::parse_file(files, &ctx_ref);
     let result = semantic::semantic_check(ctx_ref);
     if let Ok(ctx) = result {
-        crate::llvm::llvm_ir(ctx);
+        crate::cgen::code_gen(ctx);
     }
 }
 

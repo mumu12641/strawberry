@@ -13,29 +13,28 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 
-use lazy_static::lazy_static;
 use std::path::Path;
 use utils::table::{self};
+use lazy_static::lazy_static;
 
 mod cgen;
 mod complier;
 mod ctx;
 // mod grammar;
 mod lexer;
-mod llvm;
 mod parser;
+// mod llvm;
 mod semantic;
 // mod ty;
 mod utils;
 
 const STRING: &str = "String";
-const STR: &str = "str";
 const OBJECT: &str = "Object";
 const INT: &str = "int";
 const INTEGER: &str = "Integer";
 const BOOL: &str = "Bool";
 const SELF: &str = "self";
-const VOID: &str = "void";
+const VOID: &str = "Void";
 const PRIMSLOT: &str = "PrimSlot";
 const RUNTIME_ERR: &str = "Some runtime errors occurred and the program has crashed! \\n";
 // const EMPTY_POSITION: (usize, usize) = (0, 0);
@@ -111,5 +110,3 @@ fn create_project_folder(name: &str) {
         b"class Main { \n\tfun main() -> Int { \n\t\tprint(\"Hello world!\"); \n\t\treturn 0; \n\t};\n};",
     ).unwrap();
 }
-
-
